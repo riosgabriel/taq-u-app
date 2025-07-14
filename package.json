@@ -1,0 +1,38 @@
+{
+  "name": "ts-prisma-docker-boilerplate",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "db:deploy": "npx prisma migrate deploy && npx prisma generate",
+    "setup": "pnpm install && pnpm db:deploy && pnpm run dev",
+    "docker:up": "docker-compose up --build -d",
+    "docker:down": "docker-compose down",
+    "validate": "pnpm lint && pnpm format --check"
+  },
+  "dependencies": {
+    "@prisma/client": "6.7.0",
+    "dotenv": "16.5.0",
+    "effect": "^3.14.22",
+    "express": "5.1.0",
+    "outdated": "^0.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "@tsconfig/recommended": "^1.0.8",
+    "@types/express": "5.0.1",
+    "@typescript-eslint/eslint-plugin": "8.32.0",
+    "@typescript-eslint/parser": "8.32.0",
+    "eslint": "9.26.0",
+    "prettier": "3.5.3",
+    "prisma": "6.7.0",
+    "ts-node-dev": "2.0.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "^8.32.1"
+  },
+  "packageManager": "pnpm@8.15.4"
+}

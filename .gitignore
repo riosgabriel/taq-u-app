@@ -1,0 +1,38 @@
+# Node.js and TypeScript files
+node_modules/
+dist/
+coverage/
+
+# Docker files
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Environment files
+.env
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Build and package files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+.pnpm-store/
+
+# Postgres data directory
+postgres_data/
+
+# GitHub files
+.github/
+dependabot.yml
+
+# Miscellaneous files
+*.log
+*.tmp
+*.bak
+
+# OS-specific files
+.DS_Store
+Thumbs.db

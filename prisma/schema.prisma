@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DeliveryOrder {
+  id         String              @id @default(cuid())
+  customer   Customer            @relation(fields: [customerId], references: [id])
+  customerId String
+  route      Route               @relation(fields: [routeId], references: [id])
+  routeId    String
+  packages   Package[]
+  payment    Payment             @relation(fields: [paymentId], references: [id])
+  paymentId  String
+  estimate   Estimate            @relation(fields: [estimateId], references: [id])
+  estimateId String
+  status     DeliveryOrderStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@unique([routeId])
+  @@unique([paymentId])
+  @@unique([estimateId])
+}
+
+enum DeliveryOrderStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+model Customer {
+  id      String          @id @default(cuid())
+  name    String
+  email   String          @unique
+  phone   String?
+  address String
+  orders  DeliveryOrder[]
+}
+
+model Route {
+  id        String         @id @default(cuid())
+  pickup    Location       @relation("PickupLocation", fields: [pickupId], references: [id])
+  pickupId  String
+  dropoff   Location       @relation("DropoffLocation", fields: [dropoffId], references: [id])
+  dropoffId String
+  legs      RouteLeg[]
+  carrier   Carrier?       @relation(fields: [carrierId], references: [id])
+  carrierId String?
+  order     DeliveryOrder?
+}
+
+model RouteLeg {
+  id                String        @id @default(cuid())
+  route             Route         @relation(fields: [routeId], references: [id])
+  routeId           String
+  transportMode     TransportMode
+  pickupPoint       Location      @relation("LegPickupLocation", fields: [pickupLocationId], references: [id])
+  pickupLocationId  String
+  dropoffPoint      Location      @relation("LegDropoffLocation", fields: [dropoffLocationId], references: [id])
+  dropoffLocationId String
+  startTime         DateTime?
+  endTime           DateTime?
+  carrier           Carrier?      @relation(fields: [carrierId], references: [id])
+  carrierId         String?
+  packages          Package[]
+}
+
+enum TransportMode {
+  TRUCK
+  AIRPLANE
+  TRAIN
+  BIKE
+  ON_FOOT
+}
+
+model Package {
+  id             String        @id @default(cuid())
+  order          DeliveryOrder @relation(fields: [orderId], references: [id])
+  orderId        String
+  segment        RouteLeg?     @relation(fields: [segmentId], references: [id])
+  segmentId      String?
+  weightKg       Float
+  dimensions     String
+  description    String
+  fragile        Boolean       @default(false)
+  perishable     Boolean       @default(false)
+  insured        Boolean       @default(false)
+  trackingNumber String        @unique
+  status         PackageStatus @default(IN_TRANSIT)
+}
+
+enum PackageStatus {
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  LOST
+}
+
+model Location {
+  id        String @id @default(cuid())
+  name      String
+  address   String
+  latitude  Float
+  longitude Float
+
+  // Relations
+  pickupRoutes  Route[]    @relation("PickupLocation")
+  dropoffRoutes Route[]    @relation("DropoffLocation")
+  legPickups    RouteLeg[] @relation("LegPickupLocation")
+  legDropoffs   RouteLeg[] @relation("LegDropoffLocation")
+}
+
+model Payment {
+  id            String         @id @default(cuid())
+  method        PaymentMethod
+  amount        Float
+  currency      String
+  status        PaymentStatus  @default(PENDING)
+  transactionId String?
+  timestamp     DateTime       @default(now())
+  order         DeliveryOrder?
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  CASH
+  BANK_TRANSFER
+  MOBILE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model Estimate {
+  id                    String         @id @default(cuid())
+  estimatedCost         Float
+  currency              String
+  estimatedDeliveryTime DateTime
+  order                 DeliveryOrder?
+}
+
+model Carrier {
+  id          String      @id @default(cuid())
+  name        String
+  type        CarrierType
+  contactInfo String?
+  routes      Route[]
+  segments    RouteLeg[]
+}
+
+enum CarrierType {
+  COMPANY
+  INDIVIDUAL
+  DRONE
+  ROBOT
+}
