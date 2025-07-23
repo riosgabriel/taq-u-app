@@ -1,8 +1,20 @@
-import { Effect } from "effect"
-import Customer from "../domain/customer"
-import prisma from "../prisma"
-import { CustomerCreateInput } from "../api/customer-dto"
+import { Context, Effect } from "effect"
+import Customer from "@delivery/domain/customer"
+import { PrismaClient } from "@prisma/client"
+import { CustomerCreateInput } from "@delivery/dto/customer-dto"
 import { UnknownException } from "effect/Cause"
+
+const prisma = new PrismaClient()
+
+export class CustomerRepository extends Context.Tag("delivery/repository/CustomerRepository")<
+  CustomerRepository,
+  {
+    readonly createCustomer: (customerInput: CustomerCreateInput) => Effect.Effect<Customer, UnknownException>
+    readonly getCustomers: () => Effect.Effect<Array<Customer>, UnknownException>
+  }
+>() {}
+
+export type CustomerRepositoryShape = Context.Tag.Service<CustomerRepository>
 
 const getCustomers = () => {
   return Effect.tryPromise(() => prisma.customer.findMany())

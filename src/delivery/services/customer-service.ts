@@ -1,5 +1,5 @@
 import { Effect, Context } from "effect"
-import Customer from "../domain/customer"
+import Customer from "./domain/customer"
 
 class CustomerService extends Context.Tag("CustomerService")<
   CustomerService,

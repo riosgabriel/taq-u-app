@@ -1,5 +1,5 @@
 import { Schema } from "effect/index"
-import Customer from "../domain/customer"
+import Customer from "@delivery/domain/customer"
 
 class CustomerCreateInput extends Schema.Class<CustomerCreateInput>("CustomerCreateInput")({
   name: Schema.NonEmptyString,
