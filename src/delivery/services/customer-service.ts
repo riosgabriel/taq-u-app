@@ -1,17 +1,34 @@
-import { Effect, Context } from "effect"
-import Customer from "./domain/customer"
+import { Effect, Context, Layer } from "effect"
+import Customer from "@delivery/domain/customer"
+import { CustomerRepository } from "@delivery/repository/customer-repository"
+import { UnknownException } from "effect/Cause"
+import { CustomerCreateInput } from "@delivery/dto/customer-dto"
 
-class CustomerService extends Context.Tag("CustomerService")<
+export class CustomerService extends Context.Tag("CustomerService")<
   CustomerService,
   {
-    readonly createCustomer: (name: string) => Effect.Effect<Customer>
+    readonly createCustomer: (customerCreateInput: CustomerCreateInput) => Effect.Effect<Customer, UnknownException>
+    readonly getCustomers: () => Effect.Effect<Customer[], UnknownException>
   }
 >() {}
 
-class CustomerServiceLive extends CustomerService {
-  createCustomer(name: string): Effect.Effect<Customer> {
-    return Effect.succeed({ name } as Customer)
-  }
-}
+export const CustomerServiceLive = Layer.effect(
+  CustomerService,
+  Effect.gen(function* () {
+    const repository = yield* CustomerRepository
 
-export { CustomerService, CustomerServiceLive }
+    return CustomerService.of({
+      createCustomer: (customerCreateInput: CustomerCreateInput) => {
+        return Effect.gen(function* () {
+          return yield* repository.createCustomer(customerCreateInput)
+        })
+      },
+
+      getCustomers: () => {
+        return Effect.gen(function* () {
+          return yield* repository.getCustomers()
+        })
+      },
+    })
+  })
+)

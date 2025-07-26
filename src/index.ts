@@ -1,40 +1,47 @@
-import express from "express"
+import express, { Request, Response } from "express"
 import dotenv from "dotenv"
-import * as CustomerRepository from "./repository/customer-repository"
+import { CustomerRepository, CustomerRepositoryLive } from "@delivery/repository/customer-repository"
 import { Effect, Console } from "effect"
-import { CustomerCreateInput, CustomerResponse } from "./api/customer-dto"
+import { PrismaLive } from "@delivery/services/prisma-service"
+import { CustomerService, CustomerServiceLive } from "@delivery/services/customer-service"
+import Customer from "@delivery/domain/customer"
+import { CustomerCreateInput, CustomerResponse } from "@delivery/dto/customer-dto"
 
 dotenv.config()
 
-// TODO: create folder for the presentation layer with the schemas for customer creation
-// like createCustomerInput or something
-// with Customer Response
-// Using Effect schema
-
 const startServer = Effect.suspend(() => {
   const app = express()
-  const PORT = 3000
+  const PORT = 3000 // Use config provider
 
   app.use(express.json())
 
-  app.get("/customers", async (_req, res) => {
-    const getCustomerEffect = CustomerRepository.getCustomers().pipe(
-      Effect.map((customers) => customers.map((customer) => CustomerResponse.fromCustomer(customer)))
+  app.get("/customers", async (_req, res: Response<Customer[]>) => {
+    const customersEffect = CustomerService.pipe(
+      Effect.andThen((customerService) => customerService.getCustomers()),
+      Effect.provide(CustomerServiceLive),
+      Effect.provide(CustomerRepositoryLive),
+      Effect.provide(PrismaLive)
     )
 
-    const customers = await Effect.runPromise(getCustomerEffect)
+    const customers = Effect.runSync(customersEffect)
 
     res.json(customers)
   })
 
-  app.post("/customers", async (req, res) => {
+  app.post("/customers", async (req, res: Response<CustomerResponse>) => {
     const customerInput = CustomerCreateInput.make(req.body)
 
-    const program = CustomerRepository.createCustomer(customerInput)
+    const customerCreatedEffect = CustomerService.pipe(
+      Effect.andThen((customerService) => customerService.createCustomer(customerInput)),
+      Effect.provide(CustomerServiceLive),
+      Effect.provide(CustomerRepositoryLive),
+      Effect.provide(PrismaLive),
+      Effect.map((customer: Customer) => CustomerResponse.fromCustomer(customer))
+    )
 
-    const customer = await Effect.runPromise(program)
+    const customerResponse = Effect.runSync(customerCreatedEffect)
 
-    res.json(customer)
+    res.json(customerResponse)
   })
 
   return Effect.try(() => app.listen(PORT)).pipe(
