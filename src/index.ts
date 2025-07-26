@@ -23,7 +23,7 @@ const startServer = Effect.suspend(() => {
       Effect.provide(PrismaLive)
     )
 
-    const customers = Effect.runSync(customersEffect)
+    const customers = await Effect.runPromise(customersEffect)
 
     res.json(customers)
   })
@@ -39,7 +39,7 @@ const startServer = Effect.suspend(() => {
       Effect.map((customer: Customer) => CustomerResponse.fromCustomer(customer))
     )
 
-    const customerResponse = Effect.runSync(customerCreatedEffect)
+    const customerResponse = await Effect.runPromise(customerCreatedEffect)
 
     res.json(customerResponse)
   })
