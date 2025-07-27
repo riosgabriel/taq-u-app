@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express"
 import dotenv from "dotenv"
-import { CustomerRepository, CustomerRepositoryLive } from "@delivery/repository/customer-repository"
+import { CustomerRepositoryLive } from "@delivery/repository/customer-repository"
 import { Effect, Console } from "effect"
 import { PrismaLive } from "@delivery/services/prisma-service"
 import { CustomerService, CustomerServiceLive } from "@delivery/services/customer-service"
@@ -28,7 +28,28 @@ const startServer = Effect.suspend(() => {
     res.json(customers)
   })
 
-  app.post("/customers", async (req, res: Response<CustomerResponse>) => {
+  app.get("/customers/:id", async (req: Request, res: Response<CustomerResponse | { message: string }>) => {
+    const customerId = req.params.id
+
+    const customerByIdEffect = CustomerService.pipe(
+      Effect.andThen((customerService) => customerService.getCustomerById(customerId)),
+      Effect.provide(CustomerServiceLive),
+      Effect.provide(CustomerRepositoryLive),
+      Effect.provide(PrismaLive)
+    ).pipe(
+      Effect.map((customer: Customer) => {
+        const customerResponse = CustomerResponse.fromCustomer(customer)
+        return res.json(customerResponse)
+      }),
+      Effect.catchTag("delivery/CustomerNotFoundError", (error) =>
+        Effect.sync(() => res.status(404).json({ message: error.message }))
+      )
+    )
+
+    await Effect.runPromise(customerByIdEffect)
+  })
+
+  app.post("/customers", async (req: Request, res: Response<CustomerResponse>) => {
     const customerInput = CustomerCreateInput.make(req.body)
 
     const customerCreatedEffect = CustomerService.pipe(

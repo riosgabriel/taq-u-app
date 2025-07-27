@@ -1,14 +1,15 @@
-import { Context, Effect, Layer } from "effect"
-import Customer from "@delivery/domain/customer"
+import { Context, Data, Effect, Layer } from "effect"
 import { CustomerCreateInput } from "@delivery/dto/customer-dto"
 import { UnknownException } from "effect/Cause"
 import { PrismaService } from "@delivery/services/prisma-service"
+import { Customer } from "@prisma/client"
 
-export class CustomerRepository extends Context.Tag("delivery/repository/CustomerRepository")<
+export class CustomerRepository extends Context.Tag("delivery/CustomerRepository")<
   CustomerRepository,
   {
     readonly createCustomer: (customerInput: CustomerCreateInput) => Effect.Effect<Customer, UnknownException>
     readonly getCustomers: () => Effect.Effect<Array<Customer>, UnknownException>
+    readonly getCustomerById: (id: string) => Effect.Effect<Customer | null, UnknownException>
   }
 >() {}
 
@@ -31,20 +32,13 @@ export const CustomerRepositoryLive = Layer.effect(
               phone: customerInput.phone,
             },
           })
-        ).pipe(
-          Effect.map((customerPrisma) => {
-            return {
-              id: customerPrisma.id,
-              name: customerPrisma.name,
-              address: customerPrisma.address,
-              email: customerPrisma.email,
-              phone: customerPrisma.phone,
-            }
-          })
         )
       },
       getCustomers: () => {
         return Effect.tryPromise(() => prismaService.prisma.customer.findMany())
+      },
+      getCustomerById: (id: string) => {
+        return Effect.tryPromise(() => prismaService.prisma.customer.findUnique({ where: { id } }))
       },
     })
   })
