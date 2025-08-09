@@ -1,5 +1,5 @@
-import { OrderCreateInput } from "@order/dto/delivery-order-dto"
-import { Order, OrderPriority, OrderStatus, PackageStatus } from "@prisma/client"
+import { OrderCreateInput } from "@order/dto/order-dto"
+import { Order, OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { UnknownException } from "effect/Cause"
 import { PrismaService } from "prisma-service"
@@ -7,11 +7,18 @@ import { PrismaService } from "prisma-service"
 export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
-    readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<Order, UnknownException>
+    readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, UnknownException>
   }
 >() {}
 
 export type OrderRepositoryShape = Context.Tag.Service<OrderRepository>
+
+const orderWithPackages = Prisma.validator<Prisma.OrderDefaultArgs>()({
+  include: { packages: true },
+})
+
+export type OrderWithPackages = Prisma.OrderGetPayload<typeof orderWithPackages>
+
 
 export const OrderRepositoryLive = Layer.effect(
     OrderRepository,
@@ -49,6 +56,9 @@ export const OrderRepositoryLive = Layer.effect(
                 specialInstructions: orderInput.specialInstructions,
                 priority: orderInput.priority as OrderPriority, // TODO: need to map the priority to the enum
                 status: OrderStatus.PENDING,
+              },
+              include: {
+                packages: true,
               },
             })
           )

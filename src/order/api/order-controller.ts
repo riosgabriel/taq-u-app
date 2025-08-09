@@ -1,0 +1,35 @@
+import { OrderCreateInput, OrderResponse } from "@order/dto/order-dto";
+import { OrderRepositoryLive } from "@order/repository/order-repository";
+import { OrderService, OrderServiceLive } from "@order/services/order-service";
+import { Effect, Schema } from "effect";
+import { Router, Response, Request } from "express";
+import { PrismaLive } from "prisma-service";
+
+
+export const OrderController = Router()
+
+OrderController.post("/", async (req: Request, res: Response<OrderResponse | { message: string }>) => {
+
+    const program = Effect.gen(function* (_) {
+        const orderInput = yield* Schema.decodeUnknown(OrderCreateInput)(req.body)
+        const orderService = yield* OrderService
+        const order = yield* orderService.createOrder(orderInput)
+        return res.json(OrderResponse.fromCustomer(order))
+    })
+    .pipe(
+        Effect.catchTag("ParseError", (error) => {
+            console.warn(error)
+            return Effect.sync(() => res.status(404).json({ message: error.message }))
+        }),
+        Effect.catchAll((error) => {
+            console.error(error)
+            return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
+        })
+    ).pipe(
+        Effect.provide(OrderServiceLive),
+        Effect.provide(OrderRepositoryLive),
+        Effect.provide(PrismaLive)
+    )
+
+    Effect.runPromise(program)
+})
