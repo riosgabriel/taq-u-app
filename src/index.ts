@@ -1,4 +1,4 @@
-import { CustomerController } from "@delivery/api/customer-controller"
+import { CustomerController } from "order/api/customer-controller"
 import dotenv from "dotenv"
 import { Console, Effect } from "effect"
 import express from "express"

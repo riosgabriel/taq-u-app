@@ -10,7 +10,7 @@
     "outDir": "dist",
     "baseUrl": "./src",
     "paths": {
-      "@delivery/*": ["delivery/*"]
+      "@order/*": ["order/*"]
     }
   },
   "include": ["src", "tests"]

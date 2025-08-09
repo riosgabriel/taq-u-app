@@ -7,31 +7,116 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model DeliveryOrder {
-  id         String              @id @default(cuid())
-  customer   Customer            @relation(fields: [customerId], references: [id])
-  customerId String
-  route      Route               @relation(fields: [routeId], references: [id])
-  routeId    String
-  packages   Package[]
-  payment    Payment             @relation(fields: [paymentId], references: [id])
-  paymentId  String
-  estimate   Estimate            @relation(fields: [estimateId], references: [id])
-  estimateId String
-  status     DeliveryOrderStatus @default(PENDING)
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
-
-  @@unique([routeId])
-  @@unique([paymentId])
-  @@unique([estimateId])
+model Order {
+  id          String        @id @default(cuid())
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  customerId  String
+  
+  // Customer's delivery requirements
+  pickupAddress    String
+  deliveryAddress  String
+  pickupDate       DateTime
+  deliveryDate     DateTime?
+  
+  // Package information
+  packages         Package[]
+  
+  // Customer preferences
+  specialInstructions String?
+  priority           OrderPriority @default(STANDARD)
+  
+  // Status tracking
+  status            OrderStatus    @default(PENDING)
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  // Relations
+  deliveries        Delivery[]     @relation("OrderDeliveries")
+  payments          Payment[]
+  estimates         Estimate[]
 }
 
-enum DeliveryOrderStatus {
+enum OrderPriority {
+  LOW
+  STANDARD
+  HIGH
+  URGENT
+}
+
+enum OrderStatus {
   PENDING
-  IN_TRANSIT
-  DELIVERED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
   CANCELLED
+}
+
+// Driver's delivery execution
+model Delivery {
+  id          String        @id @default(cuid())
+  
+  // Link to customer orders
+  orders      Order[]       @relation("OrderDeliveries")
+  
+  // Driver assignment
+  driver      Driver        @relation(fields: [driverId], references: [id])
+  driverId    String
+  
+  // Route and timing
+  route       Route         @relation(fields: [routeId], references: [id])
+  routeId     String
+  
+  // Delivery execution
+  estimatedPickupTime    DateTime?
+  estimatedDeliveryTime  DateTime?
+  actualPickupTime       DateTime?
+  actualDeliveryTime     DateTime?
+  
+  // Status
+  status      DeliveryStatus @default(ASSIGNED)
+  
+  // Timestamps
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum DeliveryStatus {
+  ASSIGNED
+  PICKUP_IN_PROGRESS
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+// Driver/Vehicle operator
+model Driver {
+  id          String      @id @default(cuid())
+  name        String
+  email       String      @unique
+  phone       String
+  licenseNumber String?
+  vehicleType VehicleType
+  isAvailable Boolean     @default(true)
+  
+  // Relations
+  deliveries  Delivery[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum VehicleType {
+  CAR
+  VAN
+  TRUCK
+  MOTORCYCLE
+  BICYCLE
+  ON_FOOT
 }
 
 model Customer {
@@ -40,7 +125,7 @@ model Customer {
   email   String          @unique
   phone   String?
   address String
-  orders  DeliveryOrder[]
+  orders  Order[]
 }
 
 model Route {
@@ -52,7 +137,7 @@ model Route {
   legs      RouteLeg[]
   carrier   Carrier?       @relation(fields: [carrierId], references: [id])
   carrierId String?
-  order     DeliveryOrder?
+  deliveries Delivery[]
 }
 
 model RouteLeg {
@@ -81,7 +166,7 @@ enum TransportMode {
 
 model Package {
   id             String        @id @default(cuid())
-  order          DeliveryOrder @relation(fields: [orderId], references: [id])
+  order          Order         @relation(fields: [orderId], references: [id])
   orderId        String
   segment        RouteLeg?     @relation(fields: [segmentId], references: [id])
   segmentId      String?
@@ -92,10 +177,11 @@ model Package {
   perishable     Boolean       @default(false)
   insured        Boolean       @default(false)
   trackingNumber String        @unique
-  status         PackageStatus @default(IN_TRANSIT)
+  status         PackageStatus @default(AWAITING_PICKUP)
 }
 
 enum PackageStatus {
+  AWAITING_PICKUP
   IN_TRANSIT
   OUT_FOR_DELIVERY
   DELIVERED
@@ -124,7 +210,8 @@ model Payment {
   status        PaymentStatus  @default(PENDING)
   transactionId String?
   timestamp     DateTime       @default(now())
-  order         DeliveryOrder?
+  order         Order?         @relation(fields: [orderId], references: [id])
+  orderId       String?
 }
 
 enum PaymentMethod {
@@ -146,7 +233,8 @@ model Estimate {
   estimatedCost         Float
   currency              String
   estimatedDeliveryTime DateTime
-  order                 DeliveryOrder?
+  order                 Order?         @relation(fields: [orderId], references: [id])
+  orderId               String?
 }
 
 model Carrier {

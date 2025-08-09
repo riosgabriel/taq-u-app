@@ -1,8 +1,8 @@
 import { Effect, Context, Layer, Data } from "effect"
-import Customer from "@delivery/domain/customer"
-import { CustomerRepository } from "@delivery/repository/customer-repository"
+import Customer from "order/domain/customer"
+import { CustomerRepository } from "order/repository/customer-repository"
 import { UnknownException } from "effect/Cause"
-import { CustomerCreateInput } from "@delivery/dto/customer-dto"
+import { CustomerCreateInput } from "order/dto/customer-dto"
 
 export class CustomerNotFoundError extends Data.TaggedError("delivery/CustomerNotFoundError")<{
   readonly message: string
@@ -34,6 +34,7 @@ export const CustomerServiceLive = Layer.effect(
           return yield* repository.getCustomers()
         })
       },
+
       getCustomerById: (id: string) => {
         return Effect.gen(function* () {
           const customer = yield* repository.getCustomerById(id)

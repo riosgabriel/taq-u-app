@@ -1,8 +1,8 @@
-import Customer from "@delivery/domain/customer"
-import { CustomerCreateInput, CustomerResponse } from "@delivery/dto/customer-dto"
-import { CustomerRepositoryLive } from "@delivery/repository/customer-repository"
-import { CustomerService, CustomerServiceLive } from "@delivery/services/customer-service"
-import { PrismaLive } from "@delivery/services/prisma-service"
+import Customer from "order/domain/customer"
+import { CustomerCreateInput, CustomerResponse } from "order/dto/customer-dto"
+import { CustomerRepositoryLive } from "order/repository/customer-repository"
+import { CustomerService, CustomerServiceLive } from "order/services/customer-service"
+import { PrismaLive } from "prisma-service"
 import { Effect } from "effect"
 import { Request, Response, Router } from "express"
 

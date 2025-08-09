@@ -1,7 +1,7 @@
 import { Context, Data, Effect, Layer } from "effect"
-import { CustomerCreateInput } from "@delivery/dto/customer-dto"
+import { CustomerCreateInput } from "order/dto/customer-dto"
 import { UnknownException } from "effect/Cause"
-import { PrismaService } from "@delivery/services/prisma-service"
+import { PrismaService } from "prisma-service"
 import { Customer } from "@prisma/client"
 
 export class CustomerRepository extends Context.Tag("delivery/CustomerRepository")<
