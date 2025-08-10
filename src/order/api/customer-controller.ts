@@ -3,7 +3,7 @@ import { CustomerCreateInput, CustomerResponse } from "order/dto/customer-dto"
 import { CustomerRepositoryLive } from "order/repository/customer-repository"
 import { CustomerService, CustomerServiceLive } from "order/services/customer-service"
 import { PrismaLive } from "prisma-service"
-import { Effect } from "effect"
+import { Console, Effect, pipe, Schema } from "effect"
 import { Request, Response, Router } from "express"
 
 export const CustomerController = Router()
@@ -43,22 +43,27 @@ CustomerController.get("/:id", async (req: Request, res: Response<CustomerRespon
   Effect.runPromise(customerByIdEffect)
 })
 
-CustomerController.post("/", async (req: Request, res: Response<CustomerResponse | { message: string }>) => {
-  const customerInput = CustomerCreateInput.make(req.body)
+CustomerController.post("/", async (req: Request, res: Response<CustomerResponse | { message: string } >) => {
+  const program = Effect.gen(function* (_) {
+    const customerInput = yield* Schema.decodeUnknown(CustomerCreateInput)(req.body)
+    const customerService = yield* CustomerService
+    const customer = yield* customerService.createCustomer(customerInput)
+    return res.json(CustomerResponse.fromCustomer(customer))
+  }).pipe(
+    Effect.catchTag("ParseError", (error) => 
+      pipe(
+        Effect.sync(() => res.status(404).json({ message: error.message })),
+        Effect.tap(() => Console.warn(error))
+      )),
+    Effect.catchAll((error) => {
+      console.error(error)
+      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
+    })
+  )
 
-  const customerCreatedEffect = CustomerService.pipe(
-    Effect.andThen((customerService) => customerService.createCustomer(customerInput)),
-    Effect.map((customer: Customer) => {
-      const response = CustomerResponse.fromCustomer(customer)
-      return res.json(response)
-    }),
-    Effect.catchAll((error) =>
-      Effect.sync(() => {
-        console.error(error)
-        res.status(500).json({ message: "Internal Server Error" })
-      })
-    )
-  ).pipe(Effect.provide(CustomerServiceLive), Effect.provide(CustomerRepositoryLive), Effect.provide(PrismaLive))
-
-  Effect.runPromise(customerCreatedEffect)
+  Effect.runPromise(program.pipe(
+    Effect.provide(CustomerServiceLive),
+    Effect.provide(CustomerRepositoryLive),
+    Effect.provide(PrismaLive)
+  ))
 })

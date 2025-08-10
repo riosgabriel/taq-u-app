@@ -1,7 +1,7 @@
 import { OrderCreateInput, OrderResponse } from "@order/dto/order-dto";
 import { OrderRepositoryLive } from "@order/repository/order-repository";
 import { OrderService, OrderServiceLive } from "@order/services/order-service";
-import { Effect, Schema } from "effect";
+import { Effect, Schema, Console, pipe } from "effect";
 import { Router, Response, Request } from "express";
 import { PrismaLive } from "prisma-service";
 
@@ -17,19 +17,20 @@ OrderController.post("/", async (req: Request, res: Response<OrderResponse | { m
         return res.json(OrderResponse.fromCustomer(order))
     })
     .pipe(
-        Effect.catchTag("ParseError", (error) => {
-            console.warn(error)
-            return Effect.sync(() => res.status(404).json({ message: error.message }))
-        }),
+        Effect.catchTag("ParseError", (error) => 
+            pipe(
+                Effect.sync(() => res.status(404).json({ message: error.message })),
+                Effect.tap(() => Console.warn(error))
+            )),
         Effect.catchAll((error) => {
             console.error(error)
             return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
         })
-    ).pipe(
+    )
+
+    Effect.runPromise(program.pipe(
         Effect.provide(OrderServiceLive),
         Effect.provide(OrderRepositoryLive),
         Effect.provide(PrismaLive)
-    )
-
-    Effect.runPromise(program)
+    ))
 })
