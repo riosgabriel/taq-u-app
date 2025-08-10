@@ -1,11 +1,20 @@
 -- CreateEnum
-CREATE TYPE "DeliveryOrderStatus" AS ENUM ('PENDING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED');
+CREATE TYPE "OrderPriority" AS ENUM ('LOW', 'STANDARD', 'HIGH', 'URGENT');
+
+-- CreateEnum
+CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "DeliveryStatus" AS ENUM ('ASSIGNED', 'PICKUP_IN_PROGRESS', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "VehicleType" AS ENUM ('CAR', 'VAN', 'TRUCK', 'MOTORCYCLE', 'BICYCLE', 'ON_FOOT');
 
 -- CreateEnum
 CREATE TYPE "TransportMode" AS ENUM ('TRUCK', 'AIRPLANE', 'TRAIN', 'BIKE', 'ON_FOOT');
 
 -- CreateEnum
-CREATE TYPE "PackageStatus" AS ENUM ('IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'LOST');
+CREATE TYPE "PackageStatus" AS ENUM ('AWAITING_PICKUP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'LOST');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethod" AS ENUM ('CREDIT_CARD', 'CASH', 'BANK_TRANSFER', 'MOBILE');
@@ -17,17 +26,51 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'REFUNDED', 'FAILED');
 CREATE TYPE "CarrierType" AS ENUM ('COMPANY', 'INDIVIDUAL', 'DRONE', 'ROBOT');
 
 -- CreateTable
-CREATE TABLE "DeliveryOrder" (
+CREATE TABLE "Order" (
     "id" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
-    "routeId" TEXT NOT NULL,
-    "paymentId" TEXT NOT NULL,
-    "estimateId" TEXT NOT NULL,
-    "status" "DeliveryOrderStatus" NOT NULL DEFAULT 'PENDING',
+    "pickupAddress" TEXT NOT NULL,
+    "deliveryAddress" TEXT NOT NULL,
+    "pickupDate" TIMESTAMP(3) NOT NULL,
+    "deliveryDate" TIMESTAMP(3),
+    "specialInstructions" TEXT,
+    "priority" "OrderPriority" NOT NULL DEFAULT 'STANDARD',
+    "status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "DeliveryOrder_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Delivery" (
+    "id" TEXT NOT NULL,
+    "driverId" TEXT NOT NULL,
+    "routeId" TEXT NOT NULL,
+    "estimatedPickupTime" TIMESTAMP(3),
+    "estimatedDeliveryTime" TIMESTAMP(3),
+    "actualPickupTime" TIMESTAMP(3),
+    "actualDeliveryTime" TIMESTAMP(3),
+    "status" "DeliveryStatus" NOT NULL DEFAULT 'ASSIGNED',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Delivery_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Driver" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "licenseNumber" TEXT,
+    "vehicleType" "VehicleType" NOT NULL,
+    "isAvailable" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Driver_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -77,7 +120,7 @@ CREATE TABLE "Package" (
     "perishable" BOOLEAN NOT NULL DEFAULT false,
     "insured" BOOLEAN NOT NULL DEFAULT false,
     "trackingNumber" TEXT NOT NULL,
-    "status" "PackageStatus" NOT NULL DEFAULT 'IN_TRANSIT',
+    "status" "PackageStatus" NOT NULL DEFAULT 'AWAITING_PICKUP',
 
     CONSTRAINT "Package_pkey" PRIMARY KEY ("id")
 );
@@ -102,6 +145,7 @@ CREATE TABLE "Payment" (
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "transactionId" TEXT,
     "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "orderId" TEXT,
 
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
@@ -112,6 +156,7 @@ CREATE TABLE "Estimate" (
     "estimatedCost" DOUBLE PRECISION NOT NULL,
     "currency" TEXT NOT NULL,
     "estimatedDeliveryTime" TIMESTAMP(3) NOT NULL,
+    "orderId" TEXT,
 
     CONSTRAINT "Estimate_pkey" PRIMARY KEY ("id")
 );
@@ -126,14 +171,16 @@ CREATE TABLE "Carrier" (
     CONSTRAINT "Carrier_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "DeliveryOrder_routeId_key" ON "DeliveryOrder"("routeId");
+-- CreateTable
+CREATE TABLE "_OrderDeliveries" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_OrderDeliveries_AB_pkey" PRIMARY KEY ("A","B")
+);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "DeliveryOrder_paymentId_key" ON "DeliveryOrder"("paymentId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "DeliveryOrder_estimateId_key" ON "DeliveryOrder"("estimateId");
+CREATE UNIQUE INDEX "Driver_email_key" ON "Driver"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Customer_email_key" ON "Customer"("email");
@@ -141,17 +188,17 @@ CREATE UNIQUE INDEX "Customer_email_key" ON "Customer"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "Package_trackingNumber_key" ON "Package"("trackingNumber");
 
--- AddForeignKey
-ALTER TABLE "DeliveryOrder" ADD CONSTRAINT "DeliveryOrder_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "_OrderDeliveries_B_index" ON "_OrderDeliveries"("B");
 
 -- AddForeignKey
-ALTER TABLE "DeliveryOrder" ADD CONSTRAINT "DeliveryOrder_routeId_fkey" FOREIGN KEY ("routeId") REFERENCES "Route"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Order" ADD CONSTRAINT "Order_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "DeliveryOrder" ADD CONSTRAINT "DeliveryOrder_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Delivery" ADD CONSTRAINT "Delivery_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "DeliveryOrder" ADD CONSTRAINT "DeliveryOrder_estimateId_fkey" FOREIGN KEY ("estimateId") REFERENCES "Estimate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Delivery" ADD CONSTRAINT "Delivery_routeId_fkey" FOREIGN KEY ("routeId") REFERENCES "Route"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Route" ADD CONSTRAINT "Route_pickupId_fkey" FOREIGN KEY ("pickupId") REFERENCES "Location"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -175,7 +222,19 @@ ALTER TABLE "RouteLeg" ADD CONSTRAINT "RouteLeg_dropoffLocationId_fkey" FOREIGN 
 ALTER TABLE "RouteLeg" ADD CONSTRAINT "RouteLeg_carrierId_fkey" FOREIGN KEY ("carrierId") REFERENCES "Carrier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Package" ADD CONSTRAINT "Package_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "DeliveryOrder"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Package" ADD CONSTRAINT "Package_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Package" ADD CONSTRAINT "Package_segmentId_fkey" FOREIGN KEY ("segmentId") REFERENCES "RouteLeg"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Estimate" ADD CONSTRAINT "Estimate_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_OrderDeliveries" ADD CONSTRAINT "_OrderDeliveries_A_fkey" FOREIGN KEY ("A") REFERENCES "Delivery"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_OrderDeliveries" ADD CONSTRAINT "_OrderDeliveries_B_fkey" FOREIGN KEY ("B") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
