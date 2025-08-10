@@ -2,12 +2,17 @@ import { Context, Data, Effect, Layer } from "effect"
 import { CustomerCreateInput } from "order/dto/customer-dto"
 import { UnknownException } from "effect/Cause"
 import { PrismaService } from "prisma-service"
-import { Customer } from "@prisma/client"
+import { Customer, Prisma } from "@prisma/client"
 
-export class CustomerRepository extends Context.Tag("delivery/CustomerRepository")<
+export class CustomerEmailAlreadyExistsError extends Data.TaggedError("order/CustomerEmailAlreadyExistsError")<{
+  readonly message: string
+  readonly email: string
+}> {}
+
+export class CustomerRepository extends Context.Tag("order/CustomerRepository")<
   CustomerRepository,
   {
-    readonly createCustomer: (customerInput: CustomerCreateInput) => Effect.Effect<Customer, UnknownException>
+    readonly createCustomer: (customerInput: CustomerCreateInput) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | UnknownException>
     readonly getCustomers: () => Effect.Effect<Array<Customer>, UnknownException>
     readonly getCustomerById: (id: string) => Effect.Effect<Customer | null, UnknownException>
   }
@@ -22,17 +27,24 @@ export const CustomerRepositoryLive = Layer.effect(
     const prismaService = yield* PrismaService
 
     return CustomerRepository.of({
-      createCustomer: (customerInput: CustomerCreateInput): Effect.Effect<Customer, UnknownException> => {
-        return Effect.tryPromise(() =>
-          prismaService.prisma.customer.create({
+      createCustomer: (customerInput: CustomerCreateInput) => { 
+        return Effect.tryPromise({
+          try: () => prismaService.prisma.customer.create({
             data: {
               name: customerInput.name,
               address: customerInput.address,
               email: customerInput.email,
               phone: customerInput.phone,
             },
-          })
-        )
+          }),
+          catch: (error) => {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') { // TODO: what if we add another field to the unique constraint?
+              return new CustomerEmailAlreadyExistsError({ message: error.message, email: customerInput.email })
+            }
+
+            return new UnknownException({ error })
+          }
+        })
       },
       getCustomers: () => {
         return Effect.tryPromise(() => prismaService.prisma.customer.findMany())

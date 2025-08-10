@@ -1,7 +1,7 @@
 import Customer from "order/domain/customer"
 import { CustomerCreateInput, CustomerResponse } from "order/dto/customer-dto"
-import { CustomerRepositoryLive } from "order/repository/customer-repository"
-import { CustomerService, CustomerServiceLive } from "order/services/customer-service"
+import { CustomerEmailAlreadyExistsError, CustomerRepositoryLive } from "order/repository/customer-repository"
+import { CustomerNotFoundError, CustomerService, CustomerServiceLive } from "order/services/customer-service"
 import { PrismaLive } from "prisma-service"
 import { Console, Effect, pipe, Schema } from "effect"
 import { Request, Response, Router } from "express"
@@ -35,9 +35,9 @@ CustomerController.get("/:id", async (req: Request, res: Response<CustomerRespon
       const customerResponse = CustomerResponse.fromCustomer(customer)
       return res.json(customerResponse)
     }),
-    Effect.catchTag("delivery/CustomerNotFoundError", (error) =>
+    Effect.catchTag("order/CustomerNotFoundError", (error) =>
       Effect.sync(() => res.status(404).json({ message: error.message }))
-    )
+    ),
   ).pipe(Effect.provide(CustomerServiceLive), Effect.provide(CustomerRepositoryLive), Effect.provide(PrismaLive))
 
   Effect.runPromise(customerByIdEffect)
@@ -50,11 +50,10 @@ CustomerController.post("/", async (req: Request, res: Response<CustomerResponse
     const customer = yield* customerService.createCustomer(customerInput)
     return res.json(CustomerResponse.fromCustomer(customer))
   }).pipe(
-    Effect.catchTag("ParseError", (error) => 
-      pipe(
-        Effect.sync(() => res.status(404).json({ message: error.message })),
-        Effect.tap(() => Console.warn(error))
-      )),
+    Effect.catchTags({
+      "ParseError": (error) => Effect.sync(() => res.status(404).json({ message: error.message })),
+      "order/CustomerEmailAlreadyExistsError": (error) => Effect.sync(() => res.status(400).json({ message: `Customer with email ${error.email} already exists` })),
+    }),
     Effect.catchAll((error) => {
       console.error(error)
       return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))

@@ -1,17 +1,17 @@
 import { Effect, Context, Layer, Data } from "effect"
 import Customer from "order/domain/customer"
-import { CustomerRepository } from "order/repository/customer-repository"
+import { CustomerEmailAlreadyExistsError, CustomerRepository } from "order/repository/customer-repository"
 import { UnknownException } from "effect/Cause"
 import { CustomerCreateInput } from "order/dto/customer-dto"
 
-export class CustomerNotFoundError extends Data.TaggedError("delivery/CustomerNotFoundError")<{
+export class CustomerNotFoundError extends Data.TaggedError("order/CustomerNotFoundError")<{
   readonly message: string
 }> {}
 
-export class CustomerService extends Context.Tag("delivery/CustomerService")<
+export class CustomerService extends Context.Tag("order/CustomerService")<
   CustomerService,
   {
-    readonly createCustomer: (customerCreateInput: CustomerCreateInput) => Effect.Effect<Customer, UnknownException>
+    readonly createCustomer: (customerCreateInput: CustomerCreateInput) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | UnknownException>
     readonly getCustomers: () => Effect.Effect<Customer[], UnknownException>
     readonly getCustomerById: (id: string) => Effect.Effect<Customer, CustomerNotFoundError | UnknownException>
   }
