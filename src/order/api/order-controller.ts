@@ -40,3 +40,31 @@ OrderController.post("/", async (req: Request, res: Response<OrderResponse | { m
         Effect.provide(PrismaLive)
     ))
 })
+
+OrderController.get("/:id", async (req: Request, res: Response<OrderResponse | { message: string }>) => {
+    const program = Effect.gen(function* (_) {
+        const orderId = req.params.id
+        const orderService = yield* OrderService
+        const order = yield* orderService.getOrderById(orderId)
+        return res.json(OrderResponse.fromCustomer(order))
+    })
+    .pipe(
+        Effect.catchTags({
+            "order/OrderNotFoundError": (error) => {
+                Console.error(error)
+                return Effect.sync(() => res.status(404).json({ message: `Order with id ${error.orderId} not found` }))
+            },
+        }),
+        Effect.catchAll((error) => {
+            Console.error(error)
+            return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
+        })
+    )
+
+    Effect.runPromise(program.pipe(
+        Effect.provide(OrderServiceLive),
+        Effect.provide(OrderRepositoryLive),
+        Effect.provide(CustomerRepositoryLive),
+        Effect.provide(PrismaLive)
+    ))
+})

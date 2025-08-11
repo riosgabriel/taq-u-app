@@ -8,16 +8,17 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, UnknownException>
+    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages | null, UnknownException>
   }
 >() {}
 
 export type OrderRepositoryShape = Context.Tag.Service<OrderRepository>
 
-const orderWithPackages = Prisma.validator<Prisma.OrderDefaultArgs>()({
+const OrderWithPackages = Prisma.validator<Prisma.OrderDefaultArgs>()({
   include: { packages: true },
 })
 
-export type OrderWithPackages = Prisma.OrderGetPayload<typeof orderWithPackages>
+export type OrderWithPackages = Prisma.OrderGetPayload<typeof OrderWithPackages>
 
 
 export const OrderRepositoryLive = Layer.effect(
@@ -60,6 +61,16 @@ export const OrderRepositoryLive = Layer.effect(
               include: {
                 packages: true,
               },
+            })
+          )
+        },
+        getOrderById: (orderId: string) => {
+          return Effect.tryPromise(() =>
+            prismaService.prisma.order.findUnique({
+              where: { id: orderId },
+              include: {
+                packages: true,
+              }
             })
           )
         },
