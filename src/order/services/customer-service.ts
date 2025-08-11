@@ -5,6 +5,7 @@ import { UnknownException } from "effect/Cause"
 import { CustomerCreateInput } from "order/dto/customer-dto"
 
 export class CustomerNotFoundError extends Data.TaggedError("order/CustomerNotFoundError")<{
+  readonly customerId: string
   readonly message: string
 }> {}
 
@@ -40,7 +41,7 @@ export const CustomerServiceLive = Layer.effect(
           const customer = yield* repository.getCustomerById(id)
 
           return customer === null
-            ? yield* Effect.fail(new CustomerNotFoundError({ message: `Customer with id ${id} not found` }))
+            ? yield* Effect.fail(new CustomerNotFoundError({ customerId: id, message: `Customer with id ${id} not found` }))
             : yield* Effect.succeed(customer)
         })
       },

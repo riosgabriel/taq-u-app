@@ -1,4 +1,5 @@
 import { OrderCreateInput, OrderResponse } from "@order/dto/order-dto";
+import { CustomerRepositoryLive } from "@order/repository/customer-repository";
 import { OrderRepositoryLive } from "@order/repository/order-repository";
 import { OrderService, OrderServiceLive } from "@order/services/order-service";
 import { Effect, Schema, Console, pipe } from "effect";
@@ -9,7 +10,6 @@ import { PrismaLive } from "prisma-service";
 export const OrderController = Router()
 
 OrderController.post("/", async (req: Request, res: Response<OrderResponse | { message: string }>) => {
-
     const program = Effect.gen(function* (_) {
         const orderInput = yield* Schema.decodeUnknown(OrderCreateInput)(req.body)
         const orderService = yield* OrderService
@@ -17,13 +17,18 @@ OrderController.post("/", async (req: Request, res: Response<OrderResponse | { m
         return res.json(OrderResponse.fromCustomer(order))
     })
     .pipe(
-        Effect.catchTag("ParseError", (error) => 
-            pipe(
-                Effect.sync(() => res.status(404).json({ message: error.message })),
-                Effect.tap(() => Console.warn(error))
-            )),
+        Effect.catchTags({
+            "ParseError": (error) => {
+                Console.error(error)
+                return Effect.sync(() => res.status(404).json({ message: error.message }))
+            },
+            "order/CustomerNotFoundError": (error) => {
+                Console.error(error)
+                return Effect.sync(() => res.status(404).json({ message: `Customer with id ${error.customerId} not found` }))
+            },
+        }),
         Effect.catchAll((error) => {
-            console.error(error)
+            Console.error(error)
             return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
         })
     )
@@ -31,6 +36,7 @@ OrderController.post("/", async (req: Request, res: Response<OrderResponse | { m
     Effect.runPromise(program.pipe(
         Effect.provide(OrderServiceLive),
         Effect.provide(OrderRepositoryLive),
+        Effect.provide(CustomerRepositoryLive),
         Effect.provide(PrismaLive)
     ))
 })

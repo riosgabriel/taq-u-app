@@ -32,7 +32,7 @@ export const OrderRepositoryLive = Layer.effect(
               data: {
                 customer: {
                   connect: {
-                    id: orderInput.customer.id,
+                    id: orderInput.customerId,
                   },
                 },
                 packages: {
@@ -45,7 +45,7 @@ export const OrderRepositoryLive = Layer.effect(
                             perishable: pkg.perishable,
                             insured: pkg.insured,
                             status: PackageStatus.AWAITING_PICKUP,
-                            trackingNumber: `TRACK-${orderInput.customer.id}-${pkg.weightKg}-${pkg.dimensions}-${pkg.description}-${pkg.fragile}-${pkg.perishable}-${pkg.insured}`, // TODO: generate a tracking number
+                            trackingNumber: `TRACK-${orderInput.customerId}-${pkg.weightKg}-${pkg.dimensions}-${pkg.description}-${pkg.fragile}-${pkg.perishable}-${pkg.insured}`, // TODO: generate a tracking number
                         })),
                     }
                 },
