@@ -15,6 +15,7 @@ export class OrderService extends Context.Tag("order/OrderService")<
   {
     readonly createOrder: (orderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | UnknownException>
     readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, OrderNotFoundError | UnknownException>
+    readonly listOrders: () => Effect.Effect<OrderWithPackages[], UnknownException>
   }
 >() {}
 
@@ -38,6 +39,7 @@ export const OrderServiceLive = Layer.effect(
             return yield* orderRepository.createOrder(orderInput)
           })
         },
+
         getOrderById: (orderId: string) => {
           return Effect.gen(function* () {
             const order = yield* orderRepository.getOrderById(orderId)
@@ -49,6 +51,12 @@ export const OrderServiceLive = Layer.effect(
             return order
           })
         },
+        
+        listOrders: () => {
+          return Effect.gen(function* () {
+            return yield* orderRepository.listOrders()
+          })
+        }
       })
     })
   )

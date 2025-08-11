@@ -9,6 +9,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
   {
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, UnknownException>
     readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages | null, UnknownException>
+    readonly listOrders: () => Effect.Effect<OrderWithPackages[], UnknownException>
   }
 >() {}
 
@@ -74,6 +75,15 @@ export const OrderRepositoryLive = Layer.effect(
             })
           )
         },
+        listOrders: () => {
+          return Effect.tryPromise(() =>
+            prismaService.prisma.order.findMany({
+              include: {
+                packages: true,
+              }
+            })
+          )
+        }
       })
     })
   )

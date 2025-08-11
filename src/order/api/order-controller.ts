@@ -68,3 +68,24 @@ OrderController.get("/:id", async (req: Request, res: Response<OrderResponse | {
         Effect.provide(PrismaLive)
     ))
 })
+
+OrderController.get("/", async (_req: Request, res: Response<OrderResponse[] | { message: string }>) => {
+    const program = Effect.gen(function* (_) {
+        const orderService = yield* OrderService
+        const orders = yield* orderService.listOrders()
+        return res.json(orders.map(order => OrderResponse.fromCustomer(order)))
+    })
+    .pipe(
+        Effect.catchAll((error) => {
+            Console.error(error)
+            return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
+        })
+    )
+
+    Effect.runPromise(program.pipe(
+        Effect.provide(OrderServiceLive),
+        Effect.provide(OrderRepositoryLive),
+        Effect.provide(CustomerRepositoryLive),
+        Effect.provide(PrismaLive)
+    ))
+})
