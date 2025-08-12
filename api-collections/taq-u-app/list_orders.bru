@@ -1,0 +1,15 @@
+meta {
+  name: List Orders
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{host}}/api/orders/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: cme7gu07c0000js69lf0yawzh
+}

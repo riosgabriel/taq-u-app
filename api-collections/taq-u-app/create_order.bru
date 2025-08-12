@@ -1,0 +1,41 @@
+meta {
+  name: Create Order
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{host}}/api/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "customerId": "customer-uuid-here",
+    "pickupAddress": "123 Pickup Street, City, State 12345",
+    "deliveryAddress": "456 Delivery Avenue, City, State 12345",
+    "pickupDate": "2024-01-15T10:00:00Z",
+    "deliveryDate": "2024-01-16T14:00:00Z",
+    "specialInstructions": "Handle with care, leave at front door if no answer",
+    "priority": "HIGH",
+    "packages": [
+      {
+        "weightKg": 5.5,
+        "dimensions": "30x20x15 cm",
+        "description": "Electronics package",
+        "fragile": true,
+        "perishable": false,
+        "insured": true
+      },
+      {
+        "weightKg": 2.0,
+        "dimensions": "25x15x10 cm",
+        "description": "Documents",
+        "fragile": false,
+        "perishable": false,
+        "insured": false
+      }
+    ]
+  }
+}
