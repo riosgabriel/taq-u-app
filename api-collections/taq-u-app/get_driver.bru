@@ -1,0 +1,11 @@
+meta {
+  name: Get Driver
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{host}}/api/drivers
+  body: json
+  auth: inherit
+}
