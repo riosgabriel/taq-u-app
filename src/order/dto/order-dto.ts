@@ -1,71 +1,71 @@
-import { Schema } from "effect";
-import { Package } from "@prisma/client";
-import { OrderWithPackages } from "@order/repository/order-repository";
+import { Schema } from "effect"
+import { Package } from "@prisma/client"
+import { OrderWithPackages } from "@order/repository/order-repository"
 
 export class PackageCreateInput extends Schema.Class<PackageCreateInput>("PackageCreateInput")({
-    weightKg: Schema.Number.annotations({
-        required: true,
-        identifier: "weightKg",
-    }),
-    dimensions: Schema.NonEmptyString.annotations({
-        required: true,
-        identifier: "dimensions",
-    }),
-    description: Schema.NonEmptyString.annotations({
-        required: true,
-        identifier: "description",
-    }),
-    fragile: Schema.Boolean.annotations({
-        required: true,
-        default: false,
-        identifier: "fragile",
-    }),
-    perishable: Schema.Boolean.annotations({
-        required: true,
-        default: false,
-        identifier: "perishable",
-    }),
-    insured: Schema.Boolean.annotations({
-        required: true,
-        default: false,
-        identifier: "insured",
-    }),
+  weightKg: Schema.Number.annotations({
+    required: true,
+    identifier: "weightKg",
+  }),
+  dimensions: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "dimensions",
+  }),
+  description: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "description",
+  }),
+  fragile: Schema.Boolean.annotations({
+    required: true,
+    default: false,
+    identifier: "fragile",
+  }),
+  perishable: Schema.Boolean.annotations({
+    required: true,
+    default: false,
+    identifier: "perishable",
+  }),
+  insured: Schema.Boolean.annotations({
+    required: true,
+    default: false,
+    identifier: "insured",
+  }),
 }) {}
 
 export class OrderCreateInput extends Schema.Class<OrderCreateInput>("OrderCreateInput")({
-    customerId: Schema.NonEmptyString.annotations({
-        required: true,
-        identifier: "customerId",
-    }),
-    pickupAddress: Schema.NonEmptyString.annotations({
-        required: true,
-        identifier: "pickupAddress",
-    }),
-    deliveryAddress: Schema.NonEmptyString.annotations({
-        required: true,
-        identifier: "deliveryAddress",
-    }),
-    pickupDate: Schema.NonEmptyString.annotations({
-        required: true,
-        identifier: "pickupDate",
-    }),
-    deliveryDate: Schema.NonEmptyString.annotations({
-        required: false,
-        identifier: "deliveryDate",
-    }),
-    specialInstructions: Schema.String.annotations({
-        required: false,
-        identifier: "specialInstructions",
-    }),
-    packages: Schema.Array(PackageCreateInput).annotations({
-        required: true,
-        identifier: "packages",
-    }),
-    priority: Schema.NonEmptyString.annotations({
-        required: true,
-        identifier: "priority",
-        default: "NORMAL",
-    }),
+  customerId: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "customerId",
+  }),
+  pickupAddress: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "pickupAddress",
+  }),
+  deliveryAddress: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "deliveryAddress",
+  }),
+  pickupDate: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "pickupDate",
+  }),
+  deliveryDate: Schema.NonEmptyString.annotations({
+    required: false,
+    identifier: "deliveryDate",
+  }),
+  specialInstructions: Schema.String.annotations({
+    required: false,
+    identifier: "specialInstructions",
+  }),
+  packages: Schema.Array(PackageCreateInput).annotations({
+    required: true,
+    identifier: "packages",
+  }),
+  priority: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "priority",
+    default: "NORMAL",
+  }),
 }) {}
 
 export class PackageResponse extends Schema.Class<PackageResponse>("PackageResponse")({
@@ -109,7 +109,7 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
       deliveryDate: order.deliveryDate || undefined,
       specialInstructions: order.specialInstructions || undefined,
       priority: order.priority,
-      packages: order.packages.map(pkg => PackageResponse.fromPackage(pkg)),
+      packages: order.packages.map((pkg) => PackageResponse.fromPackage(pkg)),
     }
   }
 }

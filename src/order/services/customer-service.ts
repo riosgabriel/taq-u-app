@@ -12,7 +12,9 @@ export class CustomerNotFoundError extends Data.TaggedError("order/CustomerNotFo
 export class CustomerService extends Context.Tag("order/CustomerService")<
   CustomerService,
   {
-    readonly createCustomer: (customerCreateInput: CustomerCreateInput) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | UnknownException>
+    readonly createCustomer: (
+      customerCreateInput: CustomerCreateInput
+    ) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | UnknownException>
     readonly getCustomers: () => Effect.Effect<Customer[], UnknownException>
     readonly getCustomerById: (id: string) => Effect.Effect<Customer, CustomerNotFoundError | UnknownException>
   }
@@ -41,7 +43,9 @@ export const CustomerServiceLive = Layer.effect(
           const customer = yield* repository.getCustomerById(id)
 
           return customer === null
-            ? yield* Effect.fail(new CustomerNotFoundError({ customerId: id, message: `Customer with id ${id} not found` }))
+            ? yield* Effect.fail(
+                new CustomerNotFoundError({ customerId: id, message: `Customer with id ${id} not found` })
+              )
             : yield* Effect.succeed(customer)
         })
       },

@@ -1,5 +1,5 @@
 import { OrderCreateInput } from "@order/dto/order-dto"
-import { Order, OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
+import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { UnknownException } from "effect/Cause"
 import { PrismaService } from "prisma-service"
@@ -21,69 +21,68 @@ const OrderWithPackages = Prisma.validator<Prisma.OrderDefaultArgs>()({
 
 export type OrderWithPackages = Prisma.OrderGetPayload<typeof OrderWithPackages>
 
-
 export const OrderRepositoryLive = Layer.effect(
-    OrderRepository,
-    Effect.gen(function* () {
-      const prismaService = yield* PrismaService
-  
-      return OrderRepository.of({
-        createOrder: (orderInput: OrderCreateInput) => {
-          return Effect.tryPromise(() =>
-            prismaService.prisma.order.create({
-              data: {
-                customer: {
-                  connect: {
-                    id: orderInput.customerId,
-                  },
+  OrderRepository,
+  Effect.gen(function* () {
+    const prismaService = yield* PrismaService
+
+    return OrderRepository.of({
+      createOrder: (orderInput: OrderCreateInput) => {
+        return Effect.tryPromise(() =>
+          prismaService.prisma.order.create({
+            data: {
+              customer: {
+                connect: {
+                  id: orderInput.customerId,
                 },
-                packages: {
-                    createMany: {
-                        data: orderInput.packages.map((pkg) => ({
-                            weightKg: pkg.weightKg,
-                            dimensions: pkg.dimensions,
-                            description: pkg.description,
-                            fragile: pkg.fragile,
-                            perishable: pkg.perishable,
-                            insured: pkg.insured,
-                            status: PackageStatus.AWAITING_PICKUP,
-                            trackingNumber: `TRACK-${orderInput.customerId}-${pkg.weightKg}-${pkg.dimensions}-${pkg.description}-${pkg.fragile}-${pkg.perishable}-${pkg.insured}`, // TODO: generate a tracking number
-                        })),
-                    }
+              },
+              packages: {
+                createMany: {
+                  data: orderInput.packages.map((pkg) => ({
+                    weightKg: pkg.weightKg,
+                    dimensions: pkg.dimensions,
+                    description: pkg.description,
+                    fragile: pkg.fragile,
+                    perishable: pkg.perishable,
+                    insured: pkg.insured,
+                    status: PackageStatus.AWAITING_PICKUP,
+                    trackingNumber: `TRACK-${orderInput.customerId}-${pkg.weightKg}-${pkg.dimensions}-${pkg.description}-${pkg.fragile}-${pkg.perishable}-${pkg.insured}`, // TODO: generate a tracking number
+                  })),
                 },
-                pickupAddress: orderInput.pickupAddress,
-                deliveryAddress: orderInput.deliveryAddress,
-                pickupDate: orderInput.pickupDate,
-                deliveryDate: orderInput.deliveryDate,
-                specialInstructions: orderInput.specialInstructions,
-                priority: orderInput.priority as OrderPriority, // TODO: need to map the priority to the enum
-                status: OrderStatus.PENDING,
               },
-              include: {
-                packages: true,
-              },
-            })
-          )
-        },
-        getOrderById: (orderId: string) => {
-          return Effect.tryPromise(() =>
-            prismaService.prisma.order.findUnique({
-              where: { id: orderId },
-              include: {
-                packages: true,
-              }
-            })
-          )
-        },
-        listOrders: () => {
-          return Effect.tryPromise(() =>
-            prismaService.prisma.order.findMany({
-              include: {
-                packages: true,
-              }
-            })
-          )
-        }
-      })
+              pickupAddress: orderInput.pickupAddress,
+              deliveryAddress: orderInput.deliveryAddress,
+              pickupDate: orderInput.pickupDate,
+              deliveryDate: orderInput.deliveryDate,
+              specialInstructions: orderInput.specialInstructions,
+              priority: orderInput.priority as OrderPriority, // TODO: need to map the priority to the enum
+              status: OrderStatus.PENDING,
+            },
+            include: {
+              packages: true,
+            },
+          })
+        )
+      },
+      getOrderById: (orderId: string) => {
+        return Effect.tryPromise(() =>
+          prismaService.prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+              packages: true,
+            },
+          })
+        )
+      },
+      listOrders: () => {
+        return Effect.tryPromise(() =>
+          prismaService.prisma.order.findMany({
+            include: {
+              packages: true,
+            },
+          })
+        )
+      },
     })
-  )
+  })
+)
