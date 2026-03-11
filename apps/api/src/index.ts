@@ -4,13 +4,15 @@ import dotenv from "dotenv"
 import { Console, Effect } from "effect"
 import express from "express"
 import { CustomerController } from "order/api/customer-controller"
+import cors from "cors"
 
 dotenv.config()
 
 const startServer = Effect.suspend(() => {
   const app = express()
-  const PORT = 3000 // Use config provider
+  const PORT = 3000
 
+  app.use(cors())
   app.use(express.json())
 
   const apiRouter = express.Router()
