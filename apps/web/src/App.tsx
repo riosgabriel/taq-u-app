@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { Toaster } from "sonner";
+import { DeliveryRoutes } from "./components/DeliveryRoutes";
+import DriverManagement from "./components/DriverManagement";
+import { PackageList } from "./components/PackageList";
 import { PackageTracker } from "./components/PackageTracker";
 import { ShipPackage } from "./components/ShipPackage";
-import { PackageList } from "./components/PackageList";
-import { DeliveryRoutes } from "./components/DeliveryRoutes";
-import { useState } from "react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("track");
@@ -28,6 +29,7 @@ export default function App() {
               { id: "ship", label: "Ship Package", icon: "📮" },
               { id: "packages", label: "My Packages", icon: "📋" },
               { id: "routes", label: "Delivery Routes", icon: "🚛" },
+              { id: "drivers", label: "Driver Registration", icon: "👤" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -50,6 +52,7 @@ export default function App() {
             {activeTab === "ship" && <ShipPackage />}
             {activeTab === "packages" && <PackageList />}
             {activeTab === "routes" && <DeliveryRoutes />}
+            {activeTab === "drivers" && <DriverManagement />}
           </div>
         </div>
       </main>

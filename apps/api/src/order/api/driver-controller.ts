@@ -74,3 +74,49 @@ DriverController.get("/:id", async (req: Request, res: Response<DriverResponse |
     program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
   )
 })
+
+DriverController.patch("/:id", async (req: Request, res: Response<DriverResponse | { message: string }>) => {
+  const program = Effect.gen(function* (_) {
+    const driverService = yield* DriverService
+    const driver = yield* driverService.update(req.params.id, req.body)
+    return res.json(driver)
+  }).pipe(
+    Effect.catchTags({
+      "order/DriverNotFoundError": (error) => {
+        Console.error(error)
+        return Effect.sync(() => res.status(404).json({ message: error.message }))
+      },
+    }),
+    Effect.catchAll((error) => {
+      Console.error(error)
+      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
+    })
+  )
+
+  Effect.runPromise(
+    program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
+  )
+})
+
+DriverController.delete("/:id", async (req: Request, res: Response<{ message: string }>) => {
+  const program = Effect.gen(function* (_) {
+    const driverService = yield* DriverService
+    yield* driverService.delete(req.params.id)
+    return res.json({ message: "Driver deleted successfully" })
+  }).pipe(
+    Effect.catchTags({
+      "order/DriverNotFoundError": (error) => {
+        Console.error(error)
+        return Effect.sync(() => res.status(404).json({ message: error.message }))
+      },
+    }),
+    Effect.catchAll((error) => {
+      Console.error(error)
+      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
+    })
+  )
+
+  Effect.runPromise(
+    program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
+  )
+})

@@ -50,3 +50,12 @@ export class DriverResponse extends Schema.Class<DriverResponse>("DriverResponse
     }
   }
 }
+
+export class DriverUpdateInput extends Schema.Class<DriverUpdateInput>("order/DriverUpdateInput")({
+  name: Schema.optional(Schema.String),
+  email: Schema.optional(Schema.String),
+  phone: Schema.optional(Schema.String),
+  licenseNumber: Schema.optional(Schema.String),
+  vehicleType: Schema.optional(Schema.String),
+  isAvailable: Schema.optional(Schema.Boolean),
+}) {}

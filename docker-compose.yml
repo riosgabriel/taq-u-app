@@ -5,7 +5,7 @@ services:
     image: postgres:16.3
     restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-taq_u_app}
+      POSTGRES_DB: ${POSTGRES_DB:-taq-u}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     env_file:
@@ -15,7 +15,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-taq_u_app}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-taq-u}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/taq_u_app?schema=public}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/taq-u?schema=public}
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
       PRISMA_GENERATE_DATAPROXY: ${PRISMA_GENERATE_DATAPROXY:-true}

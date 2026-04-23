@@ -1,5 +1,5 @@
 import Driver from "@order/domain/driver"
-import { DriverCreateInput } from "@order/dto/driver-dto"
+import { DriverCreateInput, DriverUpdateInput } from "@order/dto/driver-dto"
 import { DriverEmailAlreadyExistsError, DriverRepository } from "@order/repository/driver-respository"
 import { Context, Data, Effect, Layer } from "effect"
 import { UnknownException } from "effect/Cause"
@@ -17,6 +17,8 @@ export class DriverService extends Context.Tag("order/DriverService")<
     ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | UnknownException>
     readonly listAll: () => Effect.Effect<Array<Driver>, UnknownException>
     readonly getById: (id: string) => Effect.Effect<Driver, DriverNotFoundError | UnknownException>
+    readonly update: (id: string, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, DriverNotFoundError | UnknownException>
+    readonly delete: (id: string) => Effect.Effect<Driver, DriverNotFoundError | UnknownException>
   }
 >() {}
 
@@ -43,6 +45,30 @@ export const DriverServiceLive = Layer.effect(
       getById: (id: string) => {
         return Effect.gen(function* () {
           const driver = yield* repository.getById(id)
+
+          if (!driver) {
+            return yield* Effect.fail(new DriverNotFoundError({ id, message: "Driver not found" }))
+          }
+
+          return yield* Effect.succeed(Driver.fromDriver(driver))
+        })
+      },
+
+      update: (id: string, driverUpdateInput: DriverUpdateInput) => {
+        return Effect.gen(function* () {
+          const driver = yield* repository.update(id, driverUpdateInput)
+
+          if (!driver) {
+            return yield* Effect.fail(new DriverNotFoundError({ id, message: "Driver not found" }))
+          }
+
+          return yield* Effect.succeed(Driver.fromDriver(driver))
+        })
+      },
+
+      delete: (id: string) => {
+        return Effect.gen(function* () {
+          const driver = yield* repository.delete(id)
 
           if (!driver) {
             return yield* Effect.fail(new DriverNotFoundError({ id, message: "Driver not found" }))
