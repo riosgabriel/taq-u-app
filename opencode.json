@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "linear": {
+      "type": "remote",
+      "url": "https://mcp.linear.app/mcp",
+      "enabled": true
+    }
+  },
+  "agent": {
+    "effect-implement": {
+      "description": "Helps implement Effect TypeScript patterns for services, layers, error handling, and resources",
+      "mode": "subagent",
+      "prompt": "{file:./.opencode/agents/effect-implement.md}"
+    }
+  }
+}
