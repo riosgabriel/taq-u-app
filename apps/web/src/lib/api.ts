@@ -42,6 +42,19 @@ class ApiClient {
     })
   }
 
+  async updateOrder(id: string, data: any) {
+    return this.request(`/orders/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async cancelOrder(id: string) {
+    return this.request(`/orders/${id}`, {
+      method: "DELETE",
+    })
+  }
+
   // Customers
   async getCustomers() {
     return this.request("/customers")
