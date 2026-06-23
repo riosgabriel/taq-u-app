@@ -7,7 +7,6 @@
   },
   "prettier.configPath": "./prettier.config.mjs",
   "prettier.requireConfig": true,
-  "typescript.preferences.organizeImports": true,
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
@@ -24,5 +23,18 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "js/ts.preferences.autoImportFileExcludePatterns": [
+    "repos/**"
+  ],
+  "files.exclude": {
+    "repos/**": true
+  },
+  "files.watcherExclude": {
+    "repos/**": true
+  },
+
+  "search.exclude": {
+    "repos/**": true
   }
 }
