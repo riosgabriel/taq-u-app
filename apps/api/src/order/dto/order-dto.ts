@@ -1,6 +1,6 @@
-import { Schema } from "effect"
-import { Package } from "@prisma/client"
 import { OrderWithPackages } from "@order/repository/order-repository"
+import { Package } from "@prisma/client"
+import { Schema } from "effect"
 
 export class PackageCreateInput extends Schema.Class<PackageCreateInput>("PackageCreateInput")({
   weightKg: Schema.Number.annotations({
@@ -98,9 +98,10 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
   deliveryDate: Schema.optional(Schema.Date),
   specialInstructions: Schema.optional(Schema.String),
   priority: Schema.String,
+  status: Schema.String,
   packages: Schema.Array(PackageResponse),
 }) {
-  static fromCustomer(order: OrderWithPackages): OrderResponse {
+  static fromOrderWithPackages(order: OrderWithPackages): OrderResponse {
     return {
       id: order.id,
       pickupAddress: order.pickupAddress,
@@ -109,7 +110,35 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
       deliveryDate: order.deliveryDate || undefined,
       specialInstructions: order.specialInstructions || undefined,
       priority: order.priority,
+      status: order.status,
       packages: order.packages.map((pkg) => PackageResponse.fromPackage(pkg)),
     }
   }
 }
+
+export class OrderUpdateInput extends Schema.Class<OrderUpdateInput>("OrderUpdateInput")({
+  pickupAddress: Schema.NonEmptyString.annotations({
+    required: false,
+    identifier: "pickupAddress",
+  }),
+  deliveryAddress: Schema.NonEmptyString.annotations({
+    required: false,
+    identifier: "deliveryAddress",
+  }),
+  pickupDate: Schema.NonEmptyString.annotations({
+    required: false,
+    identifier: "pickupDate",
+  }),
+  deliveryDate: Schema.NonEmptyString.annotations({
+    required: false,
+    identifier: "deliveryDate",
+  }),
+  specialInstructions: Schema.String.annotations({
+    required: false,
+    identifier: "specialInstructions",
+  }),
+  priority: Schema.NonEmptyString.annotations({
+    required: false,
+    identifier: "priority",
+  }),
+}) {}

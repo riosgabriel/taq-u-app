@@ -1,20 +1,25 @@
 import { DriverController } from "@order/api/driver-controller"
 import { OrderController } from "@order/api/order-controller"
+import cors from "cors"
 import dotenv from "dotenv"
-import { Console, Effect } from "effect"
+import { Effect } from "effect"
 import express from "express"
 import { CustomerController } from "order/api/customer-controller"
-import cors from "cors"
+import { effectErrorHandler } from "./middleware/error-handler"
+import { AppRuntime } from "./runtime"
 
 dotenv.config()
+
 
 const startServer = Effect.suspend(() => {
   const app = express()
   const PORT = 3000
-
+  
   app.use(cors())
   app.use(express.json())
-
+  
+  app.locals.runtime = AppRuntime
+  
   const apiRouter = express.Router()
 
   apiRouter.use("/customers", CustomerController)
@@ -22,10 +27,17 @@ const startServer = Effect.suspend(() => {
   apiRouter.use("/drivers", DriverController)
 
   app.use("/api", apiRouter)
+  app.use(effectErrorHandler)
+  
+  process.on("SIGTERM", () => {
+    Effect.runPromise(AppRuntime.disposeEffect)
+    process.exit(0)
+  })
 
   return Effect.try(() => app.listen(PORT)).pipe(
-    Effect.tap((_) => Console.log(`Server is running on http://localhost:${PORT}`))
+    Effect.tap((_) => Effect.logInfo(`Server is running on http://localhost:${PORT}`))
   )
 })
+
 
 Effect.runPromise(startServer)

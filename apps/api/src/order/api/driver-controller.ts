@@ -1,122 +1,66 @@
+import { runEffect } from "@/middleware/effect-runner"
 import { DriverCreateInput, DriverResponse } from "@order/dto/driver-dto"
-import { DriverRepositoryLive } from "@order/repository/driver-respository"
-import { DriverService, DriverServiceLive } from "@order/services/driver-service"
-import { Console, Effect, Schema } from "effect"
-import { Request, Response, Router } from "express"
-import { PrismaLive } from "prisma-service"
+import { DriverService } from "@order/services/driver-service"
+import { Effect, Schema } from "effect"
+import { NextFunction, Request, Response, Router } from "express"
 
 export const DriverController = Router()
 
-DriverController.post("/", async (req: Request, res: Response<DriverResponse | { message: string }>) => {
+DriverController.post("/", async (req: Request, res: Response<DriverResponse>, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const driverInput = yield* Schema.decodeUnknown(DriverCreateInput)(req.body)
     const driverService = yield* DriverService
-    const driver = yield* driverService.create(driverInput)
-    return res.json(DriverResponse.fromDriver(driver))
-  }).pipe(
-    Effect.catchTags({
-      ParseError: (error) => {
-        console.log(error)
-        return Effect.sync(() => res.status(404).json({ message: error.message }))
-      },
-      "order/DriverEmailAlreadyExistsError": (error) => {
-        console.log(error)
-        return Effect.sync(() => res.status(400).json({ message: `Driver with email ${error.email} already exists` }))
-      },
-    }),
-    Effect.catchAll((error) => {
-      console.log(error)
-      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
-    })
-  )
+    return DriverResponse.fromDriver(
+      yield* driverService.create(driverInput)
+    )
+  })
 
-  Effect.runPromise(
-    program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
-  )
+  runEffect(req, res, next, program, (driver) => {
+    res.json(driver)
+  })
 })
 
-DriverController.get("/", async (_req: Request, res: Response<Array<DriverResponse> | { message: string }>) => {
+DriverController.get("/", async (req: Request, res: Response<Array<DriverResponse>>, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const driverService = yield* DriverService
-    const drivers = yield* driverService.listAll()
-    return res.json(drivers)
-  }).pipe(
-    Effect.catchAll((error) => {
-      Console.error(error)
-      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
-    })
-  )
+    return yield* driverService.listAll()
+  })
 
-  Effect.runPromise(
-    program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
-  )
+  runEffect(req, res, next, program, (drivers) => {
+    res.json(drivers)
+  })
 })
 
-DriverController.get("/:id", async (req: Request, res: Response<DriverResponse | { message: string }>) => {
+DriverController.get("/:id", async (req: Request, res: Response<DriverResponse>, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const driverService = yield* DriverService
-    const driver = yield* driverService.getById(req.params.id)
-    return res.json(driver)
-  }).pipe(
-    Effect.catchTags({
-      "order/DriverNotFoundError": (error) => {
-        Console.error(error)
-        return Effect.sync(() => res.status(404).json({ message: error.message }))
-      },
-    }),
-    Effect.catchAll((error) => {
-      Console.error(error)
-      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
-    })
-  )
+    return yield* driverService.getById(req.params.id)
+  })
 
-  Effect.runPromise(
-    program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
-  )
+  runEffect(req, res, next, program, (driver) => {
+    res.json(driver)
+  })
 })
 
-DriverController.patch("/:id", async (req: Request, res: Response<DriverResponse | { message: string }>) => {
+DriverController.patch("/:id", async (req: Request, res: Response<DriverResponse>, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const driverService = yield* DriverService
-    const driver = yield* driverService.update(req.params.id, req.body)
-    return res.json(driver)
-  }).pipe(
-    Effect.catchTags({
-      "order/DriverNotFoundError": (error) => {
-        Console.error(error)
-        return Effect.sync(() => res.status(404).json({ message: error.message }))
-      },
-    }),
-    Effect.catchAll((error) => {
-      Console.error(error)
-      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
-    })
-  )
+    return yield* driverService.update(req.params.id, req.body)
+  })
 
-  Effect.runPromise(
-    program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
-  )
+  runEffect(req, res, next, program, (driver) => {
+    res.json(driver)
+  })
 })
 
-DriverController.delete("/:id", async (req: Request, res: Response<{ message: string }>) => {
+DriverController.delete("/:id", async (req: Request, res: Response<{ message: string }>, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const driverService = yield* DriverService
     yield* driverService.delete(req.params.id)
-    return res.json({ message: "Driver deleted successfully" })
-  }).pipe(
-    Effect.catchTags({
-      "order/DriverNotFoundError": (error) => {
-        Console.error(error)
-        return Effect.sync(() => res.status(404).json({ message: error.message }))
-      },
-    }),
-    Effect.catchAll((error) => {
-      Console.error(error)
-      return Effect.sync(() => res.status(500).json({ message: "Internal Server Error" }))
-    })
-  )
+    return { message: "Driver deleted successfully" }
+  })
 
-  Effect.runPromise(
-    program.pipe(Effect.provide(DriverServiceLive), Effect.provide(DriverRepositoryLive), Effect.provide(PrismaLive))
-  )
+  runEffect(req, res, next, program, (result) => {
+    res.json(result)
+  })
 })

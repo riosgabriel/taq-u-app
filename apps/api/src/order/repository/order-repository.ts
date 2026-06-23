@@ -1,4 +1,4 @@
-import { OrderCreateInput } from "@order/dto/order-dto"
+import { OrderCreateInput, OrderUpdateInput } from "@order/dto/order-dto"
 import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { UnknownException } from "effect/Cause"
@@ -10,6 +10,8 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, UnknownException>
     readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages | null, UnknownException>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], UnknownException>
+    readonly updateOrder: (orderId: string, updateInput: OrderUpdateInput) => Effect.Effect<OrderWithPackages, UnknownException>
+    readonly updateOrderStatus: (orderId: string, status: OrderStatus) => Effect.Effect<OrderWithPackages, UnknownException>
   }
 >() {}
 
@@ -77,6 +79,37 @@ export const OrderRepositoryLive = Layer.effect(
       listOrders: () => {
         return Effect.tryPromise(() =>
           prismaService.prisma.order.findMany({
+            include: {
+              packages: true,
+            },
+          })
+        )
+      },
+
+      updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
+        return Effect.tryPromise(() =>
+          prismaService.prisma.order.update({
+            where: { id: orderId },
+            data: {
+              pickupAddress: updateInput.pickupAddress,
+              deliveryAddress: updateInput.deliveryAddress,
+              pickupDate: updateInput.pickupDate,
+              deliveryDate: updateInput.deliveryDate,
+              specialInstructions: updateInput.specialInstructions,
+              priority: updateInput.priority as OrderPriority,
+            },
+            include: {
+              packages: true,
+            },
+          })
+        )
+      },
+
+      updateOrderStatus: (orderId: string, status: OrderStatus) => {
+        return Effect.tryPromise(() =>
+          prismaService.prisma.order.update({
+            where: { id: orderId },
+            data: { status },
             include: {
               packages: true,
             },
