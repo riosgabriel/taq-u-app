@@ -74,11 +74,8 @@ export const OrderServiceLive = Layer.effect(
         })
       },
 
-      listOrders: () => {
-        return Effect.gen(function* () {
-          return yield* orderRepository.listOrders()
-        })
-      },
+      // TODO: add pagination and filtering
+      listOrders: () => orderRepository.listOrders(),
 
       updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
         return Effect.gen(function* () {
@@ -110,9 +107,10 @@ export const OrderServiceLive = Layer.effect(
               new OrderStatusError({
                 orderId,
                 currentStatus: existingOrder.status,
-                message: existingOrder.status === OrderStatus.CANCELLED
-                  ? "Order is already cancelled"
-                  : `Cannot cancel order with status ${existingOrder.status}`,
+                message:
+                  existingOrder.status === OrderStatus.CANCELLED
+                    ? "Order is already cancelled"
+                    : `Cannot cancel order with status ${existingOrder.status}`,
               })
             )
           }

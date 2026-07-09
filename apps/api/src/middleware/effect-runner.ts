@@ -1,22 +1,37 @@
 import { Effect } from "effect"
+import * as ParseResult from "effect/ParseResult"
 import type { NextFunction, Request, Response } from "express"
 import { AppRuntime } from "../runtime"
+import type { HttpResponse } from "./http"
 
-export const runEffect = <A, E, R>(
+export const runEffect = <E, R>(
   req: Request,
-  _res: Response,
+  res: Response,
   next: NextFunction,
-  program: Effect.Effect<A, E, R>,
-  onSuccess: (value: A) => void
+  program: Effect.Effect<HttpResponse, E, R>
 ) => {
-  // Annotate every log in this request with shared context
-  const withContext = program.pipe(
+  const handled = program.pipe(
     Effect.annotateLogs({
       requestId: req.headers["x-request-id"] ?? crypto.randomUUID(),
       method: req.method,
       path: req.path,
+    }),
+    Effect.matchEffect({
+      onSuccess: (response) =>
+        Effect.sync(() => {
+          res.status(response.status).json(response.body)
+        }),
+      onFailure: (error) =>
+        Effect.sync(() => {
+          if (ParseResult.isParseError(error)) {
+            res.status(400).json({ error: error.message })
+            return
+          }
+          next(error)
+        }),
     })
-  ) as Effect.Effect<A, E>
+  )
 
-  AppRuntime.runPromise(withContext).then(onSuccess).catch(next)
+  // TODO: find a way to remove the cast
+  AppRuntime.runPromise(handled as Effect.Effect<void, never>).catch(next)
 }
