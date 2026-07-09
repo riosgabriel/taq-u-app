@@ -1,15 +1,16 @@
+import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
 import { runEffect } from "@/middleware/effect-runner"
 import { badRequest, notFound, ok } from "@/middleware/http"
 import { OrderCreateInput, OrderResponse, OrderUpdateInput } from "@order/dto/order-dto"
 import { OrderService } from "@order/services/order-service"
-import { Effect, Schema } from "effect"
+import { Effect } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 
 export const OrderController = Router()
 
 OrderController.post("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const orderInput = yield* Schema.decodeUnknown(OrderCreateInput)(req.body)
+    const orderInput = yield* decodeBody(OrderCreateInput, req)
     const orderService = yield* OrderService
     return ok(OrderResponse.fromOrderWithPackages(yield* orderService.createOrder(orderInput)))
   }).pipe(
@@ -20,9 +21,8 @@ OrderController.post("/", async (req: Request, res: Response, next: NextFunction
 })
 
 OrderController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const orderId = req.params.id as string
-
   const program = Effect.gen(function* (_) {
+    const { id: orderId } = yield* decodeParams(IdParams, req)
     const orderService = yield* OrderService
     return ok(OrderResponse.fromOrderWithPackages(yield* orderService.getOrderById(orderId)))
   }).pipe(
@@ -33,10 +33,9 @@ OrderController.get("/:id", async (req: Request, res: Response, next: NextFuncti
 })
 
 OrderController.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const orderId = req.params.id as string
-
   const program = Effect.gen(function* (_) {
-    const orderInput = yield* Schema.decodeUnknown(OrderUpdateInput)(req.body)
+    const { id: orderId } = yield* decodeParams(IdParams, req)
+    const orderInput = yield* decodeBody(OrderUpdateInput, req)
     const orderService = yield* OrderService
     return ok(OrderResponse.fromOrderWithPackages(yield* orderService.updateOrder(orderId, orderInput)))
   }).pipe(
@@ -47,9 +46,8 @@ OrderController.put("/:id", async (req: Request, res: Response, next: NextFuncti
 })
 
 OrderController.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const orderId = req.params.id as string
-
   const program = Effect.gen(function* (_) {
+    const { id: orderId } = yield* decodeParams(IdParams, req)
     const orderService = yield* OrderService
     return ok(OrderResponse.fromOrderWithPackages(yield* orderService.cancelOrder(orderId)))
   }).pipe(
