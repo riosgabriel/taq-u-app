@@ -39,15 +39,11 @@ export const CustomerServiceLive = Layer.effect(
       },
 
       getCustomerById: (id: string) => {
-        return Effect.gen(function* () {
-          const customer = yield* repository.getCustomerById(id)
-
-          return customer === null
-            ? yield* Effect.fail(
-                new CustomerNotFoundError({ customerId: id, message: `Customer with id ${id} not found` })
-              )
-            : yield* Effect.succeed(customer)
-        })
+        return repository.getCustomerById(id).pipe(
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
+          )
+        )
       },
     })
   })

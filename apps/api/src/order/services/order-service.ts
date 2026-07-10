@@ -45,61 +45,43 @@ export const OrderServiceLive = Layer.effect(
     return OrderService.of({
       createOrder: (orderInput: OrderCreateInput) => {
         return Effect.gen(function* () {
-          const customer = yield* customerRepository.getCustomerById(orderInput.customerId)
+          yield* customerRepository.getCustomerById(orderInput.customerId)
 
-          if (!customer) {
-            return yield* Effect.fail(
+          return yield* orderRepository.createOrder(orderInput)
+        }).pipe(
+          Effect.catchTag("order/RecordNotFoundError", () =>
+            Effect.fail(
               new CustomerNotFoundError({
                 customerId: orderInput.customerId,
                 message: `Customer with id ${orderInput.customerId} not found`,
               })
             )
-          }
-
-          return yield* orderRepository.createOrder(orderInput)
-        })
+          )
+        )
       },
 
       getOrderById: (orderId: string) => {
-        return Effect.gen(function* () {
-          const order = yield* orderRepository.getOrderById(orderId)
-
-          if (!order) {
-            return yield* Effect.fail(
-              new OrderNotFoundError({ orderId, message: `Order with id ${orderId} not found` })
-            )
-          }
-
-          return order
-        })
+        return orderRepository.getOrderById(orderId).pipe(
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+          )
+        )
       },
 
       // TODO: add pagination and filtering
       listOrders: () => orderRepository.listOrders(),
 
       updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
-        return Effect.gen(function* () {
-          const existingOrder = yield* orderRepository.getOrderById(orderId)
-
-          if (!existingOrder) {
-            return yield* Effect.fail(
-              new OrderNotFoundError({ orderId, message: `Order with id ${orderId} not found` })
-            )
-          }
-
-          return yield* orderRepository.updateOrder(orderId, updateInput)
-        })
+        return orderRepository.updateOrder(orderId, updateInput).pipe(
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+          )
+        )
       },
 
       cancelOrder: (orderId: string) => {
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
-
-          if (!existingOrder) {
-            return yield* Effect.fail(
-              new OrderNotFoundError({ orderId, message: `Order with id ${orderId} not found` })
-            )
-          }
 
           // Cannot cancel orders that are already completed or cancelled
           if (existingOrder.status === OrderStatus.COMPLETED || existingOrder.status === OrderStatus.CANCELLED) {
@@ -116,7 +98,11 @@ export const OrderServiceLive = Layer.effect(
           }
 
           return yield* orderRepository.updateOrderStatus(orderId, OrderStatus.CANCELLED)
-        })
+        }).pipe(
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+          )
+        )
       },
     })
   })

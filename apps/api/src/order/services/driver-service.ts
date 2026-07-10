@@ -43,39 +43,30 @@ export const DriverServiceLive = Layer.effect(
       },
 
       getById: (id: string) => {
-        return Effect.gen(function* () {
-          const driver = yield* repository.getById(id)
-
-          if (!driver) {
-            return yield* Effect.fail(new DriverNotFoundError({ id, message: "Driver not found" }))
-          }
-
-          return yield* Effect.succeed(Driver.fromDriver(driver))
-        })
+        return repository.getById(id).pipe(
+          Effect.map((driver) => Driver.fromDriver(driver)),
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+          )
+        )
       },
 
       update: (id: string, driverUpdateInput: DriverUpdateInput) => {
-        return Effect.gen(function* () {
-          const driver = yield* repository.update(id, driverUpdateInput)
-
-          if (!driver) {
-            return yield* Effect.fail(new DriverNotFoundError({ id, message: "Driver not found" }))
-          }
-
-          return yield* Effect.succeed(Driver.fromDriver(driver))
-        })
+        return repository.update(id, driverUpdateInput).pipe(
+          Effect.map((driver) => Driver.fromDriver(driver)),
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+          )
+        )
       },
 
       delete: (id: string) => {
-        return Effect.gen(function* () {
-          const driver = yield* repository.delete(id)
-
-          if (!driver) {
-            return yield* Effect.fail(new DriverNotFoundError({ id, message: "Driver not found" }))
-          }
-
-          return yield* Effect.succeed(Driver.fromDriver(driver))
-        })
+        return repository.delete(id).pipe(
+          Effect.map((driver) => Driver.fromDriver(driver)),
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+          )
+        )
       },
     })
   })

@@ -1,3 +1,4 @@
+import { RecordNotFoundError } from "@order/repository/errors"
 import { Customer, Prisma } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
 import { UnknownException } from "effect/Cause"
@@ -9,6 +10,9 @@ export class CustomerEmailAlreadyExistsError extends Data.TaggedError("order/Cus
   readonly email: string
 }> {}
 
+const customerNotFound = (id: string) =>
+  new RecordNotFoundError({ model: "Customer", id, message: `Customer with id ${id} not found` })
+
 export class CustomerRepository extends Context.Tag("order/CustomerRepository")<
   CustomerRepository,
   {
@@ -16,7 +20,7 @@ export class CustomerRepository extends Context.Tag("order/CustomerRepository")<
       customerInput: CustomerCreateInput
     ) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | UnknownException>
     readonly getCustomers: () => Effect.Effect<Array<Customer>, UnknownException>
-    readonly getCustomerById: (id: string) => Effect.Effect<Customer | null, UnknownException>
+    readonly getCustomerById: (id: string) => Effect.Effect<Customer, RecordNotFoundError | UnknownException>
   }
 >() {}
 
@@ -54,7 +58,9 @@ export const CustomerRepositoryLive = Layer.effect(
         return Effect.tryPromise(() => prismaService.prisma.customer.findMany())
       },
       getCustomerById: (id: string) => {
-        return Effect.tryPromise(() => prismaService.prisma.customer.findUnique({ where: { id } }))
+        return Effect.tryPromise(() => prismaService.prisma.customer.findUnique({ where: { id } })).pipe(
+          Effect.flatMap((customer) => (customer ? Effect.succeed(customer) : Effect.fail(customerNotFound(id))))
+        )
       },
     })
   })

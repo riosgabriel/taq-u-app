@@ -1,4 +1,5 @@
 import { DriverCreateInput, DriverUpdateInput } from "@order/dto/driver-dto"
+import { isRecordNotFoundError, RecordNotFoundError } from "@order/repository/errors"
 import { Driver, Prisma, VehicleType } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
 import { UnknownException } from "effect/Cause"
@@ -9,6 +10,9 @@ export class DriverEmailAlreadyExistsError extends Data.TaggedError("order/Drive
   readonly message: string
 }> {}
 
+const driverNotFound = (id: string) =>
+  new RecordNotFoundError({ model: "Driver", id, message: `Driver with id ${id} not found` })
+
 export class DriverRepository extends Context.Tag("order/DriverRepository")<
   DriverRepository,
   {
@@ -16,9 +20,12 @@ export class DriverRepository extends Context.Tag("order/DriverRepository")<
       driverInput: DriverCreateInput
     ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | UnknownException>
     readonly listAll: () => Effect.Effect<Array<Driver>, UnknownException>
-    readonly getById: (id: string) => Effect.Effect<Driver | null, UnknownException>
-    readonly update: (id: string, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver | null, UnknownException>
-    readonly delete: (id: string) => Effect.Effect<Driver | null, UnknownException>
+    readonly getById: (id: string) => Effect.Effect<Driver, RecordNotFoundError | UnknownException>
+    readonly update: (
+      id: string,
+      driverUpdateInput: DriverUpdateInput
+    ) => Effect.Effect<Driver, RecordNotFoundError | UnknownException>
+    readonly delete: (id: string) => Effect.Effect<Driver, RecordNotFoundError | UnknownException>
   }
 >() {}
 
@@ -60,7 +67,9 @@ export const DriverRepositoryLive = Layer.effect(
       },
 
       getById: (id: string) => {
-        return Effect.tryPromise(() => prismaService.prisma.driver.findUnique({ where: { id } }))
+        return Effect.tryPromise(() => prismaService.prisma.driver.findUnique({ where: { id } })).pipe(
+          Effect.flatMap((driver) => (driver ? Effect.succeed(driver) : Effect.fail(driverNotFound(id))))
+        )
       },
 
       update: (id: string, driverUpdateInput: DriverUpdateInput) => {
@@ -77,11 +86,13 @@ export const DriverRepositoryLive = Layer.effect(
               isAvailable: driverUpdateInput.isAvailable,
             },
           })
-        )
+        ).pipe(Effect.catchIf(isRecordNotFoundError, () => Effect.fail(driverNotFound(id))))
       },
 
       delete: (id: string) => {
-        return Effect.tryPromise(() => prismaService.prisma.driver.delete({ where: { id } }))
+        return Effect.tryPromise(() => prismaService.prisma.driver.delete({ where: { id } })).pipe(
+          Effect.catchIf(isRecordNotFoundError, () => Effect.fail(driverNotFound(id)))
+        )
       },
     })
   })

@@ -1,17 +1,29 @@
 import { OrderCreateInput, OrderUpdateInput } from "@order/dto/order-dto"
+import { isRecordNotFoundError, RecordNotFoundError } from "@order/repository/errors"
 import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { UnknownException } from "effect/Cause"
 import { PrismaService } from "prisma-service"
 
+const orderNotFound = (orderId: string) =>
+  new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
+
 export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, UnknownException>
-    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages | null, UnknownException>
+    readonly getOrderById: (
+      orderId: string
+    ) => Effect.Effect<OrderWithPackages, RecordNotFoundError | UnknownException>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], UnknownException>
-    readonly updateOrder: (orderId: string, updateInput: OrderUpdateInput) => Effect.Effect<OrderWithPackages, UnknownException>
-    readonly updateOrderStatus: (orderId: string, status: OrderStatus) => Effect.Effect<OrderWithPackages, UnknownException>
+    readonly updateOrder: (
+      orderId: string,
+      updateInput: OrderUpdateInput
+    ) => Effect.Effect<OrderWithPackages, RecordNotFoundError | UnknownException>
+    readonly updateOrderStatus: (
+      orderId: string,
+      status: OrderStatus
+    ) => Effect.Effect<OrderWithPackages, RecordNotFoundError | UnknownException>
   }
 >() {}
 
@@ -74,7 +86,7 @@ export const OrderRepositoryLive = Layer.effect(
               packages: true,
             },
           })
-        )
+        ).pipe(Effect.flatMap((order) => (order ? Effect.succeed(order) : Effect.fail(orderNotFound(orderId)))))
       },
       listOrders: () => {
         return Effect.tryPromise(() =>
@@ -102,7 +114,7 @@ export const OrderRepositoryLive = Layer.effect(
               packages: true,
             },
           })
-        )
+        ).pipe(Effect.catchIf(isRecordNotFoundError, () => Effect.fail(orderNotFound(orderId))))
       },
 
       updateOrderStatus: (orderId: string, status: OrderStatus) => {
@@ -114,7 +126,7 @@ export const OrderRepositoryLive = Layer.effect(
               packages: true,
             },
           })
-        )
+        ).pipe(Effect.catchIf(isRecordNotFoundError, () => Effect.fail(orderNotFound(orderId))))
       },
     })
   })
