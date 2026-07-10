@@ -1,4 +1,5 @@
-import { Schema } from "effect/index"
+
+import { Schema } from "effect"
 import Customer from "order/domain/customer"
 
 export class CustomerCreateInput extends Schema.Class<CustomerCreateInput>("CustomerCreateInput")({
