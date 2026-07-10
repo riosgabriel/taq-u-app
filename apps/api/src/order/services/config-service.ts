@@ -1,35 +1,28 @@
 import { Config, Context, Effect, Layer } from "effect"
 
-export const DatabaseURLConfig = Config.string("DATABASE_URL").pipe(
-  Config.withDefault("postgresql://postgres:postgres@localhost:5432/postgres") // TODO: remove it
+export const DatabaseURLConfig = Config.string("DATABASE_URL")
+
+export const LogLevelConfig = Config.literal("debug", "info", "warn", "error")("LOG_LEVEL").pipe(
+  Config.withDefault("info")
 )
 
-const LogLevelsAllowed = ["debug", "info", "warn", "error"]
+export const AppConfig = Config.all({
+  databaseUrl: DatabaseURLConfig,
+  logLevel: LogLevelConfig,
+})
 
-export const LogLevelConfig = Config.string("LOG_LEVEL").pipe(
-  Config.withDefault("info"),
-  Config.validate({
-    message: `Log level must be one of: ${LogLevelsAllowed.join(", ")}`,
-    validation: (value) => LogLevelsAllowed.includes(value),
-  })
-)
-
-class ConfigService extends Context.Tag("delivery/ConfigService")<
+export class ConfigService extends Context.Tag("order/ConfigService")<
   ConfigService,
   {
-    readonly getConfig: Effect.Effect<{
-      readonly logLevel: Config.Config<string>
-      readonly databaseUrl: Config.Config<string>
-    }>
+    readonly databaseUrl: string
+    readonly logLevel: "debug" | "info" | "warn" | "error"
   }
 >() {}
 
-export const ConfigLive = Layer.succeed(
+export const ConfigLive = Layer.effect(
   ConfigService,
-  ConfigService.of({
-    getConfig: Effect.succeed({
-      logLevel: LogLevelConfig,
-      databaseUrl: DatabaseURLConfig,
-    }),
+  Effect.gen(function* () {
+    const config = yield* Effect.configProviderWith((provider) => provider.load(AppConfig))
+    return ConfigService.of(config)
   })
 )
