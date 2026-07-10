@@ -1,8 +1,8 @@
+import { PersistenceError } from "@/persistence-errors"
 import Driver from "@order/domain/driver"
 import { DriverCreateInput, DriverUpdateInput } from "@order/dto/driver-dto"
 import { DriverEmailAlreadyExistsError, DriverRepository } from "@order/repository/driver-respository"
 import { Context, Data, Effect, Layer } from "effect"
-import { UnknownException } from "effect/Cause"
 
 export class DriverNotFoundError extends Data.TaggedError("order/DriverNotFoundError")<{
   readonly id: string
@@ -14,11 +14,11 @@ export class DriverService extends Context.Tag("order/DriverService")<
   {
     readonly create: (
       driverCreateInput: DriverCreateInput
-    ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | UnknownException>
-    readonly listAll: () => Effect.Effect<Array<Driver>, UnknownException>
-    readonly getById: (id: string) => Effect.Effect<Driver, DriverNotFoundError | UnknownException>
-    readonly update: (id: string, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, DriverNotFoundError | UnknownException>
-    readonly delete: (id: string) => Effect.Effect<Driver, DriverNotFoundError | UnknownException>
+    ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | PersistenceError>
+    readonly listAll: () => Effect.Effect<Array<Driver>, PersistenceError>
+    readonly getById: (id: string) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
+    readonly update: (id: string, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
+    readonly delete: (id: string) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
   }
 >() {}
 

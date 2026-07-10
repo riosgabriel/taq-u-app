@@ -1,9 +1,9 @@
+import { PersistenceError } from "@/persistence-errors"
 import { OrderCreateInput, OrderUpdateInput } from "@order/dto/order-dto"
 import { CustomerRepository } from "@order/repository/customer-repository"
 import { OrderRepository, OrderWithPackages } from "@order/repository/order-repository"
 import { OrderStatus } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
-import { UnknownException } from "effect/Cause"
 import { CustomerNotFoundError } from "./customer-service"
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
   readonly orderId: string
@@ -21,16 +21,16 @@ export class OrderService extends Context.Tag("order/OrderService")<
   {
     readonly createOrder: (
       orderInput: OrderCreateInput
-    ) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | UnknownException>
-    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, OrderNotFoundError | UnknownException>
-    readonly listOrders: () => Effect.Effect<OrderWithPackages[], UnknownException>
+    ) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | PersistenceError>
+    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
+    readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
       orderId: string,
       updateInput: OrderUpdateInput
-    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | UnknownException>
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly cancelOrder: (
       orderId: string
-    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | UnknownException>
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
   }
 >() {}
 
@@ -68,7 +68,6 @@ export const OrderServiceLive = Layer.effect(
         )
       },
 
-      // TODO: add pagination and filtering
       listOrders: () => orderRepository.listOrders(),
 
       updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
@@ -83,7 +82,6 @@ export const OrderServiceLive = Layer.effect(
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
-          // Cannot cancel orders that are already completed or cancelled
           if (existingOrder.status === OrderStatus.COMPLETED || existingOrder.status === OrderStatus.CANCELLED) {
             return yield* Effect.fail(
               new OrderStatusError({

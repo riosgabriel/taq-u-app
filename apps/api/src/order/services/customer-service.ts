@@ -1,8 +1,8 @@
-import { Effect, Context, Layer, Data } from "effect"
+import { PersistenceError } from "@/persistence-errors"
+import { Context, Data, Effect, Layer } from "effect"
 import Customer from "order/domain/customer"
-import { CustomerEmailAlreadyExistsError, CustomerRepository } from "order/repository/customer-repository"
-import { UnknownException } from "effect/Cause"
 import { CustomerCreateInput } from "order/dto/customer-dto"
+import { CustomerEmailAlreadyExistsError, CustomerRepository } from "order/repository/customer-repository"
 
 export class CustomerNotFoundError extends Data.TaggedError("order/CustomerNotFoundError")<{
   readonly customerId: string
@@ -14,9 +14,9 @@ export class CustomerService extends Context.Tag("order/CustomerService")<
   {
     readonly createCustomer: (
       customerCreateInput: CustomerCreateInput
-    ) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | UnknownException>
-    readonly getCustomers: () => Effect.Effect<Customer[], UnknownException>
-    readonly getCustomerById: (id: string) => Effect.Effect<Customer, CustomerNotFoundError | UnknownException>
+    ) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | PersistenceError>
+    readonly getCustomers: () => Effect.Effect<Customer[], PersistenceError>
+    readonly getCustomerById: (id: string) => Effect.Effect<Customer, CustomerNotFoundError | PersistenceError>
   }
 >() {}
 

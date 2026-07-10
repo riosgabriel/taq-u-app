@@ -1,8 +1,7 @@
+import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { DriverCreateInput, DriverUpdateInput } from "@order/dto/driver-dto"
-import { isRecordNotFoundError, RecordNotFoundError } from "@order/repository/errors"
-import { Driver, Prisma, VehicleType } from "@prisma/client"
+import { Driver, VehicleType } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
-import { UnknownException } from "effect/Cause"
 import { PrismaService } from "prisma-service"
 
 export class DriverEmailAlreadyExistsError extends Data.TaggedError("order/DriverEmailAlreadyExistsError")<{
@@ -18,14 +17,14 @@ export class DriverRepository extends Context.Tag("order/DriverRepository")<
   {
     readonly create: (
       driverInput: DriverCreateInput
-    ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | UnknownException>
-    readonly listAll: () => Effect.Effect<Array<Driver>, UnknownException>
-    readonly getById: (id: string) => Effect.Effect<Driver, RecordNotFoundError | UnknownException>
+    ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | PersistenceError>
+    readonly listAll: () => Effect.Effect<Array<Driver>, PersistenceError>
+    readonly getById: (id: string) => Effect.Effect<Driver, PersistenceError>
     readonly update: (
       id: string,
       driverUpdateInput: DriverUpdateInput
-    ) => Effect.Effect<Driver, RecordNotFoundError | UnknownException>
-    readonly delete: (id: string) => Effect.Effect<Driver, RecordNotFoundError | UnknownException>
+    ) => Effect.Effect<Driver, PersistenceError>
+    readonly delete: (id: string) => Effect.Effect<Driver, PersistenceError>
   }
 >() {}
 
@@ -36,45 +35,45 @@ export const DriverRepositoryLive = Layer.effect(
 
     return DriverRepository.of({
       create: (driverInput: DriverCreateInput) => {
-        return Effect.tryPromise({
-          try: () =>
+        return prismaService
+          .execute(() =>
             prismaService.prisma.driver.create({
               data: {
                 name: driverInput.name,
                 email: driverInput.email,
                 phone: driverInput.phone,
                 licenseNumber: driverInput.licenseNumber ?? "",
-                vehicleType: driverInput.vehicleType.toUpperCase() as VehicleType, // TODO: fix casting
+                vehicleType: driverInput.vehicleType.toUpperCase() as VehicleType,
                 isAvailable: driverInput.isAvailable,
               },
-            }),
-          catch: (error) => {
-            if (error instanceof Prisma.PrismaClientKnownRequestError) {
-              if (error.code === "P2002") {
-                return new DriverEmailAlreadyExistsError({
+            })
+          )
+          .pipe(
+            Effect.catchTag("UniqueConstraintViolation", () =>
+              Effect.fail(
+                new DriverEmailAlreadyExistsError({
                   email: driverInput.email,
                   message: "Driver email already exists",
                 })
-              }
-            }
-            return new UnknownException({ error })
-          },
-        })
+              )
+            )
+          )
       },
 
-      listAll: () => { // TODO: 
-        return Effect.tryPromise(() => prismaService.prisma.driver.findMany())
+      listAll: () => {
+        return prismaService.execute(() => prismaService.prisma.driver.findMany())
       },
 
       getById: (id: string) => {
-        return Effect.tryPromise(() => prismaService.prisma.driver.findUnique({ where: { id } })).pipe(
-          Effect.flatMap((driver) => (driver ? Effect.succeed(driver) : Effect.fail(driverNotFound(id))))
-        )
+        return prismaService
+          .execute(() => prismaService.prisma.driver.findUnique({ where: { id } }))
+          .pipe(
+            Effect.flatMap((driver) => (driver ? Effect.succeed(driver) : Effect.fail(driverNotFound(id))))
+          )
       },
 
       update: (id: string, driverUpdateInput: DriverUpdateInput) => {
-        return Effect.tryPromise(() =>
-          // TODO: check if undefined values are ignored by Prisma
+        return prismaService.execute(() =>
           prismaService.prisma.driver.update({
             where: { id },
             data: {
@@ -82,17 +81,15 @@ export const DriverRepositoryLive = Layer.effect(
               email: driverUpdateInput.email,
               phone: driverUpdateInput.phone,
               licenseNumber: driverUpdateInput.licenseNumber,
-              vehicleType: driverUpdateInput.vehicleType?.toUpperCase() as VehicleType, // TODO: fix casting
+              vehicleType: driverUpdateInput.vehicleType?.toUpperCase() as VehicleType,
               isAvailable: driverUpdateInput.isAvailable,
             },
           })
-        ).pipe(Effect.catchIf(isRecordNotFoundError, () => Effect.fail(driverNotFound(id))))
+        )
       },
 
       delete: (id: string) => {
-        return Effect.tryPromise(() => prismaService.prisma.driver.delete({ where: { id } })).pipe(
-          Effect.catchIf(isRecordNotFoundError, () => Effect.fail(driverNotFound(id)))
-        )
+        return prismaService.execute(() => prismaService.prisma.driver.delete({ where: { id } }))
       },
     })
   })

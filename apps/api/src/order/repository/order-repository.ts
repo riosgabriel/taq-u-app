@@ -1,8 +1,7 @@
+import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { OrderCreateInput, OrderUpdateInput } from "@order/dto/order-dto"
-import { isRecordNotFoundError, RecordNotFoundError } from "@order/repository/errors"
 import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
-import { UnknownException } from "effect/Cause"
 import { PrismaService } from "prisma-service"
 
 const orderNotFound = (orderId: string) =>
@@ -11,19 +10,19 @@ const orderNotFound = (orderId: string) =>
 export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
-    readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, UnknownException>
+    readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly getOrderById: (
       orderId: string
-    ) => Effect.Effect<OrderWithPackages, RecordNotFoundError | UnknownException>
-    readonly listOrders: () => Effect.Effect<OrderWithPackages[], UnknownException>
+    ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
       orderId: string,
       updateInput: OrderUpdateInput
-    ) => Effect.Effect<OrderWithPackages, RecordNotFoundError | UnknownException>
+    ) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly updateOrderStatus: (
       orderId: string,
       status: OrderStatus
-    ) => Effect.Effect<OrderWithPackages, RecordNotFoundError | UnknownException>
+    ) => Effect.Effect<OrderWithPackages, PersistenceError>
   }
 >() {}
 
@@ -42,7 +41,7 @@ export const OrderRepositoryLive = Layer.effect(
 
     return OrderRepository.of({
       createOrder: (orderInput: OrderCreateInput) => {
-        return Effect.tryPromise(() =>
+        return prismaService.execute(() =>
           prismaService.prisma.order.create({
             data: {
               customer: {
@@ -60,7 +59,7 @@ export const OrderRepositoryLive = Layer.effect(
                     perishable: pkg.perishable,
                     insured: pkg.insured,
                     status: PackageStatus.AWAITING_PICKUP,
-                    trackingNumber: `TRACK-${orderInput.customerId}-${pkg.weightKg}-${pkg.dimensions}-${pkg.description}-${pkg.fragile}-${pkg.perishable}-${pkg.insured}`, // TODO: generate a tracking number
+                    trackingNumber: `TRACK-${orderInput.customerId}-${pkg.weightKg}-${pkg.dimensions}-${pkg.description}-${pkg.fragile}-${pkg.perishable}-${pkg.insured}`,
                   })),
                 },
               },
@@ -69,7 +68,7 @@ export const OrderRepositoryLive = Layer.effect(
               pickupDate: orderInput.pickupDate,
               deliveryDate: orderInput.deliveryDate,
               specialInstructions: orderInput.specialInstructions,
-              priority: orderInput.priority as OrderPriority, // TODO: need to map the priority to the enum
+              priority: orderInput.priority as OrderPriority,
               status: OrderStatus.PENDING,
             },
             include: {
@@ -79,17 +78,19 @@ export const OrderRepositoryLive = Layer.effect(
         )
       },
       getOrderById: (orderId: string) => {
-        return Effect.tryPromise(() =>
-          prismaService.prisma.order.findUnique({
-            where: { id: orderId },
-            include: {
-              packages: true,
-            },
-          })
-        ).pipe(Effect.flatMap((order) => (order ? Effect.succeed(order) : Effect.fail(orderNotFound(orderId)))))
+        return prismaService
+          .execute(() =>
+            prismaService.prisma.order.findUnique({
+              where: { id: orderId },
+              include: {
+                packages: true,
+              },
+            })
+          )
+          .pipe(Effect.flatMap((order) => (order ? Effect.succeed(order) : Effect.fail(orderNotFound(orderId)))))
       },
       listOrders: () => {
-        return Effect.tryPromise(() =>
+        return prismaService.execute(() =>
           prismaService.prisma.order.findMany({
             include: {
               packages: true,
@@ -99,7 +100,7 @@ export const OrderRepositoryLive = Layer.effect(
       },
 
       updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
-        return Effect.tryPromise(() =>
+        return prismaService.execute(() =>
           prismaService.prisma.order.update({
             where: { id: orderId },
             data: {
@@ -114,11 +115,11 @@ export const OrderRepositoryLive = Layer.effect(
               packages: true,
             },
           })
-        ).pipe(Effect.catchIf(isRecordNotFoundError, () => Effect.fail(orderNotFound(orderId))))
+        )
       },
 
       updateOrderStatus: (orderId: string, status: OrderStatus) => {
-        return Effect.tryPromise(() =>
+        return prismaService.execute(() =>
           prismaService.prisma.order.update({
             where: { id: orderId },
             data: { status },
@@ -126,7 +127,7 @@ export const OrderRepositoryLive = Layer.effect(
               packages: true,
             },
           })
-        ).pipe(Effect.catchIf(isRecordNotFoundError, () => Effect.fail(orderNotFound(orderId))))
+        )
       },
     })
   })
