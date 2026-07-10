@@ -23,7 +23,8 @@ DriverController.post("/", async (req: Request, res: Response, next: NextFunctio
 DriverController.get("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const driverService = yield* DriverService
-    return ok(yield* driverService.listAll())
+    const drivers = yield* driverService.listAll()
+    return ok(drivers.map(DriverResponse.fromDriver))
   })
 
   runEffect(req, res, next, program)
@@ -33,7 +34,7 @@ DriverController.get("/:id", async (req: Request, res: Response, next: NextFunct
   const program = Effect.gen(function* (_) {
     const { id } = yield* decodeParams(IdParams, req)
     const driverService = yield* DriverService
-    return ok(yield* driverService.getById(id))
+    return ok(DriverResponse.fromDriver(yield* driverService.getById(id)))
   }).pipe(
     Effect.catchTag("order/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message)))
   )
@@ -46,7 +47,7 @@ DriverController.patch("/:id", async (req: Request, res: Response, next: NextFun
     const { id } = yield* decodeParams(IdParams, req)
     const driverInput = yield* decodeBody(DriverUpdateInput, req)
     const driverService = yield* DriverService
-    return ok(yield* driverService.update(id, driverInput))
+    return ok(DriverResponse.fromDriver(yield* driverService.update(id, driverInput)))
   }).pipe(
     Effect.catchTag("order/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message)))
   )
