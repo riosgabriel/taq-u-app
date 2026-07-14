@@ -22,6 +22,7 @@ Get the details of issue TAQ-18
 ```
 
 This gives you:
+
 - Title and description
 - Status and priority
 - Assignee and team
@@ -36,6 +37,7 @@ git checkout -b feature/TAQ-18-implement-feature
 Branch naming convention: `{type}/{issue-id}-{short-description}`
 
 Types:
+
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `refactor/` - Code refactoring
@@ -52,6 +54,7 @@ Commit format: `{type}({issue-id}): {description}`
 ### 4. Link PRs
 
 When creating PRs, include the issue ID in the description:
+
 ```markdown
 Closes TAQ-18
 ```
@@ -101,30 +104,30 @@ Add comment to TAQ-18: "Started implementation"
 
 ## Issue States
 
-| State | Meaning |
-|-------|---------|
-| Backlog | Not yet started, unassigned |
-| Todo | Ready to work on |
-| In Progress | Actively being developed |
-| In Review | PR submitted, awaiting review |
-| Done | Completed and merged |
+| State       | Meaning                       |
+| ----------- | ----------------------------- |
+| Backlog     | Not yet started, unassigned   |
+| Todo        | Ready to work on              |
+| In Progress | Actively being developed      |
+| In Review   | PR submitted, awaiting review |
+| Done        | Completed and merged          |
 
 ## Priority Levels
 
-| Priority | Description |
-|----------|-------------|
-| Urgent | Block everything, needs immediate attention |
-| High | Important, should be done soon |
-| Medium | Normal priority |
-| Low | Can be deferred |
+| Priority | Description                                 |
+| -------- | ------------------------------------------- |
+| Urgent   | Block everything, needs immediate attention |
+| High     | Important, should be done soon              |
+| Medium   | Normal priority                             |
+| Low      | Can be deferred                             |
 
 ## Common Tasks
 
-| Task | Linear MCP Command |
-|------|-------------------|
-| Get issue details | `Get details for TAQ-18` |
-| List my issues | `List my assigned issues` |
-| Update status | `Move TAQ-18 to Done` |
-| Assign issue | `Assign TAQ-18 to @user` |
-| Add comment | `Add comment to TAQ-18: "..."` |
-| Create issue | `Create issue with title "..."` |
+| Task              | Linear MCP Command              |
+| ----------------- | ------------------------------- |
+| Get issue details | `Get details for TAQ-18`        |
+| List my issues    | `List my assigned issues`       |
+| Update status     | `Move TAQ-18 to Done`           |
+| Assign issue      | `Assign TAQ-18 to @user`        |
+| Add comment       | `Add comment to TAQ-18: "..."`  |
+| Create issue      | `Create issue with title "..."` |

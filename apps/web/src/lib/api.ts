@@ -91,13 +91,13 @@ class ApiClient {
     return this.request(`/drivers/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
-    });
+    })
   }
 
   async deleteDriver(id: string) {
     return this.request(`/drivers/${id}`, {
       method: "DELETE",
-    });
+    })
   }
 }
 

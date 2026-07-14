@@ -1,42 +1,42 @@
-import { useState } from "react";
-import { api } from "../lib/api";
-import { OrderResponse, OrderUpdateInput } from "../types/order";
-import { toast } from "sonner";
+import { useState } from "react"
+import { api } from "../lib/api"
+import { OrderResponse, OrderUpdateInput } from "../types/order"
+import { toast } from "sonner"
 
 interface OrderEditProps {
-  order: OrderResponse;
-  onClose: () => void;
-  onSuccess: () => void;
+  order: OrderResponse
+  onClose: () => void
+  onSuccess: () => void
 }
 
 export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
   const [formData, setFormData] = useState<OrderUpdateInput>({
     pickupAddress: order.pickupAddress,
     deliveryAddress: order.deliveryAddress,
-    pickupDate: order.pickupDate.split('T')[0],
-    deliveryDate: order.deliveryDate ? order.deliveryDate.split('T')[0] : "",
+    pickupDate: order.pickupDate.split("T")[0],
+    deliveryDate: order.deliveryDate ? order.deliveryDate.split("T")[0] : "",
     specialInstructions: order.specialInstructions || "",
     priority: order.priority,
-  });
-  const [loading, setLoading] = useState(false);
+  })
+  const [loading, setLoading] = useState(false)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
     try {
-      await api.updateOrder(order.id, formData);
-      toast.success("Order updated successfully");
-      onSuccess();
+      await api.updateOrder(order.id, formData)
+      toast.success("Order updated successfully")
+      onSuccess()
     } catch (error: any) {
-      toast.error(error.message || "Failed to update order");
+      toast.error(error.message || "Failed to update order")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
@@ -55,9 +55,7 @@ export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Pickup Address */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pickup Address
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Address</label>
             <input
               type="text"
               name="pickupAddress"
@@ -70,9 +68,7 @@ export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
 
           {/* Delivery Address */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Delivery Address
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
             <input
               type="text"
               name="deliveryAddress"
@@ -86,9 +82,7 @@ export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
           {/* Dates */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pickup Date
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Date</label>
               <input
                 type="date"
                 name="pickupDate"
@@ -99,9 +93,7 @@ export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Delivery Date (Optional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Date (Optional)</label>
               <input
                 type="date"
                 name="deliveryDate"
@@ -114,9 +106,7 @@ export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
 
           {/* Priority */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Priority
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
             <select
               name="priority"
               value={formData.priority || "NORMAL"}
@@ -132,9 +122,7 @@ export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
 
           {/* Special Instructions */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Special Instructions
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
             <textarea
               name="specialInstructions"
               value={formData.specialInstructions || ""}
@@ -173,5 +161,5 @@ export function OrderEdit({ order, onClose, onSuccess }: OrderEditProps) {
         </form>
       </div>
     </div>
-  );
+  )
 }

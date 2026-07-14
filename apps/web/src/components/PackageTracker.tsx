@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState } from "react"
 
 // Example tracking data - in a real app, this would come from Convex
 const examplePackages = {
-  "TAQ12345678ABCD": {
+  TAQ12345678ABCD: {
     trackingNumber: "TAQ12345678ABCD",
     status: "in_transit",
     senderName: "Tokyo Electronics Store",
@@ -14,23 +14,23 @@ const examplePackages = {
         status: "Package picked up",
         location: "Tokyo Distribution Center",
         timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000,
-        notes: "Package collected from sender"
+        notes: "Package collected from sender",
       },
       {
         status: "In transit",
         location: "Osaka Hub",
         timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000,
-        notes: "Package sorted and loaded for delivery"
+        notes: "Package sorted and loaded for delivery",
       },
       {
         status: "Out for delivery",
         location: "Shibuya Delivery Center",
         timestamp: Date.now() - 2 * 60 * 60 * 1000,
-        notes: "Package loaded on delivery vehicle"
-      }
-    ]
+        notes: "Package loaded on delivery vehicle",
+      },
+    ],
   },
-  "TAQ87654321EFGH": {
+  TAQ87654321EFGH: {
     trackingNumber: "TAQ87654321EFGH",
     status: "delivered",
     senderName: "Amazon Japan",
@@ -42,58 +42,58 @@ const examplePackages = {
         status: "Package picked up",
         location: "Amazon Fulfillment Center",
         timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000,
-        notes: "Package collected from sender"
+        notes: "Package collected from sender",
       },
       {
         status: "Delivered",
         location: "Harajuku, Tokyo",
         timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000,
-        notes: "Package delivered to recipient"
-      }
-    ]
-  }
-};
+        notes: "Package delivered to recipient",
+      },
+    ],
+  },
+}
 
 export function PackageTracker() {
-  const [trackingNumber, setTrackingNumber] = useState("");
-  const [searchResult, setSearchResult] = useState<any>(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState("")
+  const [searchResult, setSearchResult] = useState<any>(null)
+  const [isSearching, setIsSearching] = useState(false)
 
   const handleSearch = async () => {
-    setIsSearching(true);
+    setIsSearching(true)
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const result = examplePackages[trackingNumber as keyof typeof examplePackages];
-    setSearchResult(result || null);
-    setIsSearching(false);
-  };
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const result = examplePackages[trackingNumber as keyof typeof examplePackages]
+    setSearchResult(result || null)
+    setIsSearching(false)
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-        return "text-green-600 bg-green-50";
+        return "text-green-600 bg-green-50"
       case "out_for_delivery":
-        return "text-blue-600 bg-blue-50";
+        return "text-blue-600 bg-blue-50"
       case "in_transit":
-        return "text-yellow-600 bg-yellow-50";
+        return "text-yellow-600 bg-yellow-50"
       default:
-        return "text-gray-600 bg-gray-50";
+        return "text-gray-600 bg-gray-50"
     }
-  };
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "delivered":
-        return "✅";
+        return "✅"
       case "out_for_delivery":
-        return "🚛";
+        return "🚛"
       case "in_transit":
-        return "📦";
+        return "📦"
       default:
-        return "⏳";
+        return "⏳"
     }
-  };
+  }
 
   return (
     <div className="p-6">
@@ -132,10 +132,10 @@ export function PackageTracker() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold">Package Details</h3>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(searchResult.status)}`}>
-                {getStatusIcon(searchResult.status)} {searchResult.status.replace('_', ' ').toUpperCase()}
+                {getStatusIcon(searchResult.status)} {searchResult.status.replace("_", " ").toUpperCase()}
               </span>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Tracking Number</p>
@@ -169,14 +169,10 @@ export function PackageTracker() {
                   <div className="flex-1 pb-4">
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-semibold text-gray-900">{update.status}</h4>
-                      <span className="text-sm text-gray-500">
-                        {new Date(update.timestamp).toLocaleString()}
-                      </span>
+                      <span className="text-sm text-gray-500">{new Date(update.timestamp).toLocaleString()}</span>
                     </div>
                     <p className="text-gray-600 mb-1">{update.location}</p>
-                    {update.notes && (
-                      <p className="text-sm text-gray-500">{update.notes}</p>
-                    )}
+                    {update.notes && <p className="text-sm text-gray-500">{update.notes}</p>}
                   </div>
                 </div>
               ))}
@@ -209,5 +205,5 @@ export function PackageTracker() {
         </div>
       </div>
     </div>
-  );
+  )
 }

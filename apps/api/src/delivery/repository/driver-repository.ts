@@ -1,5 +1,5 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
-import { DriverCreateInput, DriverUpdateInput } from "@order/dto/driver-dto"
+import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { Driver, VehicleType } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
 import { PrismaService } from "prisma-service"
@@ -20,10 +20,7 @@ export class DriverRepository extends Context.Tag("order/DriverRepository")<
     ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Driver>, PersistenceError>
     readonly getById: (id: string) => Effect.Effect<Driver, PersistenceError>
-    readonly update: (
-      id: string,
-      driverUpdateInput: DriverUpdateInput
-    ) => Effect.Effect<Driver, PersistenceError>
+    readonly update: (id: string, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, PersistenceError>
     readonly delete: (id: string) => Effect.Effect<Driver, PersistenceError>
   }
 >() {}
@@ -67,9 +64,7 @@ export const DriverRepositoryLive = Layer.effect(
       getById: (id: string) => {
         return prismaService
           .execute(() => prismaService.prisma.driver.findUnique({ where: { id } }))
-          .pipe(
-            Effect.flatMap((driver) => (driver ? Effect.succeed(driver) : Effect.fail(driverNotFound(id))))
-          )
+          .pipe(Effect.flatMap((driver) => (driver ? Effect.succeed(driver) : Effect.fail(driverNotFound(id)))))
       },
 
       update: (id: string, driverUpdateInput: DriverUpdateInput) => {

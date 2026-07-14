@@ -1,6 +1,6 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
-import { OrderCreateInput, OrderUpdateInput } from "@order/dto/order-dto"
-import { TrackingNumberService } from "@order/services/tracking-number-service"
+import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
+import { TrackingNumberService } from "ordering/services/tracking-number-service"
 import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { PrismaService } from "prisma-service"
@@ -18,7 +18,19 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
       orderId: string,
       updateInput: OrderUpdateInput
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
-    readonly updateOrderStatus: (orderId: string, status: OrderStatus) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly updateOrderStatus: (
+      orderId: string,
+      status: OrderStatus
+    ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly addPackageToOrder: (
+      orderId: string,
+      packageInput: AddPackageInput
+    ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly updatePackageStatus: (
+      orderId: string,
+      packageId: string,
+      status: PackageStatus
+    ) => Effect.Effect<OrderWithPackages, PersistenceError>
   }
 >() {}
 
@@ -132,7 +144,7 @@ export const OrderRepositoryLive = Layer.effect(
 
       updateOrderStatus: (orderId: string, status: OrderStatus) => {
         return prismaService.execute(() =>
-            prismaService.prisma.order.update({
+          prismaService.prisma.order.update({
             where: { id: orderId },
             data: { status },
             include: {
@@ -140,6 +152,54 @@ export const OrderRepositoryLive = Layer.effect(
             },
           })
         )
+      },
+
+      addPackageToOrder: (orderId: string, packageInput: AddPackageInput) => {
+        return Effect.gen(function* () {
+          const trackingNumbers = yield* generateTrackingNumbers(1)
+          const trackingNumber = trackingNumbers[0]
+
+          yield* prismaService.execute(() =>
+            prismaService.prisma.package.create({
+              data: {
+                order: { connect: { id: orderId } },
+                weightKg: packageInput.weightKg,
+                dimensions: packageInput.dimensions,
+                description: packageInput.description,
+                fragile: packageInput.fragile,
+                perishable: packageInput.perishable,
+                insured: packageInput.insured,
+                trackingNumber,
+                status: PackageStatus.AWAITING_PICKUP,
+              },
+            })
+          )
+
+          return yield* prismaService.execute(() =>
+            prismaService.prisma.order.findUniqueOrThrow({
+              where: { id: orderId },
+              include: { packages: true },
+            })
+          )
+        })
+      },
+
+      updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
+        return Effect.gen(function* () {
+          yield* prismaService.execute(() =>
+            prismaService.prisma.package.update({
+              where: { id: packageId },
+              data: { status },
+            })
+          )
+
+          return yield* prismaService.execute(() =>
+            prismaService.prisma.order.findUniqueOrThrow({
+              where: { id: orderId },
+              include: { packages: true },
+            })
+          )
+        })
       },
     })
   })

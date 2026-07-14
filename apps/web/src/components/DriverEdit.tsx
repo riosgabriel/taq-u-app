@@ -31,7 +31,7 @@ const DriverEdit: React.FC<DriverEditProps> = ({ driverId, onCancel, onSave }) =
 
   const fetchDriver = async () => {
     try {
-      const data = await api.getDriver(driverId!) as Driver
+      const data = (await api.getDriver(driverId!)) as Driver
       setDriver(data)
     } catch (error) {
       toast.error("Failed to fetch driver details")
@@ -61,16 +61,14 @@ const DriverEdit: React.FC<DriverEditProps> = ({ driverId, onCancel, onSave }) =
   }
 
   const handleInputChange = (field: keyof Driver, value: string | boolean) => {
-    setDriver(prev => ({ ...prev, [field]: value }))
+    setDriver((prev) => ({ ...prev, [field]: value }))
   }
 
   return (
     <div className="p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? "Edit Driver" : "Create New Driver"}
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">{isEditing ? "Edit Driver" : "Create New Driver"}</h2>
           <button
             onClick={onCancel}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
@@ -195,7 +193,7 @@ const DriverEdit: React.FC<DriverEditProps> = ({ driverId, onCancel, onSave }) =
               disabled={loading}
               className="px-6 py-2 bg-yellow-600 text-white font-medium rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Saving..." : (isEditing ? "Update Driver" : "Create Driver")}
+              {loading ? "Saving..." : isEditing ? "Update Driver" : "Create Driver"}
             </button>
           </div>
         </form>

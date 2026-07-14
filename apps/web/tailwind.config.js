@@ -1,4 +1,4 @@
-const { fontFamily } = require("tailwindcss/defaultTheme");
+const { fontFamily } = require("tailwindcss/defaultTheme")
 
 module.exports = {
   mode: "jit",
@@ -42,4 +42,4 @@ module.exports = {
       boxShadow: ["hover", "active"],
     },
   },
-};
+}

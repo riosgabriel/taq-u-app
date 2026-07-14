@@ -1,6 +1,7 @@
 ## Repository Overview
 
 pnpm workspace monorepo (pnpm 8.15.4) with two apps under `apps/*`:
+
 - `@taq-u-app/api` — Express 5 + Effect + Prisma (PostgreSQL) backend
 - `@taq-u-app/web` — React 19 + Vite + Tailwind CSS frontend
 
@@ -49,7 +50,7 @@ When running a single package, always use `pnpm --filter @taq-u-app/<pkg> <scrip
 - **Docker**: `docker-compose.yml` at root — PostgreSQL 16.3 + app container (uses `apps/api/Dockerfile`)
 - **Prisma schema**: `apps/api/prisma/schema.prisma` — models: Order, Delivery, Driver, Customer, Route, RouteLeg, Package, Location, Payment, Estimate, Carrier
 - **Database URL**: `postgres://postgres:postgres@localhost:5432/taq-u` (local) or `@db:5432` (Docker)
-- **Environment**: root `.env` (gitignored) — includes DATABASE_URL, POSTGRES_*, LINEAR_API_KEY (secret, prevent committing)
+- **Environment**: root `.env` (gitignored) — includes DATABASE*URL, POSTGRES*\*, LINEAR_API_KEY (secret, prevent committing)
 
 ## Tooling
 

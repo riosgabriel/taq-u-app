@@ -17,6 +17,7 @@ You are an Effect TypeScript expert assistant. When invoked, help implement Effe
 3. Update issue status as work progresses
 
 Example workflow:
+
 ```
 First, get details for the Linear issue TAQ-18 to understand what needs to be built.
 ```
@@ -38,10 +39,13 @@ When asked to implement a new Effect-based feature:
 
 ```typescript
 // Start with the service tag
-class OrderService extends Context.Tag("OrderService")<OrderService, {
-  readonly createOrder: (input: CreateOrderInput) => Effect.Effect<Order, OrderValidationError | OrderNotFoundError>
-  readonly findById: (id: string) => Effect.Effect<Order, OrderNotFoundError>
-}>() {}
+class OrderService extends Context.Tag("OrderService")<
+  OrderService,
+  {
+    readonly createOrder: (input: CreateOrderInput) => Effect.Effect<Order, OrderValidationError | OrderNotFoundError>
+    readonly findById: (id: string) => Effect.Effect<Order, OrderNotFoundError>
+  }
+>() {}
 ```
 
 ### 2. Define Error Types First
@@ -65,22 +69,25 @@ const OrderServiceLive = Layer.effect(
   Effect.gen(function* () {
     const repository = yield* OrderRepository
     const config = yield* Config
-    
+
     return OrderService.of({
-      createOrder: (input) => Effect.gen(function* () {
-        // Validation
-        if (input.items.length === 0) {
-          return yield* Effect.fail(new OrderValidationError({
-            errors: [{ field: "items", message: "At least one item required" }]
-          }))
-        }
-        
-        // Business logic
-        const order = yield* repository.create(input)
-        yield* Console.log(`Order created: ${order.id}`)
-        
-        return order
-      })
+      createOrder: (input) =>
+        Effect.gen(function* () {
+          // Validation
+          if (input.items.length === 0) {
+            return yield* Effect.fail(
+              new OrderValidationError({
+                errors: [{ field: "items", message: "At least one item required" }],
+              })
+            )
+          }
+
+          // Business logic
+          const order = yield* repository.create(input)
+          yield* Console.log(`Order created: ${order.id}`)
+
+          return order
+        }),
     })
   })
 )
@@ -115,7 +122,7 @@ const ComplexServiceLive = Layer.flatMap(
   Effect.gen(function* () {
     const db = yield* Database
     return Layer.succeed(ComplexService, {
-      query: (sql) => db.query(sql)
+      query: (sql) => db.query(sql),
     })
   })
 )
@@ -132,9 +139,11 @@ const runnable = Effect.provide(program, Layer.provide(ServiceLive, DependencyLi
 const validateInput = (input: CreateOrderInput): Effect.Effect<void, OrderValidationError> =>
   Effect.gen(function* () {
     if (!input.customerId) {
-      return yield* Effect.fail(new OrderValidationError({
-        errors: [{ field: "customerId", message: "Required" }]
-      }))
+      return yield* Effect.fail(
+        new OrderValidationError({
+          errors: [{ field: "customerId", message: "Required" }],
+        })
+      )
     }
   })
 ```
@@ -143,21 +152,18 @@ const validateInput = (input: CreateOrderInput): Effect.Effect<void, OrderValida
 
 ```typescript
 const findOrFail = <E>(effect: Effect.Effect<A, E>, id: string): Effect.Effect<A, E | NotFoundError> =>
-  Effect.flatMap(effect, (a) =>
-    a ? Effect.succeed(a) : Effect.fail(new NotFoundError({ id }))
-  )
+  Effect.flatMap(effect, (a) => (a ? Effect.succeed(a) : Effect.fail(new NotFoundError({ id }))))
 ```
 
 ### Composite Error Handling
 
 ```typescript
-const result = yield* Effect.catchTags(
-  operation,
-  [
+const result =
+  yield *
+  Effect.catchTags(operation, [
     ["ValidationError", (e) => Effect.succeed(handleValidation(e))],
-    ["NotFoundError", (e) => Effect.redial(() => retry(e))]
-  ]
-)
+    ["NotFoundError", (e) => Effect.redial(() => retry(e))],
+  ])
 ```
 
 ## Testing Integration
@@ -165,38 +171,39 @@ const result = yield* Effect.catchTags(
 ### Provide Test Layers
 
 ```typescript
-const testLayer = Layer.provide(
-  OrderServiceLive,
-  Layer.provide(OrderRepositoryTest, OrderRepositoryLive)
-)
+const testLayer = Layer.provide(OrderServiceLive, Layer.provide(OrderRepositoryTest, OrderRepositoryLive))
 ```
 
 ### Test Individual Operations
 
 ```typescript
 it("should validate empty items", async () => {
-  const testService = Layer.succeed(OrderService, OrderService.of({
-    createOrder: (input) => Effect.fail(new OrderValidationError({
-      errors: [{ field: "items", message: "Required" }]
-    }))
-  }))
-  
-  const result = await Effect.runPromiseExit(
-    Effect.provide(createOrderEffect, testService)
+  const testService = Layer.succeed(
+    OrderService,
+    OrderService.of({
+      createOrder: (input) =>
+        Effect.fail(
+          new OrderValidationError({
+            errors: [{ field: "items", message: "Required" }],
+          })
+        ),
+    })
   )
-  
+
+  const result = await Effect.runPromiseExit(Effect.provide(createOrderEffect, testService))
+
   expect(result._tag).toBe("Failure")
 })
 ```
 
 ## Quick Decision Guide
 
-| Situation | Recommended Pattern |
-|-----------|---------------------|
-| Service has no deps | `Layer.succeed(Tag, implementation)` |
-| Service depends on others | `Layer.effect(Tag, Effect.gen(...))` |
+| Situation                        | Recommended Pattern                   |
+| -------------------------------- | ------------------------------------- |
+| Service has no deps              | `Layer.succeed(Tag, implementation)`  |
+| Service depends on others        | `Layer.effect(Tag, Effect.gen(...))`  |
 | Need to use deps in construction | `Layer.flatMap(Tag, Effect.gen(...))` |
-| Sequential async operations | `Effect.gen(function* () {...})` |
-| Simple map transformation | `Effect.map(effect, (x) => ...)` |
-| Known failure case | `Effect.fail(new ErrorType(...))` |
-| Unknown failure | `Effect.dieMessage(...)` or throw |
+| Sequential async operations      | `Effect.gen(function* () {...})`      |
+| Simple map transformation        | `Effect.map(effect, (x) => ...)`      |
+| Known failure case               | `Effect.fail(new ErrorType(...))`     |
+| Unknown failure                  | `Effect.dieMessage(...)` or throw     |

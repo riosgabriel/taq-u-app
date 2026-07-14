@@ -1,8 +1,8 @@
 import { PersistenceError } from "@/persistence-errors"
 import { Context, Data, Effect, Layer } from "effect"
-import Customer from "order/domain/customer"
-import { CustomerCreateInput } from "order/dto/customer-dto"
-import { CustomerEmailAlreadyExistsError, CustomerRepository } from "order/repository/customer-repository"
+import Customer from "customer/domain/customer"
+import { CustomerCreateInput } from "customer/dto/customer-dto"
+import { CustomerEmailAlreadyExistsError, CustomerRepository } from "customer/repository/customer-repository"
 
 export class CustomerNotFoundError extends Data.TaggedError("order/CustomerNotFoundError")<{
   readonly customerId: string
@@ -39,11 +39,13 @@ export const CustomerServiceLive = Layer.effect(
       },
 
       getCustomerById: (id: string) => {
-        return repository.getCustomerById(id).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
-            Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
+        return repository
+          .getCustomerById(id)
+          .pipe(
+            Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
+            )
           )
-        )
       },
     })
   })

@@ -53,11 +53,13 @@ docker-compose down
 ### Local Development (without Docker)
 
 1. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 2. Set up the database:
+
    ```bash
    pnpm db:deploy
    ```
@@ -88,15 +90,15 @@ The Docker Compose setup includes:
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | `postgresql://postgres:postgres@db:5432/taq_u_app?schema=public` | Database connection string |
-| `POSTGRES_DB` | `taq_u_app` | Database name |
-| `POSTGRES_USER` | `postgres` | Database user |
-| `POSTGRES_PASSWORD` | `postgres` | Database password |
-| `NODE_ENV` | `development` | Node.js environment |
-| `PORT` | `3000` | Application port |
-| `PRISMA_GENERATE_DATAPROXY` | `true` | Prisma configuration |
+| Variable                    | Default                                                          | Description                |
+| --------------------------- | ---------------------------------------------------------------- | -------------------------- |
+| `DATABASE_URL`              | `postgresql://postgres:postgres@db:5432/taq_u_app?schema=public` | Database connection string |
+| `POSTGRES_DB`               | `taq_u_app`                                                      | Database name              |
+| `POSTGRES_USER`             | `postgres`                                                       | Database user              |
+| `POSTGRES_PASSWORD`         | `postgres`                                                       | Database password          |
+| `NODE_ENV`                  | `development`                                                    | Node.js environment        |
+| `PORT`                      | `3000`                                                           | Application port           |
+| `PRISMA_GENERATE_DATAPROXY` | `true`                                                           | Prisma configuration       |
 
 ## Database Schema
 
@@ -137,6 +139,7 @@ PORT=3001  # Change application port
 ### Prisma Issues
 
 1. Regenerate Prisma client:
+
    ```bash
    docker-compose exec app pnpm prisma generate
    ```
@@ -148,4 +151,4 @@ PORT=3001  # Change application port
 
 ## License
 
-MIT 
+MIT

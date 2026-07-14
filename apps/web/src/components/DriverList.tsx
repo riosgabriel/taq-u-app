@@ -19,7 +19,7 @@ const DriverList: React.FC<DriverListProps> = ({ onEditDriver, onCreateDriver })
 
   const fetchDrivers = async () => {
     try {
-      const data = await api.getDrivers() as Driver[]
+      const data = (await api.getDrivers()) as Driver[]
       setDrivers(data)
     } catch (error) {
       toast.error("Failed to fetch drivers")
@@ -44,20 +44,27 @@ const DriverList: React.FC<DriverListProps> = ({ onEditDriver, onCreateDriver })
     }
   }
 
-  const filteredDrivers = drivers.filter(driver =>
-    driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    driver.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    driver.licenseNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDrivers = drivers.filter(
+    (driver) =>
+      driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.licenseNumber.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const getVehicleTypeIcon = (type: string) => {
     switch (type) {
-      case "car": return "🚗"
-      case "van": return "🚐"
-      case "truck": return "🚚"
-      case "motorcycle": return "🏍️"
-      case "bicycle": return "🚴"
-      default: return "🚗"
+      case "car":
+        return "🚗"
+      case "van":
+        return "🚐"
+      case "truck":
+        return "🚚"
+      case "motorcycle":
+        return "🏍️"
+      case "bicycle":
+        return "🚴"
+      default:
+        return "🚗"
     }
   }
 
@@ -121,11 +128,11 @@ const DriverList: React.FC<DriverListProps> = ({ onEditDriver, onCreateDriver })
                     <span className="text-2xl">{getVehicleTypeIcon(driver.vehicleType)}</span>
                     <div>
                       <h3 className="font-semibold text-gray-900">{driver.name}</h3>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        driver.isAvailable 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-gray-100 text-gray-800"
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          driver.isAvailable ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {driver.isAvailable ? "Available" : "Unavailable"}
                       </span>
                     </div>

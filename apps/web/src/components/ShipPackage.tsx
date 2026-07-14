@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react"
+import { toast } from "sonner"
 
 export function ShipPackage() {
   const [formData, setFormData] = useState({
@@ -16,73 +16,73 @@ export function ShipPackage() {
     height: "",
     declaredValue: "",
     serviceType: "standard",
-    paymentMethod: "cash"
-  });
+    paymentMethod: "cash",
+  })
 
-  const [estimatedCost, setEstimatedCost] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [estimatedCost, setEstimatedCost] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const packageTypes = [
     { value: "document", label: "Document", basePrice: 500 },
     { value: "small", label: "Small Package", basePrice: 800 },
     { value: "medium", label: "Medium Package", basePrice: 1200 },
-    { value: "large", label: "Large Package", basePrice: 2000 }
-  ];
+    { value: "large", label: "Large Package", basePrice: 2000 },
+  ]
 
   const serviceTypes = [
     { value: "standard", label: "Standard (2-3 days)", multiplier: 1 },
     { value: "express", label: "Express (1-2 days)", multiplier: 1.5 },
-    { value: "overnight", label: "Overnight", multiplier: 2 }
-  ];
+    { value: "overnight", label: "Overnight", multiplier: 2 },
+  ]
 
   const calculateCost = () => {
-    const packageType = packageTypes.find(p => p.value === formData.packageType);
-    const serviceType = serviceTypes.find(s => s.value === formData.serviceType);
-    
-    if (!packageType || !serviceType) return 0;
-    
-    let cost = packageType.basePrice;
-    const weight = parseFloat(formData.weight) || 0;
-    
+    const packageType = packageTypes.find((p) => p.value === formData.packageType)
+    const serviceType = serviceTypes.find((s) => s.value === formData.serviceType)
+
+    if (!packageType || !serviceType) return 0
+
+    let cost = packageType.basePrice
+    const weight = parseFloat(formData.weight) || 0
+
     // Weight surcharge
     if (weight > 1) {
-      cost += (weight - 1) * 200;
+      cost += (weight - 1) * 200
     }
-    
+
     // Service multiplier
-    cost *= serviceType.multiplier;
-    
+    cost *= serviceType.multiplier
+
     // Insurance
-    const declaredValue = parseFloat(formData.declaredValue) || 0;
-    const insurance = Math.max(declaredValue * 0.005, 100);
-    cost += insurance;
-    
-    return Math.round(cost);
-  };
+    const declaredValue = parseFloat(formData.declaredValue) || 0
+    const insurance = Math.max(declaredValue * 0.005, 100)
+    cost += insurance
+
+    return Math.round(cost)
+  }
 
   const handleInputChange = (field: string, value: string) => {
-    const newFormData = { ...formData, [field]: value };
-    setFormData(newFormData);
-    
+    const newFormData = { ...formData, [field]: value }
+    setFormData(newFormData)
+
     // Recalculate cost when relevant fields change
-    if (['packageType', 'weight', 'serviceType', 'declaredValue'].includes(field)) {
+    if (["packageType", "weight", "serviceType", "declaredValue"].includes(field)) {
       setTimeout(() => {
-        setEstimatedCost(calculateCost());
-      }, 100);
+        setEstimatedCost(calculateCost())
+      }, 100)
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
+    e.preventDefault()
+    setIsSubmitting(true)
+
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const trackingNumber = `TAQ${Date.now().toString().slice(-8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    
-    toast.success(`Package created successfully! Tracking number: ${trackingNumber}`);
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    const trackingNumber = `TAQ${Date.now().toString().slice(-8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+    toast.success(`Package created successfully! Tracking number: ${trackingNumber}`)
+
     // Reset form
     setFormData({
       senderName: "",
@@ -98,11 +98,11 @@ export function ShipPackage() {
       height: "",
       declaredValue: "",
       serviceType: "standard",
-      paymentMethod: "cash"
-    });
-    setEstimatedCost(0);
-    setIsSubmitting(false);
-  };
+      paymentMethod: "cash",
+    })
+    setEstimatedCost(0)
+    setIsSubmitting(false)
+  }
 
   return (
     <div className="p-6">
@@ -122,7 +122,7 @@ export function ShipPackage() {
                 type="text"
                 required
                 value={formData.senderName}
-                onChange={(e) => handleInputChange('senderName', e.target.value)}
+                onChange={(e) => handleInputChange("senderName", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -132,7 +132,7 @@ export function ShipPackage() {
                 type="tel"
                 required
                 value={formData.senderPhone}
-                onChange={(e) => handleInputChange('senderPhone', e.target.value)}
+                onChange={(e) => handleInputChange("senderPhone", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -142,7 +142,7 @@ export function ShipPackage() {
                 required
                 rows={3}
                 value={formData.senderAddress}
-                onChange={(e) => handleInputChange('senderAddress', e.target.value)}
+                onChange={(e) => handleInputChange("senderAddress", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -159,7 +159,7 @@ export function ShipPackage() {
                 type="text"
                 required
                 value={formData.recipientName}
-                onChange={(e) => handleInputChange('recipientName', e.target.value)}
+                onChange={(e) => handleInputChange("recipientName", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -169,7 +169,7 @@ export function ShipPackage() {
                 type="tel"
                 required
                 value={formData.recipientPhone}
-                onChange={(e) => handleInputChange('recipientPhone', e.target.value)}
+                onChange={(e) => handleInputChange("recipientPhone", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -179,7 +179,7 @@ export function ShipPackage() {
                 required
                 rows={3}
                 value={formData.recipientAddress}
-                onChange={(e) => handleInputChange('recipientAddress', e.target.value)}
+                onChange={(e) => handleInputChange("recipientAddress", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -194,10 +194,10 @@ export function ShipPackage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Package Type</label>
               <select
                 value={formData.packageType}
-                onChange={(e) => handleInputChange('packageType', e.target.value)}
+                onChange={(e) => handleInputChange("packageType", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               >
-                {packageTypes.map(type => (
+                {packageTypes.map((type) => (
                   <option key={type.value} value={type.value}>
                     {type.label} (¥{type.basePrice})
                   </option>
@@ -212,7 +212,7 @@ export function ShipPackage() {
                 min="0"
                 required
                 value={formData.weight}
-                onChange={(e) => handleInputChange('weight', e.target.value)}
+                onChange={(e) => handleInputChange("weight", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -223,7 +223,7 @@ export function ShipPackage() {
                 min="0"
                 required
                 value={formData.length}
-                onChange={(e) => handleInputChange('length', e.target.value)}
+                onChange={(e) => handleInputChange("length", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -234,7 +234,7 @@ export function ShipPackage() {
                 min="0"
                 required
                 value={formData.width}
-                onChange={(e) => handleInputChange('width', e.target.value)}
+                onChange={(e) => handleInputChange("width", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -245,7 +245,7 @@ export function ShipPackage() {
                 min="0"
                 required
                 value={formData.height}
-                onChange={(e) => handleInputChange('height', e.target.value)}
+                onChange={(e) => handleInputChange("height", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -256,7 +256,7 @@ export function ShipPackage() {
                 min="0"
                 required
                 value={formData.declaredValue}
-                onChange={(e) => handleInputChange('declaredValue', e.target.value)}
+                onChange={(e) => handleInputChange("declaredValue", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
@@ -271,10 +271,10 @@ export function ShipPackage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
               <select
                 value={formData.serviceType}
-                onChange={(e) => handleInputChange('serviceType', e.target.value)}
+                onChange={(e) => handleInputChange("serviceType", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               >
-                {serviceTypes.map(service => (
+                {serviceTypes.map((service) => (
                   <option key={service.value} value={service.value}>
                     {service.label}
                   </option>
@@ -285,7 +285,7 @@ export function ShipPackage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
               <select
                 value={formData.paymentMethod}
-                onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                onChange={(e) => handleInputChange("paymentMethod", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               >
                 <option value="cash">Cash on Pickup</option>
@@ -317,5 +317,5 @@ export function ShipPackage() {
         </div>
       </form>
     </div>
-  );
+  )
 }

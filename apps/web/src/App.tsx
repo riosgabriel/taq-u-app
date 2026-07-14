@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { Toaster } from "sonner";
-import { DeliveryRoutes } from "./components/DeliveryRoutes";
-import DriverManagement from "./components/DriverManagement";
-import { OrderList } from "./components/OrderList";
-import { PackageList } from "./components/PackageList";
-import { PackageTracker } from "./components/PackageTracker";
-import { ShipPackage } from "./components/ShipPackage";
+import { useState } from "react"
+import { Toaster } from "sonner"
+import { DeliveryRoutes } from "./components/DeliveryRoutes"
+import DriverManagement from "./components/DriverManagement"
+import { OrderList } from "./components/OrderList"
+import { PackageList } from "./components/PackageList"
+import { PackageTracker } from "./components/PackageTracker"
+import { ShipPackage } from "./components/ShipPackage"
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("track");
+  const [activeTab, setActiveTab] = useState("track")
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -47,17 +47,17 @@ export default function App() {
             ))}
           </div>
 
-            {/* Tab Content */}
-            <div className="bg-white rounded-lg shadow-sm">
-              {activeTab === "track" && <PackageTracker />}
-              {activeTab === "ship" && <ShipPackage />}
-              {activeTab === "orders" && <OrderList />}
-              {activeTab === "routes" && <DeliveryRoutes />}
-              {activeTab === "drivers" && <DriverManagement />}
-            </div>
+          {/* Tab Content */}
+          <div className="bg-white rounded-lg shadow-sm">
+            {activeTab === "track" && <PackageTracker />}
+            {activeTab === "ship" && <ShipPackage />}
+            {activeTab === "orders" && <OrderList />}
+            {activeTab === "routes" && <DeliveryRoutes />}
+            {activeTab === "drivers" && <DriverManagement />}
+          </div>
         </div>
       </main>
       <Toaster />
     </div>
-  );
+  )
 }

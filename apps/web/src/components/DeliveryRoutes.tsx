@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from "react"
 
 // Example delivery routes data - in a real app, this would come from Convex
 const exampleRoutes = [
@@ -16,7 +16,7 @@ const exampleRoutes = [
       { id: "p2", trackingNumber: "TAQ87654321EFGH", address: "Harajuku 4-5-6", status: "in_transit" },
       { id: "p3", trackingNumber: "TAQ11223344IJKL", address: "Shinjuku 7-8-9", status: "pending" },
     ],
-    currentLocation: "Shibuya District"
+    currentLocation: "Shibuya District",
   },
   {
     id: "2",
@@ -31,7 +31,7 @@ const exampleRoutes = [
       { id: "p4", trackingNumber: "TAQ99887766MNOP", address: "Setagaya 1-1-1", status: "pending" },
       { id: "p5", trackingNumber: "TAQ55443322QRST", address: "Suginami 2-2-2", status: "pending" },
     ],
-    currentLocation: "Distribution Center"
+    currentLocation: "Distribution Center",
   },
   {
     id: "3",
@@ -47,70 +47,68 @@ const exampleRoutes = [
       { id: "p6", trackingNumber: "TAQ66778899UVWX", address: "Asakusa 3-3-3", status: "delivered" },
       { id: "p7", trackingNumber: "TAQ33445566YZAB", address: "Ueno 4-4-4", status: "delivered" },
     ],
-    currentLocation: "Distribution Center"
-  }
-];
+    currentLocation: "Distribution Center",
+  },
+]
 
 export function DeliveryRoutes() {
-  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
-  const [filter, setFilter] = useState("all");
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null)
+  const [filter, setFilter] = useState("all")
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "text-green-600 bg-green-50 border-green-200";
+        return "text-green-600 bg-green-50 border-green-200"
       case "in_progress":
-        return "text-blue-600 bg-blue-50 border-blue-200";
+        return "text-blue-600 bg-blue-50 border-blue-200"
       case "planned":
-        return "text-yellow-600 bg-yellow-50 border-yellow-200";
+        return "text-yellow-600 bg-yellow-50 border-yellow-200"
       default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
+        return "text-gray-600 bg-gray-50 border-gray-200"
     }
-  };
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return "✅";
+        return "✅"
       case "in_progress":
-        return "🚛";
+        return "🚛"
       case "planned":
-        return "📋";
+        return "📋"
       default:
-        return "❓";
+        return "❓"
     }
-  };
+  }
 
   const getPackageStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-        return "text-green-600 bg-green-50";
+        return "text-green-600 bg-green-50"
       case "in_transit":
-        return "text-blue-600 bg-blue-50";
+        return "text-blue-600 bg-blue-50"
       case "pending":
-        return "text-gray-600 bg-gray-50";
+        return "text-gray-600 bg-gray-50"
       default:
-        return "text-gray-600 bg-gray-50";
+        return "text-gray-600 bg-gray-50"
     }
-  };
+  }
 
-  const filteredRoutes = exampleRoutes.filter(route => 
-    filter === "all" || route.status === filter
-  );
+  const filteredRoutes = exampleRoutes.filter((route) => filter === "all" || route.status === filter)
 
   const formatDuration = (ms: number) => {
-    const hours = Math.floor(ms / (1000 * 60 * 60));
-    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
-  };
+    const hours = Math.floor(ms / (1000 * 60 * 60))
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60))
+    return `${hours}h ${minutes}m`
+  }
 
   const getProgress = (route: any) => {
-    if (route.status === "completed") return 100;
-    if (route.status === "planned") return 0;
-    
-    const deliveredPackages = route.packages.filter((p: any) => p.status === "delivered").length;
-    return Math.round((deliveredPackages / route.packages.length) * 100);
-  };
+    if (route.status === "completed") return 100
+    if (route.status === "planned") return 0
+
+    const deliveredPackages = route.packages.filter((p: any) => p.status === "delivered").length
+    return Math.round((deliveredPackages / route.packages.length) * 100)
+  }
 
   return (
     <div className="p-6">
@@ -152,27 +150,31 @@ export function DeliveryRoutes() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-xl font-semibold">{route.routeName}</h3>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(route.status)}`}>
-                      {getStatusIcon(route.status)} {route.status.replace('_', ' ').toUpperCase()}
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(route.status)}`}
+                    >
+                      {getStatusIcon(route.status)} {route.status.replace("_", " ").toUpperCase()}
                     </span>
                   </div>
-                  
+
                   <div className="grid md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-gray-600">Driver</p>
                       <p className="font-semibold">{route.driverName}</p>
-                      <p className="text-gray-500">{route.vehicleType} • {route.vehiclePlate}</p>
+                      <p className="text-gray-500">
+                        {route.vehicleType} • {route.vehiclePlate}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-600">Current Location</p>
                       <p className="font-semibold">{route.currentLocation}</p>
                       <p className="text-gray-500">
-                        {route.status === "in_progress" && route.startTime && 
-                          `Started ${new Date(route.startTime).toLocaleTimeString()}`
-                        }
-                        {route.status === "completed" && route.endTime && 
-                          `Completed ${new Date(route.endTime).toLocaleTimeString()}`
-                        }
+                        {route.status === "in_progress" &&
+                          route.startTime &&
+                          `Started ${new Date(route.startTime).toLocaleTimeString()}`}
+                        {route.status === "completed" &&
+                          route.endTime &&
+                          `Completed ${new Date(route.endTime).toLocaleTimeString()}`}
                         {route.status === "planned" && "Awaiting departure"}
                       </p>
                     </div>
@@ -183,11 +185,9 @@ export function DeliveryRoutes() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {getProgress(route)}%
-                  </div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">{getProgress(route)}%</div>
                   <div className="text-sm text-gray-500">Complete</div>
                 </div>
               </div>
@@ -195,7 +195,7 @@ export function DeliveryRoutes() {
               {/* Progress Bar */}
               <div className="mb-4">
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${getProgress(route)}%` }}
                   ></div>
@@ -242,7 +242,7 @@ export function DeliveryRoutes() {
                           </div>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${getPackageStatusColor(pkg.status)}`}>
-                          {pkg.status.replace('_', ' ').toUpperCase()}
+                          {pkg.status.replace("_", " ").toUpperCase()}
                         </span>
                       </div>
                     ))}
@@ -262,13 +262,16 @@ export function DeliveryRoutes() {
         </div>
         <div className="bg-yellow-50 rounded-lg p-4">
           <div className="text-2xl font-bold text-yellow-600">
-            {exampleRoutes.filter(r => r.status === "in_progress").length}
+            {exampleRoutes.filter((r) => r.status === "in_progress").length}
           </div>
           <div className="text-sm text-yellow-700">Active Routes</div>
         </div>
         <div className="bg-green-50 rounded-lg p-4">
           <div className="text-2xl font-bold text-green-600">
-            {exampleRoutes.reduce((sum, route) => sum + route.packages.filter((p: any) => p.status === "delivered").length, 0)}
+            {exampleRoutes.reduce(
+              (sum, route) => sum + route.packages.filter((p: any) => p.status === "delivered").length,
+              0
+            )}
           </div>
           <div className="text-sm text-green-700">Delivered Today</div>
         </div>
@@ -280,5 +283,5 @@ export function DeliveryRoutes() {
         </div>
       </div>
     </div>
-  );
+  )
 }

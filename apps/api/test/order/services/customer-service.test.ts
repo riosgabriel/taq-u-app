@@ -35,7 +35,8 @@ describe("CustomerService", () => {
             })
           )
         )
-      ))
+      )
+    )
 
     it.effect("returns empty list when no customers exist", () =>
       Effect.gen(function* () {
@@ -52,7 +53,8 @@ describe("CustomerService", () => {
             })
           )
         )
-      ))
+      )
+    )
   })
 
   describe("getCustomerById", () => {
@@ -71,7 +73,8 @@ describe("CustomerService", () => {
             })
           )
         )
-      ))
+      )
+    )
 
     it.effect("fails with CustomerNotFoundError when customer does not exist", () =>
       Effect.gen(function* () {
@@ -93,7 +96,8 @@ describe("CustomerService", () => {
             })
           )
         )
-      ))
+      )
+    )
   })
 
   describe("createCustomer", () => {
@@ -125,7 +129,8 @@ describe("CustomerService", () => {
             })
           )
         )
-      ))
+      )
+    )
 
     it.effect("fails with CustomerEmailAlreadyExistsError when email is taken", () =>
       Effect.gen(function* () {
@@ -158,6 +163,7 @@ describe("CustomerService", () => {
             })
           )
         )
-      ))
+      )
+    )
   })
 })

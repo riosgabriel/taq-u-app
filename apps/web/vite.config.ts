@@ -1,6 +1,6 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import path from "path"
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -27,9 +27,9 @@ window.addEventListener('message', async (message) => {
 });
             `,
                 map: null,
-              };
+              }
             }
-            return null;
+            return null
           },
         }
       : null,
@@ -40,4 +40,4 @@ window.addEventListener('message', async (message) => {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+}))

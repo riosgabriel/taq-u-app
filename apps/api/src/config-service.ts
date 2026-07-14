@@ -2,9 +2,12 @@ import { Config, Context, Effect, Layer } from "effect"
 
 export const DatabaseURLConfig = Config.string("DATABASE_URL")
 
-export const LogLevelConfig = Config.literal("debug", "info", "warn", "error")("LOG_LEVEL").pipe(
-  Config.withDefault("info")
-)
+export const LogLevelConfig = Config.literal(
+  "debug",
+  "info",
+  "warn",
+  "error"
+)("LOG_LEVEL").pipe(Config.withDefault("info"))
 
 export const AppConfig = Config.all({
   databaseUrl: DatabaseURLConfig,

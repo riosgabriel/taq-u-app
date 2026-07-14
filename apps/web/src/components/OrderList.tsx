@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { api } from "../lib/api";
-import { OrderResponse } from "../types/order";
-import { OrderEdit } from "./OrderEdit";
-import { toast } from "sonner";
+import { useState, useEffect } from "react"
+import { api } from "../lib/api"
+import { OrderResponse } from "../types/order"
+import { OrderEdit } from "./OrderEdit"
+import { toast } from "sonner"
 
 const statusColors: Record<string, string> = {
   PENDING: "text-yellow-600 bg-yellow-50 border-yellow-200",
@@ -10,7 +10,7 @@ const statusColors: Record<string, string> = {
   IN_TRANSIT: "text-indigo-600 bg-indigo-50 border-indigo-200",
   DELIVERED: "text-green-600 bg-green-50 border-green-200",
   CANCELLED: "text-red-600 bg-red-50 border-red-200",
-};
+}
 
 const statusIcons: Record<string, string> = {
   PENDING: "⏳",
@@ -18,54 +18,52 @@ const statusIcons: Record<string, string> = {
   IN_TRANSIT: "📦",
   DELIVERED: "📬",
   CANCELLED: "❌",
-};
+}
 
 export function OrderList() {
-  const [orders, setOrders] = useState<OrderResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [editingOrder, setEditingOrder] = useState<OrderResponse | null>(null);
+  const [orders, setOrders] = useState<OrderResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState("all")
+  const [editingOrder, setEditingOrder] = useState<OrderResponse | null>(null)
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    loadOrders()
+  }, [])
 
   async function loadOrders() {
     try {
-      setLoading(true);
-      const data = await api.getOrders();
-      setOrders(data);
+      setLoading(true)
+      const data = await api.getOrders()
+      setOrders(data)
     } catch (error: any) {
-      toast.error(error.message || "Failed to load orders");
+      toast.error(error.message || "Failed to load orders")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   async function handleCancel(order: OrderResponse) {
-    if (!confirm("Are you sure you want to cancel order " + order.id + "?")) return;
+    if (!confirm("Are you sure you want to cancel order " + order.id + "?")) return
 
     try {
-      await api.cancelOrder(order.id);
-      toast.success("Order cancelled successfully");
-      loadOrders();
+      await api.cancelOrder(order.id)
+      toast.success("Order cancelled successfully")
+      loadOrders()
     } catch (error: any) {
-      toast.error(error.message || "Failed to cancel order");
+      toast.error(error.message || "Failed to cancel order")
     }
   }
 
-  const filteredOrders = filter === "all"
-    ? orders
-    : orders.filter(o => o.status === filter);
+  const filteredOrders = filter === "all" ? orders : orders.filter((o) => o.status === filter)
 
   const statusCounts = {
     all: orders.length,
-    PENDING: orders.filter(o => o.status === "PENDING").length,
-    CONFIRMED: orders.filter(o => o.status === "CONFIRMED").length,
-    IN_TRANSIT: orders.filter(o => o.status === "IN_TRANSIT").length,
-    DELIVERED: orders.filter(o => o.status === "DELIVERED").length,
-    CANCELLED: orders.filter(o => o.status === "CANCELLED").length,
-  };
+    PENDING: orders.filter((o) => o.status === "PENDING").length,
+    CONFIRMED: orders.filter((o) => o.status === "CONFIRMED").length,
+    IN_TRANSIT: orders.filter((o) => o.status === "IN_TRANSIT").length,
+    DELIVERED: orders.filter((o) => o.status === "DELIVERED").length,
+    CANCELLED: orders.filter((o) => o.status === "CANCELLED").length,
+  }
 
   if (loading) {
     return (
@@ -73,7 +71,7 @@ export function OrderList() {
         <div className="text-4xl mb-4">⏳</div>
         <p className="text-gray-600">Loading orders...</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -96,7 +94,8 @@ export function OrderList() {
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={"px-4 py-2 rounded-lg font-medium transition-colors " +
+            className={
+              "px-4 py-2 rounded-lg font-medium transition-colors " +
               (filter === tab.key
                 ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50")
@@ -117,37 +116,41 @@ export function OrderList() {
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+            <div
+              key={order.id}
+              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+            >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-mono font-semibold text-lg">{order.id}</h3>
-                    <span className={"px-3 py-1 rounded-full text-sm font-medium border " + (statusColors[order.status] || "text-gray-600 bg-gray-50")}>
-                      {(statusIcons[order.status] || "❓")} {order.status.replace('_', ' ')}
+                    <span
+                      className={
+                        "px-3 py-1 rounded-full text-sm font-medium border " +
+                        (statusColors[order.status] || "text-gray-600 bg-gray-50")
+                      }
+                    >
+                      {statusIcons[order.status] || "❓"} {order.status.replace("_", " ")}
                     </span>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
                     <div>
-                        <p className="text-gray-600">Pickup</p>
-                        <p className="font-semibold">{order.pickupAddress}</p>
-                        <p className="text-gray-500">{new Date(order.pickupDate).toLocaleDateString()}</p>
+                      <p className="text-gray-600">Pickup</p>
+                      <p className="font-semibold">{order.pickupAddress}</p>
+                      <p className="text-gray-500">{new Date(order.pickupDate).toLocaleDateString()}</p>
                     </div>
                     <div>
-                        <p className="text-gray-600">Delivery</p>
-                        <p className="font-semibold">{order.deliveryAddress}</p>
-                        {order.deliveryDate && (
-                          <p className="text-gray-500">{new Date(order.deliveryDate).toLocaleDateString()}</p>
-                        )}
+                      <p className="text-gray-600">Delivery</p>
+                      <p className="font-semibold">{order.deliveryAddress}</p>
+                      {order.deliveryDate && (
+                        <p className="text-gray-500">{new Date(order.deliveryDate).toLocaleDateString()}</p>
+                      )}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium text-gray-600 mb-1">
-                    Priority: {order.priority}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {order.packages.length} package(s)
-                  </div>
+                  <div className="text-sm font-medium text-gray-600 mb-1">Priority: {order.priority}</div>
+                  <div className="text-sm text-gray-500">{order.packages.length} package(s)</div>
                 </div>
               </div>
 
@@ -191,20 +194,18 @@ export function OrderList() {
         </div>
         <div className="bg-yellow-50 rounded-lg p-4">
           <div className="text-2xl font-bold text-yellow-600">
-            {orders.filter(o => o.status === "PENDING" || o.status === "CONFIRMED").length}
+            {orders.filter((o) => o.status === "PENDING" || o.status === "CONFIRMED").length}
           </div>
           <div className="text-sm text-yellow-700">Active</div>
         </div>
         <div className="bg-green-50 rounded-lg p-4">
           <div className="text-2xl font-bold text-green-600">
-            {orders.filter(o => o.status === "DELIVERED").length}
+            {orders.filter((o) => o.status === "DELIVERED").length}
           </div>
           <div className="text-sm text-green-700">Delivered</div>
         </div>
         <div className="bg-red-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-red-600">
-            {orders.filter(o => o.status === "CANCELLED").length}
-          </div>
+          <div className="text-2xl font-bold text-red-600">{orders.filter((o) => o.status === "CANCELLED").length}</div>
           <div className="text-sm text-red-700">Cancelled</div>
         </div>
       </div>
@@ -215,11 +216,11 @@ export function OrderList() {
           order={editingOrder}
           onClose={() => setEditingOrder(null)}
           onSuccess={() => {
-            setEditingOrder(null);
-            loadOrders();
+            setEditingOrder(null)
+            loadOrders()
           }}
         />
       )}
     </div>
-  );
+  )
 }

@@ -1,6 +1,5 @@
-
 import { Schema } from "effect"
-import Customer from "order/domain/customer"
+import Customer from "customer/domain/customer"
 
 export class CustomerCreateInput extends Schema.Class<CustomerCreateInput>("CustomerCreateInput")({
   name: Schema.NonEmptyString.annotations({

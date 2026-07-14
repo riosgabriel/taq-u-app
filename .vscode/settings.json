@@ -24,9 +24,7 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "js/ts.preferences.autoImportFileExcludePatterns": [
-    "repos/**"
-  ],
+  "js/ts.preferences.autoImportFileExcludePatterns": ["repos/**"],
   "files.exclude": {
     "repos/**": true
   },

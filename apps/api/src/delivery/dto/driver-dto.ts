@@ -1,5 +1,5 @@
 import { Schema } from "effect"
-import Driver from "order/domain/driver"
+import Driver from "delivery/domain/driver"
 
 export class DriverCreateInput extends Schema.Class<DriverCreateInput>("order/DriverCreateInput")({
   name: Schema.String.annotations({

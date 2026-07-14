@@ -1,12 +1,18 @@
 import { PersistenceError } from "@/persistence-errors"
-import { OrderCreateInput, OrderUpdateInput } from "@order/dto/order-dto"
-import { CustomerRepository } from "@order/repository/customer-repository"
-import { OrderRepository, OrderWithPackages } from "@order/repository/order-repository"
-import { OrderStatus } from "@prisma/client"
+import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
+import { CustomerRepository } from "customer/repository/customer-repository"
+import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
+import { OrderStatus, PackageStatus } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
-import { CustomerNotFoundError } from "./customer-service"
+import { CustomerNotFoundError } from "customer/services/customer-service"
+
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
   readonly orderId: string
+  readonly message: string
+}> {}
+
+export class PackageNotFoundError extends Data.TaggedError("order/PackageNotFoundError")<{
+  readonly packageId: string
   readonly message: string
 }> {}
 
@@ -31,6 +37,15 @@ export class OrderService extends Context.Tag("order/OrderService")<
     readonly cancelOrder: (
       orderId: string
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
+    readonly addPackageToOrder: (
+      orderId: string,
+      packageInput: AddPackageInput
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
+    readonly updatePackageStatus: (
+      orderId: string,
+      packageId: string,
+      status: PackageStatus
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PackageNotFoundError | PersistenceError>
   }
 >() {}
 
@@ -61,21 +76,25 @@ export const OrderServiceLive = Layer.effect(
       },
 
       getOrderById: (orderId: string) => {
-        return orderRepository.getOrderById(orderId).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
-            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+        return orderRepository
+          .getOrderById(orderId)
+          .pipe(
+            Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+            )
           )
-        )
       },
 
       listOrders: () => orderRepository.listOrders(),
 
       updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
-        return orderRepository.updateOrder(orderId, updateInput).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
-            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+        return orderRepository
+          .updateOrder(orderId, updateInput)
+          .pipe(
+            Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+            )
           )
-        )
       },
 
       cancelOrder: (orderId: string) => {
@@ -101,6 +120,26 @@ export const OrderServiceLive = Layer.effect(
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           )
         )
+      },
+
+      addPackageToOrder: (orderId: string, packageInput: AddPackageInput) => {
+        return orderRepository
+          .addPackageToOrder(orderId, packageInput)
+          .pipe(
+            Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+            )
+          )
+      },
+
+      updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
+        return orderRepository
+          .updatePackageStatus(orderId, packageId, status)
+          .pipe(
+            Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+            )
+          )
       },
     })
   })

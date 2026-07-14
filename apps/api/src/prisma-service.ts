@@ -6,7 +6,7 @@ import {
   UnexpectedPersistenceError,
   UniqueConstraintViolation,
 } from "@/persistence-errors"
-import { ConfigService } from "@order/services/config-service"
+import { ConfigService } from "config-service"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 

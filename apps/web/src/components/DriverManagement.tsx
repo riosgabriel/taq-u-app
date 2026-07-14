@@ -29,18 +29,9 @@ const DriverManagement: React.FC = () => {
 
   return (
     <>
-      {currentView === "list" && (
-        <DriverList
-          onEditDriver={handleEditDriver}
-          onCreateDriver={handleCreateDriver}
-        />
-      )}
+      {currentView === "list" && <DriverList onEditDriver={handleEditDriver} onCreateDriver={handleCreateDriver} />}
       {(currentView === "edit" || currentView === "create") && (
-        <DriverEdit
-          driverId={selectedDriverId}
-          onSave={handleSaveDriver}
-          onCancel={handleCancelEdit}
-        />
+        <DriverEdit driverId={selectedDriverId} onSave={handleSaveDriver} onCancel={handleCancelEdit} />
       )}
     </>
   )

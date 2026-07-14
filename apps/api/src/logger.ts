@@ -1,4 +1,4 @@
-import { ConfigService } from "@order/services/config-service"
+import { ConfigService } from "config-service"
 import { Effect, Layer, LogLevel, Logger } from "effect"
 
 const toLogLevel = (level: "debug" | "info" | "warn" | "error"): LogLevel.LogLevel => {

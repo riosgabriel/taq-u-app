@@ -1,14 +1,11 @@
 import { Package as PrismaPackage } from "@prisma/client"
 import { Schema } from "effect"
+import Customer from "customer/domain/customer"
 
 export class Package extends Schema.Class<Package>("order/Package")({
   id: Schema.NonEmptyString.annotations({
     required: true,
     identifier: "id",
-  }),
-  orderId: Schema.String.annotations({
-    required: true,
-    identifier: "orderId",
   }),
   weightKg: Schema.Number.annotations({
     required: true,
@@ -46,7 +43,6 @@ export class Package extends Schema.Class<Package>("order/Package")({
   static fromPackage(pkg: PrismaPackage): Package {
     return {
       id: pkg.id,
-      orderId: pkg.orderId,
       weightKg: pkg.weightKg,
       dimensions: pkg.dimensions,
       description: pkg.description,
@@ -59,4 +55,11 @@ export class Package extends Schema.Class<Package>("order/Package")({
   }
 }
 
-export default Package
+export class Order extends Schema.Class<Order>("Order")({
+  id: Schema.String,
+  customerId: Schema.String,
+  customer: Customer,
+  packages: Schema.Array(Package),
+}) {}
+
+export default Order

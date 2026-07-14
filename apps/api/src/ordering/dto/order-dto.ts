@@ -1,6 +1,43 @@
-import { OrderWithPackages } from "@order/repository/order-repository"
-import { Package } from "@prisma/client"
+import { OrderWithPackages } from "ordering/repository/order-repository"
+import { Package as PrismaPackage } from "@prisma/client"
 import { Schema } from "effect"
+
+export class AddPackageInput extends Schema.Class<AddPackageInput>("order/AddPackageInput")({
+  weightKg: Schema.Number.annotations({
+    required: true,
+    identifier: "weightKg",
+  }),
+  dimensions: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "dimensions",
+  }),
+  description: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "description",
+  }),
+  fragile: Schema.Boolean.annotations({
+    required: true,
+    default: false,
+    identifier: "fragile",
+  }),
+  perishable: Schema.Boolean.annotations({
+    required: true,
+    default: false,
+    identifier: "perishable",
+  }),
+  insured: Schema.Boolean.annotations({
+    required: true,
+    default: false,
+    identifier: "insured",
+  }),
+}) {}
+
+export class PackageStatusUpdateInput extends Schema.Class<PackageStatusUpdateInput>("order/PackageStatusUpdateInput")({
+  status: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "status",
+  }),
+}) {}
 
 export class PackageCreateInput extends Schema.Class<PackageCreateInput>("PackageCreateInput")({
   weightKg: Schema.Number.annotations({
@@ -68,7 +105,7 @@ export class OrderCreateInput extends Schema.Class<OrderCreateInput>("OrderCreat
   }),
 }) {}
 
-export class PackageResponse extends Schema.Class<PackageResponse>("PackageResponse")({
+export class PackageResponse extends Schema.Class<PackageResponse>("order/PackageResponse")({
   id: Schema.NonEmptyString,
   weightKg: Schema.Number,
   dimensions: Schema.NonEmptyString,
@@ -76,8 +113,10 @@ export class PackageResponse extends Schema.Class<PackageResponse>("PackageRespo
   fragile: Schema.Boolean,
   perishable: Schema.Boolean,
   insured: Schema.Boolean,
+  trackingNumber: Schema.NonEmptyString,
+  status: Schema.String,
 }) {
-  static fromPackage(pkg: Package): PackageResponse {
+  static fromPackage(pkg: PrismaPackage): PackageResponse {
     return {
       id: pkg.id,
       weightKg: pkg.weightKg,
@@ -86,6 +125,8 @@ export class PackageResponse extends Schema.Class<PackageResponse>("PackageRespo
       fragile: pkg.fragile,
       perishable: pkg.perishable,
       insured: pkg.insured,
+      trackingNumber: pkg.trackingNumber,
+      status: pkg.status,
     }
   }
 }
