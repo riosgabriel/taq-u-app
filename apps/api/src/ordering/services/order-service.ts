@@ -5,6 +5,7 @@ import { OrderRepository, OrderWithPackages } from "ordering/repository/order-re
 import { OrderStatus, PackageStatus } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
 import { CustomerNotFoundError } from "customer/services/customer-service"
+import { EventPublisher } from "events/event-publisher"
 
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
   readonly orderId: string
@@ -56,13 +57,18 @@ export const OrderServiceLive = Layer.effect(
   Effect.gen(function* () {
     const orderRepository = yield* OrderRepository
     const customerRepository = yield* CustomerRepository
+    const eventPublisher = yield* EventPublisher
 
     return OrderService.of({
       createOrder: (orderInput: OrderCreateInput) => {
         return Effect.gen(function* () {
           yield* customerRepository.getCustomerById(orderInput.customerId)
 
-          return yield* orderRepository.createOrder(orderInput)
+          const result = yield* orderRepository.createOrder(orderInput)
+
+          yield* eventPublisher.notify(result.events)
+
+          return result.order
         }).pipe(
           Effect.catchTag("order/RecordNotFoundError", () =>
             Effect.fail(

@@ -4,14 +4,21 @@ import { TrackingNumberService } from "ordering/services/tracking-number-service
 import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { PrismaService } from "prisma-service"
+import { EventPublisher } from "events/event-publisher"
+import { DomainEvent } from "events/domain-event"
 
 const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
 
+export type CreateOrderResult = {
+  readonly order: OrderWithPackages
+  readonly events: ReadonlyArray<DomainEvent>
+}
+
 export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
-    readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<CreateOrderResult, PersistenceError>
     readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
@@ -47,6 +54,7 @@ export const OrderRepositoryLive = Layer.effect(
   Effect.gen(function* () {
     const prismaService = yield* PrismaService
     const trackingNumberService = yield* TrackingNumberService
+    const eventPublisher = yield* EventPublisher
 
     const generateTrackingNumbers = (count: number): Effect.Effect<string[], PersistenceError> =>
       Effect.gen(function* () {
@@ -61,9 +69,10 @@ export const OrderRepositoryLive = Layer.effect(
       createOrder: (orderInput: OrderCreateInput) => {
         return Effect.gen(function* () {
           const trackingNumbers = yield* generateTrackingNumbers(orderInput.packages.length)
+          const persistedEvents: DomainEvent[] = []
 
-          return yield* prismaService.execute(() =>
-            prismaService.prisma.order.create({
+          const order = yield* prismaService.$transaction(async (tx) => {
+            const order = await tx.order.create({
               data: {
                 customer: {
                   connect: {
@@ -96,7 +105,20 @@ export const OrderRepositoryLive = Layer.effect(
                 packages: true,
               },
             })
-          )
+
+            const event: DomainEvent = {
+              type: "OrderCreated",
+              streamId: `order:${order.id}`,
+              payload: { orderId: order.id, customerId: order.customerId },
+              timestamp: new Date(),
+            }
+            await eventPublisher.writeInTransaction(tx, [event])
+            persistedEvents.push(event)
+
+            return order
+          })
+
+          return { order, events: persistedEvents }
         })
       },
 

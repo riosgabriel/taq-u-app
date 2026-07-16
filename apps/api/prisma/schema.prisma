@@ -252,3 +252,28 @@ enum CarrierType {
   DRONE
   ROBOT
 }
+
+model Event {
+  sequence  BigInt    @id @default(autoincrement())
+  type      String
+  streamId  String
+  payload   Json
+  createdAt DateTime  @default(now())
+
+  @@index([sequence])
+  @@index([type])
+}
+
+model Checkpoint {
+  consumerId   String   @id
+  lastSequence BigInt
+  updatedAt    DateTime @updatedAt
+}
+
+model Deduplication {
+  consumerId    String
+  eventSequence BigInt
+  processedAt   DateTime @default(now())
+
+  @@id([consumerId, eventSequence])
+}
