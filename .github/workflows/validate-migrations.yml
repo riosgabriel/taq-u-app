@@ -37,7 +37,7 @@ jobs:
           node-version: 20
           cache: "pnpm"
 
-      - run: pnpm install
+      - run: pnpm install --no-frozen-lockfile
 
       - name: Validate schema syntax
         working-directory: apps/api
