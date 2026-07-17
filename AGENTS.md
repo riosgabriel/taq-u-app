@@ -56,7 +56,7 @@ When running a single package, always use `pnpm --filter @taq-u-app/<pkg> <scrip
 
 - **Linear**: MCP server configured (see `.opencode/skills/linear-workflow/SKILL.md`). Issue format `TAQ-###`.
 - **API testing**: Bruno collections at `apps/api/collections/` — use with Bruno desktop app
-- **pnpm-lock.yaml is gitignored** — no lockfile checked in. `pnpm install` fetches latest compatible versions.
+- **pnpm-lock.yaml is tracked** — reproducible installs across all environments.
 - **OpenCode skills**: `effect-best-practices` and `linear-workflow` are loaded automatically when relevant
 - **OpenCode subagent**: `effect-implement` for Effect service layer code generation
 
