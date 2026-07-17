@@ -24,7 +24,6 @@ yarn.lock
 postgres_data/
 
 # GitHub files
-.github/
 dependabot.yml
 
 # Miscellaneous files

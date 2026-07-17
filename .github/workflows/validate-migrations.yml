@@ -1,0 +1,55 @@
+name: Validate Prisma Migrations
+
+on:
+  pull_request:
+    paths:
+      - "apps/api/prisma/schema.prisma"
+      - "apps/api/prisma/migrations/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16.3
+        env:
+          POSTGRES_DB: taq_u_shadow
+          POSTGRES_USER: prisma
+          POSTGRES_PASSWORD: prisma
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - run: pnpm install
+
+      - name: Validate schema syntax
+        working-directory: apps/api
+        run: npx prisma validate
+
+      - name: Check for unapplied schema changes
+        working-directory: apps/api
+        env:
+          SHADOW_DATABASE_URL: postgresql://prisma:prisma@localhost:5432/taq_u_shadow
+        run: |
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code
