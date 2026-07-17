@@ -110,7 +110,6 @@ export const OrderRepositoryLive = Layer.effect(
               type: "OrderCreated",
               streamId: `order:${order.id}`,
               payload: { orderId: order.id, customerId: order.customerId },
-              timestamp: new Date(),
             }
             await eventPublisher.writeInTransaction(tx, [event])
             persistedEvents.push(event)
