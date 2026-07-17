@@ -5,6 +5,7 @@
       "type": "remote",
       "url": "https://mcp.linear.app/mcp",
       "enabled": true,
+      "oauth": false,
       "headers": {
         "Authorization": "Bearer {env:LINEAR_API_KEY}"
       }
@@ -13,8 +14,18 @@
       "type": "remote",
       "url": "https://api.preston.bot/mcp",
       "enabled": true,
+      "oauth": false,
       "headers": {
         "Authorization": "Bearer {env:PRESTON_API_KEY}"
+      }
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "enabled": true,
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {env:GITHUB_ACCESS_TOKEN}"
       }
     }
   }

@@ -79,6 +79,20 @@ docker-compose down
 - `pnpm lint` - Run ESLint
 - `pnpm format` - Format code with Prettier
 
+### Using OpenCode (AI Assistant)
+
+This project includes MCP server integrations (Linear, Preston, GitHub) that require API keys from `.env`. Use the pnpm script to automatically load environment variables:
+
+```bash
+pnpm oc
+```
+
+Pass any opencode arguments:
+
+```bash
+pnpm oc run "explain the codebase"
+```
+
 ## Docker Configuration
 
 The Docker Compose setup includes:
