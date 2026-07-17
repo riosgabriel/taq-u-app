@@ -1,8 +1,8 @@
 import { PersistenceError } from "@/persistence-errors"
-import { PrismaService } from "prisma-service"
-import { DomainEvent } from "events/domain-event"
 import { Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
+import { DomainEvent } from "events/domain-event"
+import { mapPrismaError, PrismaService } from "prisma-service"
 
 export interface EventRow {
   readonly sequence: bigint
@@ -33,13 +33,17 @@ export const EventStoreLive = Layer.effect(
     return EventStore.of({
       write: async (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) => {
         if (events.length === 0) return
-        await tx.event.createMany({
-          data: events.map((e) => ({
-            type: e.type,
-            streamId: e.streamId,
-            payload: e.payload as Prisma.InputJsonValue,
-          })),
-        })
+        try {
+          await tx.event.createMany({
+            data: events.map((e) => ({
+              type: e.type,
+              streamId: e.streamId,
+              payload: e.payload
+            })),
+          })
+        } catch (error) {
+          throw mapPrismaError(error)
+        }
       },
 
       readSince: (sinceSequence: bigint, limit: number) =>
