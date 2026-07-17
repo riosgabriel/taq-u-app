@@ -41,6 +41,8 @@ jobs:
 
       - name: Validate schema syntax
         working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://prisma:prisma@localhost:5432/taq_u_shadow
         run: npx prisma validate
 
       - name: Check for unapplied schema changes
