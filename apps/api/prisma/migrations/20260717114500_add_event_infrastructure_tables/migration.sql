@@ -28,7 +28,4 @@ CREATE TABLE "Deduplication" (
 );
 
 -- CreateIndex
-CREATE INDEX "Event_sequence_idx" ON "Event"("sequence");
-
--- CreateIndex
 CREATE INDEX "Event_type_idx" ON "Event"("type");
