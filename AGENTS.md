@@ -58,7 +58,6 @@ When running a single package, always use `pnpm --filter @taq-u-app/<pkg> <scrip
 - **API testing**: Bruno collections at `apps/api/collections/` — use with Bruno desktop app
 - **pnpm-lock.yaml is tracked** — reproducible installs across all environments.
 - **OpenCode skills**: `effect-best-practices` and `linear-workflow` are loaded automatically when relevant
-- **OpenCode subagent**: `effect-implement` for Effect service layer code generation
 
 ## Gotchas
 
