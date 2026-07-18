@@ -11,4 +11,4 @@ const child = spawn("opencode", process.argv.slice(2), {
   env: { ...process.env },
 })
 
-child.on("exit", (code) => process.exit(code ?? 0))
+child.on("exit", (code) => process.exit(code ?? 1))

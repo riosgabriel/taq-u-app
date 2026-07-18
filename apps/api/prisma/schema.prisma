@@ -252,3 +252,14 @@ enum CarrierType {
   DRONE
   ROBOT
 }
+
+model Event {
+  sequence  BigInt    @id @default(autoincrement())
+  type      String
+  streamId  String
+  payload   Json
+  createdAt DateTime  @default(now())
+
+  @@index([type])
+  @@index([streamId])
+}

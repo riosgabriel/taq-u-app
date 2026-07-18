@@ -6,16 +6,22 @@ import { ConfigLive } from "config-service"
 import { DriverServiceLive } from "delivery/services/driver-service"
 import { OrderServiceLive } from "ordering/services/order-service"
 import { TrackingNumberServiceLive } from "ordering/services/tracking-number-service"
+import { EventBusLive } from "events/event-bus"
+import { EventPublisherLive } from "events/event-publisher"
+import { EventStoreLive } from "events/event-store"
 import { Layer, ManagedRuntime } from "effect"
 import { PrismaLive } from "prisma-service"
 import { AppLogger } from "./logger"
 
 const PrismaWithConfig = PrismaLive.pipe(Layer.provide(ConfigLive))
 
+const EventsLive = EventPublisherLive.pipe(Layer.provide(EventStoreLive), Layer.provide(EventBusLive))
+
 const OrderModuleLive = OrderServiceLive.pipe(
   Layer.provide(OrderRepositoryLive),
   Layer.provide(CustomerRepositoryLive),
   Layer.provide(TrackingNumberServiceLive),
+  Layer.provide(EventsLive),
   Layer.provide(PrismaWithConfig)
 )
 

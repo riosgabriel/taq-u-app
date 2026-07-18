@@ -33,7 +33,7 @@ const mapKnownPrismaError = (error: Prisma.PrismaClientKnownRequestError): Persi
   }
 }
 
-const mapPrismaError = (error: unknown): PersistenceError => {
+export const mapPrismaError = (error: unknown): PersistenceError => {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     return mapKnownPrismaError(error)
   }
@@ -54,6 +54,7 @@ export class PrismaService extends Context.Tag("PrismaService")<
   {
     readonly prisma: PrismaClient
     readonly execute: <A>(operation: () => Prisma.PrismaPromise<A>) => Effect.Effect<A, PersistenceError>
+    readonly $transaction: <A>(fn: (tx: Prisma.TransactionClient) => Promise<A>) => Effect.Effect<A, PersistenceError>
   }
 >() {}
 
@@ -69,6 +70,11 @@ export const PrismaLive = Layer.scoped(
       execute: (operation) =>
         Effect.tryPromise({
           try: operation,
+          catch: mapPrismaError,
+        }),
+      $transaction: (fn) =>
+        Effect.tryPromise({
+          try: () => client.$transaction(fn),
           catch: mapPrismaError,
         }),
     })

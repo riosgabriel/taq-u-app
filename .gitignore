@@ -14,7 +14,6 @@ docker-compose.local.yml
 .idea/
 
 # Build and package files
-pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
@@ -24,7 +23,6 @@ yarn.lock
 postgres_data/
 
 # GitHub files
-.github/
 dependabot.yml
 
 # Miscellaneous files
