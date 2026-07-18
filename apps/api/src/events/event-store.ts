@@ -4,6 +4,9 @@ import { Context, Effect, Layer } from "effect"
 import { DomainEvent } from "events/domain-event"
 import { mapPrismaError, PrismaService } from "prisma-service"
 
+// Read-side projection of an Event row. Note: `createdAt` is DB-managed and serves
+// as the temporal marker — `DomainEvent` deliberately omits it since it is set on
+// insert and not on the in-memory event construction.
 export interface EventRow {
   readonly sequence: bigint
   readonly type: string
@@ -15,6 +18,10 @@ export interface EventRow {
 export class EventStore extends Context.Tag("events/EventStore")<
   EventStore,
   {
+    // `write` is intentionally a Promise: it runs inside a caller's $transaction
+    // callback and must participate in the existing transaction. Read methods
+    // return Effect because they are called from Effect.gen and benefit from
+    // structured concurrency + error mapping via PrismaService.execute.
     readonly write: (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) => Promise<void>
     readonly readSince: (sinceSequence: bigint, limit: number) => Effect.Effect<EventRow[], PersistenceError>
     readonly readSinceWithType: (

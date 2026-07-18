@@ -69,6 +69,9 @@ export const OrderRepositoryLive = Layer.effect(
       createOrder: (orderInput: OrderCreateInput) => {
         return Effect.gen(function* () {
           const trackingNumbers = yield* generateTrackingNumbers(orderInput.packages.length)
+          // Single-event accumulator for the current create flow. If nested calls
+          // (e.g. addPackageToOrder) start emitting events, switch to a collector
+          // that can be safely mutated from within the transaction callback.
           const persistedEvents: DomainEvent[] = []
 
           const order = yield* prismaService.$transaction(async (tx) => {
