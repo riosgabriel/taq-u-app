@@ -56,25 +56,29 @@ export const OrderRepositoryLive = Layer.effect(
     const trackingNumberService = yield* TrackingNumberService
     const eventPublisher = yield* EventPublisher
 
-    const generateTrackingNumbers = (count: number): Effect.Effect<string[], PersistenceError> =>
-      Effect.gen(function* () {
-        const numbers: Array<string> = []
-        for (let i = 0; i < count; i++) {
-          numbers.push(yield* trackingNumberService.generate())
-        }
-        return numbers
-      })
+    const generateTrackingNumbersInTx = async (tx: Prisma.TransactionClient, count: number): Promise<string[]> => {
+      const numbers: string[] = []
+      for (let i = 0; i < count; i++) {
+        numbers.push(await trackingNumberService.generateInTx(tx))
+      }
+      return numbers
+    }
 
     return OrderRepository.of({
       createOrder: (orderInput: OrderCreateInput) => {
         return Effect.gen(function* () {
-          const trackingNumbers = yield* generateTrackingNumbers(orderInput.packages.length)
           // Single-event accumulator for the current create flow. If nested calls
           // (e.g. addPackageToOrder) start emitting events, switch to a collector
           // that can be safely mutated from within the transaction callback.
           const persistedEvents: DomainEvent[] = []
 
           const order = yield* prismaService.$transaction(async (tx) => {
+            // Tracking numbers are allocated inside the transaction so that a
+            // rollback discards them. The uniqueness check uses the same tx
+            // client, so concurrent allocations in the same transaction see
+            // each other's pending writes.
+            const trackingNumbers = await generateTrackingNumbersInTx(tx, orderInput.packages.length)
+
             const order = await tx.order.create({
               data: {
                 customer: {
@@ -180,11 +184,10 @@ export const OrderRepositoryLive = Layer.effect(
 
       addPackageToOrder: (orderId: string, packageInput: AddPackageInput) => {
         return Effect.gen(function* () {
-          const trackingNumbers = yield* generateTrackingNumbers(1)
-          const trackingNumber = trackingNumbers[0]
+          return yield* prismaService.$transaction(async (tx) => {
+            const trackingNumber = await trackingNumberService.generateInTx(tx)
 
-          yield* prismaService.execute(() =>
-            prismaService.prisma.package.create({
+            await tx.package.create({
               data: {
                 order: { connect: { id: orderId } },
                 weightKg: packageInput.weightKg,
@@ -197,14 +200,12 @@ export const OrderRepositoryLive = Layer.effect(
                 status: PackageStatus.AWAITING_PICKUP,
               },
             })
-          )
 
-          return yield* prismaService.execute(() =>
-            prismaService.prisma.order.findUniqueOrThrow({
+            return tx.order.findUniqueOrThrow({
               where: { id: orderId },
               include: { packages: true },
             })
-          )
+          })
         })
       },
 

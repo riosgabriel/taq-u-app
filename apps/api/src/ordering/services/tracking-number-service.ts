@@ -1,6 +1,7 @@
 import { PersistenceError } from "@/persistence-errors"
+import { Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
-import { PrismaService } from "prisma-service"
+import { mapPrismaError, PrismaService } from "prisma-service"
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const TRACKING_NUMBER_LENGTH = 12
@@ -17,6 +18,7 @@ export class TrackingNumberService extends Context.Tag("order/TrackingNumberServ
   TrackingNumberService,
   {
     readonly generate: () => Effect.Effect<string, PersistenceError>
+    readonly generateInTx: (tx: Prisma.TransactionClient) => Promise<string>
   }
 >() {}
 
@@ -37,7 +39,22 @@ export const TrackingNumberServiceLive = Layer.effect(
         return candidate
       })
 
-    return TrackingNumberService.of({ generate })
+    // Tx-aware variant: uniqueness check is performed on the same transaction
+    // client so that allocations see each other's uncommitted writes and a
+    // transaction rollback discards any numbers it produced. Returns a Promise
+    // so it can be awaited from inside a $transaction callback.
+    const generateInTx = async (tx: Prisma.TransactionClient): Promise<string> => {
+      const candidate = generateCandidate()
+      const existing = await tx.package.findUnique({ where: { trackingNumber: candidate } }).catch((e) => {
+        throw mapPrismaError(e)
+      })
+      if (existing) {
+        return generateInTx(tx)
+      }
+      return candidate
+    }
+
+    return TrackingNumberService.of({ generate, generateInTx })
   })
 )
 
