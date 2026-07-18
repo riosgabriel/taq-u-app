@@ -38,7 +38,7 @@ export const EventStoreLive = Layer.effect(
             data: events.map((e) => ({
               type: e.type,
               streamId: e.streamId,
-              payload: e.payload
+              payload: e.payload,
             })),
           })
         } catch (error) {
@@ -46,23 +46,28 @@ export const EventStoreLive = Layer.effect(
         }
       },
 
-      readSince: (sinceSequence: bigint, limit: number) =>
-        prismaService.execute(() =>
+      readSince: (sinceSequence: bigint, limit: number) => {
+        if (limit <= 0 || sinceSequence < 0n) return Effect.succeed([])
+        return prismaService.execute(() =>
           prismaService.prisma.event.findMany({
             where: { sequence: { gt: sinceSequence } },
             orderBy: { sequence: "asc" },
             take: limit,
           })
-        ),
+        )
+      },
 
-      readSinceWithType: (sinceSequence: bigint, types: ReadonlyArray<string>, limit: number) =>
-        prismaService.execute(() =>
+      readSinceWithType: (sinceSequence: bigint, types: ReadonlyArray<string>, limit: number) => {
+        if (limit <= 0 || sinceSequence < 0n) return Effect.succeed([])
+        if (types.length === 0) return Effect.succeed([])
+        return prismaService.execute(() =>
           prismaService.prisma.event.findMany({
             where: { sequence: { gt: sinceSequence }, type: { in: types as string[] } },
             orderBy: { sequence: "asc" },
             take: limit,
           })
-        ),
+        )
+      },
     })
   })
 )
