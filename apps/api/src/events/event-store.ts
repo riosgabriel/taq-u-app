@@ -15,7 +15,10 @@ export interface EventRow {
 export class EventStore extends Context.Tag("events/EventStore")<
   EventStore,
   {
-    readonly write: (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) => Promise<void>
+    readonly write: (
+      tx: Prisma.TransactionClient,
+      events: ReadonlyArray<DomainEvent>
+    ) => Effect.Effect<void, PersistenceError>
     readonly readSince: (sinceSequence: bigint, limit: number) => Effect.Effect<EventRow[], PersistenceError>
     readonly readSinceWithType: (
       sinceSequence: bigint,
@@ -31,20 +34,20 @@ export const EventStoreLive = Layer.effect(
     const prismaService = yield* PrismaService
 
     return EventStore.of({
-      write: async (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) => {
-        if (events.length === 0) return
-        try {
-          await tx.event.createMany({
-            data: events.map((e) => ({
-              type: e.type,
-              streamId: e.streamId,
-              payload: e.payload,
-            })),
-          })
-        } catch (error) {
-          throw mapPrismaError(error)
-        }
-      },
+      write: (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) =>
+        events.length === 0
+          ? Effect.void
+          : Effect.tryPromise({
+              try: () =>
+                tx.event.createMany({
+                  data: events.map((e) => ({
+                    type: e.type,
+                    streamId: e.streamId,
+                    payload: e.payload,
+                  })),
+                }),
+              catch: mapPrismaError,
+            }),
 
       readSince: (sinceSequence: bigint, limit: number) => {
         if (limit <= 0 || sinceSequence < 0n) return Effect.succeed([])

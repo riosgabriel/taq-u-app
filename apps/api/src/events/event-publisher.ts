@@ -24,7 +24,7 @@ export const EventPublisherLive = Layer.effect(
     return EventPublisher.of({
       writeInTransaction: async (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) => {
         if (events.length === 0) return events
-        await store.write(tx, events)
+        await Effect.runPromise(store.write(tx, events))
         return events
       },
 
