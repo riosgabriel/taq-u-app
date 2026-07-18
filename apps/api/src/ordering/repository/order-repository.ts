@@ -67,16 +67,7 @@ export const OrderRepositoryLive = Layer.effect(
     return OrderRepository.of({
       createOrder: (orderInput: OrderCreateInput) => {
         return Effect.gen(function* () {
-          // Single-event accumulator for the current create flow. If nested calls
-          // (e.g. addPackageToOrder) start emitting events, switch to a collector
-          // that can be safely mutated from within the transaction callback.
-          const persistedEvents: DomainEvent[] = []
-
-          const order = yield* prismaService.$transaction(async (tx) => {
-            // Tracking numbers are allocated inside the transaction so that a
-            // rollback discards them. The uniqueness check uses the same tx
-            // client, so concurrent allocations in the same transaction see
-            // each other's pending writes.
+          const { order, events } = yield* prismaService.$transaction(async (tx) => {
             const trackingNumbers = await generateTrackingNumbersInTx(tx, orderInput.packages.length)
 
             const order = await tx.order.create({
@@ -113,18 +104,17 @@ export const OrderRepositoryLive = Layer.effect(
               },
             })
 
-            const event: DomainEvent = {
+            const orderEvent: DomainEvent = {
               type: "OrderCreated",
               streamId: `order:${order.id}`,
               payload: { orderId: order.id, customerId: order.customerId },
             }
-            await eventPublisher.writeInTransaction(tx, [event])
-            persistedEvents.push(event)
+            const written = await eventPublisher.writeInTransaction(tx, [orderEvent])
 
-            return order
+            return { order, events: written }
           })
 
-          return { order, events: persistedEvents }
+          return { order, events }
         })
       },
 

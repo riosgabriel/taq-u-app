@@ -7,7 +7,10 @@ import { Prisma } from "@prisma/client"
 export class EventPublisher extends Context.Tag("events/EventPublisher")<
   EventPublisher,
   {
-    readonly writeInTransaction: (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) => Promise<void>
+    readonly writeInTransaction: (
+      tx: Prisma.TransactionClient,
+      events: ReadonlyArray<DomainEvent>
+    ) => Promise<ReadonlyArray<DomainEvent>>
     readonly notify: (events: ReadonlyArray<DomainEvent>) => Effect.Effect<void>
   }
 >() {}
@@ -20,8 +23,9 @@ export const EventPublisherLive = Layer.effect(
 
     return EventPublisher.of({
       writeInTransaction: async (tx: Prisma.TransactionClient, events: ReadonlyArray<DomainEvent>) => {
-        if (events.length === 0) return
+        if (events.length === 0) return events
         await store.write(tx, events)
+        return events
       },
 
       notify: (events: ReadonlyArray<DomainEvent>) => {
