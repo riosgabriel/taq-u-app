@@ -27,13 +27,11 @@ const OrderModuleLive = OrderServiceLive.pipe(
 
 const DriverModuleLive = DriverServiceLive.pipe(
   Layer.provide(DriverRepositoryLive),
-  Layer.provide(EventsLive),
   Layer.provide(PrismaWithConfig)
 )
 
 const CustomerModuleLive = CustomerServiceLive.pipe(
   Layer.provide(CustomerRepositoryLive),
-  Layer.provide(EventsLive),
   Layer.provide(PrismaWithConfig)
 )
 
