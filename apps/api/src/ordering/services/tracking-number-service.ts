@@ -1,10 +1,11 @@
-import { PersistenceError } from "@/persistence-errors"
+import { PersistenceError, UnexpectedPersistenceError } from "@/persistence-errors"
 import { Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { mapPrismaError, PrismaService } from "prisma-service"
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const TRACKING_NUMBER_LENGTH = 12
+const MAX_GENERATION_ATTEMPTS = 100
 
 const generateCandidate = (): string => {
   let suffix = ""
@@ -29,29 +30,31 @@ export const TrackingNumberServiceLive = Layer.effect(
 
     const generate = (): Effect.Effect<string, PersistenceError> =>
       Effect.gen(function* () {
-        const candidate = generateCandidate()
-        const existing = yield* prismaService.execute(() =>
-          prismaService.prisma.package.findUnique({ where: { trackingNumber: candidate } })
-        )
-        if (existing) {
-          return yield* generate()
+        for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
+          const candidate = generateCandidate()
+          const existing = yield* prismaService.execute(() =>
+            prismaService.prisma.package.findUnique({ where: { trackingNumber: candidate } })
+          )
+          if (!existing) return candidate
         }
-        return candidate
+        return yield* Effect.fail(
+          new UnexpectedPersistenceError({
+            cause: `Could not generate a unique tracking number after ${MAX_GENERATION_ATTEMPTS} attempts`,
+          })
+        )
       })
 
-    // Tx-aware variant: uniqueness check is performed on the same transaction
-    // client so that allocations see each other's uncommitted writes and a
-    // transaction rollback discards any numbers it produced. Returns a Promise
-    // so it can be awaited from inside a $transaction callback.
     const generateInTx = async (tx: Prisma.TransactionClient): Promise<string> => {
-      const candidate = generateCandidate()
-      const existing = await tx.package.findUnique({ where: { trackingNumber: candidate } }).catch((e) => {
-        throw mapPrismaError(e)
-      })
-      if (existing) {
-        return generateInTx(tx)
+      for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
+        const candidate = generateCandidate()
+        const existing = await tx.package.findUnique({ where: { trackingNumber: candidate } }).catch((e) => {
+          throw mapPrismaError(e)
+        })
+        if (!existing) return candidate
       }
-      return candidate
+      throw new UnexpectedPersistenceError({
+        cause: `Could not generate a unique tracking number after ${MAX_GENERATION_ATTEMPTS} attempts`,
+      })
     }
 
     return TrackingNumberService.of({ generate, generateInTx })
