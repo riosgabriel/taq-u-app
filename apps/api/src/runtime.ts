@@ -21,6 +21,8 @@ const OrderModuleLive = OrderServiceLive.pipe(
   Layer.provide(OrderRepositoryLive),
   Layer.provide(CustomerRepositoryLive),
   Layer.provide(TrackingNumberServiceLive),
+  Layer.provide(DriverServiceLive),
+  Layer.provide(DriverRepositoryLive),
   Layer.provide(EventsLive),
   Layer.provide(PrismaWithConfig)
 )

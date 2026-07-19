@@ -21,6 +21,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<CreateOrderResult, PersistenceError>
     readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
+    readonly findByDriverId: (driverId: string) => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
       orderId: string,
       updateInput: OrderUpdateInput
@@ -29,6 +30,11 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
       orderId: string,
       status: OrderStatus
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly assignDriver: (
+      orderId: string,
+      driverId: string,
+      assignedAt: Date
+    ) => Effect.Effect<CreateOrderResult, PersistenceError>
     readonly addPackageToOrder: (
       orderId: string,
       packageInput: AddPackageInput
@@ -44,7 +50,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
 export type OrderRepositoryShape = Context.Tag.Service<OrderRepository>
 
 const OrderWithPackages = Prisma.validator<Prisma.OrderDefaultArgs>()({
-  include: { packages: true },
+  include: { packages: true, driver: true },
 })
 
 export type OrderWithPackages = Prisma.OrderGetPayload<typeof OrderWithPackages>
@@ -101,6 +107,7 @@ export const OrderRepositoryLive = Layer.effect(
               },
               include: {
                 packages: true,
+                driver: true,
               },
             })
 
@@ -125,6 +132,7 @@ export const OrderRepositoryLive = Layer.effect(
               where: { id: orderId },
               include: {
                 packages: true,
+                driver: true,
               },
             })
           )
@@ -136,6 +144,19 @@ export const OrderRepositoryLive = Layer.effect(
           prismaService.prisma.order.findMany({
             include: {
               packages: true,
+              driver: true,
+            },
+          })
+        )
+      },
+
+      findByDriverId: (driverId: string) => {
+        return prismaService.execute(() =>
+          prismaService.prisma.order.findMany({
+            where: { driverId },
+            include: {
+              packages: true,
+              driver: true,
             },
           })
         )
@@ -155,6 +176,7 @@ export const OrderRepositoryLive = Layer.effect(
             },
             include: {
               packages: true,
+              driver: true,
             },
           })
         )
@@ -167,9 +189,40 @@ export const OrderRepositoryLive = Layer.effect(
             data: { status },
             include: {
               packages: true,
+              driver: true,
             },
           })
         )
+      },
+
+      assignDriver: (orderId: string, driverId: string, assignedAt: Date) => {
+        return Effect.gen(function* () {
+          const { order, events } = yield* prismaService.$transaction(async (tx) => {
+            const order = await tx.order.update({
+              where: { id: orderId },
+              data: {
+                driverId,
+                assignedAt,
+                status: OrderStatus.ASSIGNED,
+              },
+              include: {
+                packages: true,
+                driver: true,
+              },
+            })
+
+            const event: DomainEvent = {
+              type: "DriverAssigned",
+              streamId: `order:${order.id}`,
+              payload: { orderId: order.id, driverId, assignedAt: assignedAt.toISOString() },
+            }
+            const written = await eventPublisher.writeInTransaction(tx, [event])
+
+            return { order, events: written }
+          })
+
+          return { order, events }
+        })
       },
 
       addPackageToOrder: (orderId: string, packageInput: AddPackageInput) => {
@@ -193,7 +246,7 @@ export const OrderRepositoryLive = Layer.effect(
 
             return tx.order.findUniqueOrThrow({
               where: { id: orderId },
-              include: { packages: true },
+              include: { packages: true, driver: true },
             })
           })
         })
@@ -211,7 +264,7 @@ export const OrderRepositoryLive = Layer.effect(
           return yield* prismaService.execute(() =>
             prismaService.prisma.order.findUniqueOrThrow({
               where: { id: orderId },
-              include: { packages: true },
+              include: { packages: true, driver: true },
             })
           )
         })
