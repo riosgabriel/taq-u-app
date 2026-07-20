@@ -1,4 +1,4 @@
-import { OrderWithPackages } from "ordering/repository/order-repository"
+import { OrderWithRelations } from "ordering/repository/order-repository"
 import { Package as PrismaPackage } from "@prisma/client"
 import { Schema } from "effect"
 
@@ -151,7 +151,7 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
   assignedAt: Schema.optional(Schema.Date),
   packages: Schema.Array(PackageResponse),
 }) {
-  static fromOrderWithPackages(order: OrderWithPackages): OrderResponse {
+  static fromOrderWithPackages(order: OrderWithRelations): OrderResponse {
     return {
       id: order.id,
       pickupAddress: order.pickupAddress,

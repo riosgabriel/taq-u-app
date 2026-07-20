@@ -3,7 +3,7 @@ import Driver from "delivery/domain/driver"
 import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverEmailAlreadyExistsError, DriverRepository } from "delivery/repository/driver-repository"
 import { Context, Data, Effect, Layer } from "effect"
-import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
+import { OrderRepository, OrderWithRelations } from "ordering/repository/order-repository"
 
 export class DriverNotFoundError extends Data.TaggedError("delivery/DriverNotFoundError")<{
   readonly id: string
@@ -25,7 +25,7 @@ export class DriverService extends Context.Tag("delivery/DriverService")<
     readonly delete: (id: string) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
     readonly listOrders: (
       driverId: string
-    ) => Effect.Effect<OrderWithPackages[], DriverNotFoundError | PersistenceError>
+    ) => Effect.Effect<OrderWithRelations[], DriverNotFoundError | PersistenceError>
   }
 >() {}
 

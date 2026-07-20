@@ -11,7 +11,7 @@ const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
 
 export type CreateOrderResult = {
-  readonly order: OrderWithPackages
+  readonly order: OrderWithRelations
   readonly events: ReadonlyArray<DomainEvent>
 }
 
@@ -19,17 +19,17 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<CreateOrderResult, PersistenceError>
-    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, PersistenceError>
-    readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
-    readonly findByDriverId: (driverId: string) => Effect.Effect<OrderWithPackages[], PersistenceError>
+    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithRelations, PersistenceError>
+    readonly listOrders: () => Effect.Effect<OrderWithRelations[], PersistenceError>
+    readonly findByDriverId: (driverId: string) => Effect.Effect<OrderWithRelations[], PersistenceError>
     readonly updateOrder: (
       orderId: string,
       updateInput: OrderUpdateInput
-    ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    ) => Effect.Effect<OrderWithRelations, PersistenceError>
     readonly updateOrderStatus: (
       orderId: string,
       status: OrderStatus
-    ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    ) => Effect.Effect<OrderWithRelations, PersistenceError>
     readonly assignDriver: (
       orderId: string,
       driverId: string,
@@ -38,22 +38,22 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
     readonly addPackageToOrder: (
       orderId: string,
       packageInput: AddPackageInput
-    ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    ) => Effect.Effect<OrderWithRelations, PersistenceError>
     readonly updatePackageStatus: (
       orderId: string,
       packageId: string,
       status: PackageStatus
-    ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    ) => Effect.Effect<OrderWithRelations, PersistenceError>
   }
 >() {}
 
 export type OrderRepositoryShape = Context.Tag.Service<OrderRepository>
 
-const OrderWithPackages = Prisma.validator<Prisma.OrderDefaultArgs>()({
+const OrderWithRelations = Prisma.validator<Prisma.OrderDefaultArgs>()({
   include: { packages: true, driver: true },
 })
 
-export type OrderWithPackages = Prisma.OrderGetPayload<typeof OrderWithPackages>
+export type OrderWithRelations = Prisma.OrderGetPayload<typeof OrderWithRelations>
 
 export const OrderRepositoryLive = Layer.effect(
   OrderRepository,
