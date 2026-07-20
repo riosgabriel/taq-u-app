@@ -50,7 +50,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
 export type OrderRepositoryShape = Context.Tag.Service<OrderRepository>
 
 const OrderWithRelations = Prisma.validator<Prisma.OrderDefaultArgs>()({
-  include: { packages: true, driver: true },
+  include: { packages: true },
 })
 
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof OrderWithRelations>
@@ -107,7 +107,6 @@ export const OrderRepositoryLive = Layer.effect(
               },
               include: {
                 packages: true,
-                driver: true,
               },
             })
 
@@ -132,7 +131,6 @@ export const OrderRepositoryLive = Layer.effect(
               where: { id: orderId },
               include: {
                 packages: true,
-                driver: true,
               },
             })
           )
@@ -144,7 +142,6 @@ export const OrderRepositoryLive = Layer.effect(
           prismaService.prisma.order.findMany({
             include: {
               packages: true,
-              driver: true,
             },
           })
         )
@@ -156,7 +153,6 @@ export const OrderRepositoryLive = Layer.effect(
             where: { driverId },
             include: {
               packages: true,
-              driver: true,
             },
           })
         )
@@ -176,7 +172,6 @@ export const OrderRepositoryLive = Layer.effect(
             },
             include: {
               packages: true,
-              driver: true,
             },
           })
         )
@@ -189,7 +184,6 @@ export const OrderRepositoryLive = Layer.effect(
             data: { status },
             include: {
               packages: true,
-              driver: true,
             },
           })
         )
@@ -207,7 +201,6 @@ export const OrderRepositoryLive = Layer.effect(
               },
               include: {
                 packages: true,
-                driver: true,
               },
             })
 
@@ -246,7 +239,7 @@ export const OrderRepositoryLive = Layer.effect(
 
             return tx.order.findUniqueOrThrow({
               where: { id: orderId },
-              include: { packages: true, driver: true },
+              include: { packages: true },
             })
           })
         })
@@ -264,7 +257,7 @@ export const OrderRepositoryLive = Layer.effect(
           return yield* prismaService.execute(() =>
             prismaService.prisma.order.findUniqueOrThrow({
               where: { id: orderId },
-              include: { packages: true, driver: true },
+              include: { packages: true },
             })
           )
         })
