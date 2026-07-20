@@ -17,24 +17,17 @@ const PrismaWithConfig = PrismaLive.pipe(Layer.provide(ConfigLive))
 
 const EventsLive = EventPublisherLive.pipe(Layer.provide(EventStoreLive), Layer.provide(EventBusLive))
 
-const OrderModuleLive = OrderServiceLive.pipe(
-  Layer.provide(OrderRepositoryLive),
-  Layer.provide(CustomerRepositoryLive),
-  Layer.provide(TrackingNumberServiceLive),
-  Layer.provide(DriverServiceLive),
-  Layer.provide(DriverRepositoryLive),
-  Layer.provide(EventsLive),
-  Layer.provide(PrismaWithConfig)
-)
-
-const DriverModuleLive = DriverServiceLive.pipe(Layer.provide(DriverRepositoryLive), Layer.provide(PrismaWithConfig))
-
-const CustomerModuleLive = CustomerServiceLive.pipe(
-  Layer.provide(CustomerRepositoryLive),
-  Layer.provide(PrismaWithConfig)
-)
-
-const AppLive = Layer.mergeAll(OrderModuleLive, DriverModuleLive, CustomerModuleLive)
+const AppLive = Layer.mergeAll(
+  OrderServiceLive,
+  CustomerServiceLive,
+  DriverServiceLive,
+  OrderRepositoryLive,
+  CustomerRepositoryLive,
+  DriverRepositoryLive,
+  TrackingNumberServiceLive,
+  EventsLive,
+  PrismaWithConfig
+) as unknown as Layer.Layer<unknown, never, never>
 
 export const AppRuntime = ManagedRuntime.make(
   Layer.merge(Layer.provide(AppLive, ConfigLive), Layer.provide(AppLogger, ConfigLive))

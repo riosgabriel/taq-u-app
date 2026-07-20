@@ -1,6 +1,6 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
-import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { Driver, VehicleType } from "@prisma/client"
+import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { Context, Data, Effect, Layer } from "effect"
 import { PrismaService } from "prisma-service"
 

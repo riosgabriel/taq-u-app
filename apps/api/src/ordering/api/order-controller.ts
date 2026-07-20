@@ -1,6 +1,9 @@
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
 import { runEffect } from "@/middleware/effect-runner"
 import { badRequest, notFound, ok } from "@/middleware/http"
+import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { PackageStatus } from "@prisma/client"
+import { Effect, Schema } from "effect"
+import { NextFunction, Request, Response, Router } from "express"
 import {
   AddPackageInput,
   AssignDriverInput,
@@ -11,9 +14,6 @@ import {
   PackageStatusUpdateInput,
 } from "ordering/dto/order-dto"
 import { OrderService } from "ordering/services/order-service"
-import { PackageStatus } from "@prisma/client"
-import { Effect, Schema } from "effect"
-import { NextFunction, Request, Response, Router } from "express"
 
 export const OrderController = Router()
 
@@ -87,7 +87,7 @@ OrderController.post("/:orderId/assign", async (req: Request, res: Response, nex
     return ok(OrderResponse.fromOrderWithPackages(assigned))
   }).pipe(
     Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))),
-    Effect.catchTag("order/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))),
+    Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))),
     Effect.catchTag("order/OrderStatusError", (error) => Effect.succeed(badRequest(error.message)))
   )
 

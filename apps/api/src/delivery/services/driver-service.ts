@@ -3,13 +3,14 @@ import Driver from "delivery/domain/driver"
 import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverEmailAlreadyExistsError, DriverRepository } from "delivery/repository/driver-repository"
 import { Context, Data, Effect, Layer } from "effect"
+import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
 
-export class DriverNotFoundError extends Data.TaggedError("order/DriverNotFoundError")<{
+export class DriverNotFoundError extends Data.TaggedError("delivery/DriverNotFoundError")<{
   readonly id: string
   readonly message: string
 }> {}
 
-export class DriverService extends Context.Tag("order/DriverService")<
+export class DriverService extends Context.Tag("delivery/DriverService")<
   DriverService,
   {
     readonly create: (
@@ -22,6 +23,9 @@ export class DriverService extends Context.Tag("order/DriverService")<
       driverUpdateInput: DriverUpdateInput
     ) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
     readonly delete: (id: string) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
+    readonly listOrders: (
+      driverId: string
+    ) => Effect.Effect<OrderWithPackages[], DriverNotFoundError | PersistenceError>
   }
 >() {}
 
@@ -29,6 +33,7 @@ export const DriverServiceLive = Layer.effect(
   DriverService,
   Effect.gen(function* () {
     const repository = yield* DriverRepository
+    const orderRepository = yield* OrderRepository
 
     return DriverService.of({
       create: (driverInput: DriverCreateInput) => {
@@ -68,6 +73,17 @@ export const DriverServiceLive = Layer.effect(
           Effect.map((driver) => Driver.fromDriver(driver)),
           Effect.catchTag("order/RecordNotFoundError", (error) =>
             Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+          )
+        )
+      },
+
+      listOrders: (driverId: string) => {
+        return Effect.gen(function* () {
+          yield* repository.getById(driverId)
+          return yield* orderRepository.findByDriverId(driverId)
+        }).pipe(
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new DriverNotFoundError({ id: driverId, message: error.message }))
           )
         )
       },
