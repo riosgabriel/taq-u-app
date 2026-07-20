@@ -1,8 +1,8 @@
 import { RecordNotFoundError } from "@/persistence-errors"
 import { describe, expect, it } from "@effect/vitest"
 import { assertLeft } from "@effect/vitest/utils"
-import { CustomerEmailAlreadyExistsError, CustomerRepository } from "@order/repository/customer-repository"
-import { CustomerNotFoundError, CustomerService, CustomerServiceLive } from "@order/services/customer-service"
+import { CustomerEmailAlreadyExistsError, CustomerRepository } from "customer/repository/customer-repository"
+import { CustomerNotFoundError, CustomerService, CustomerServiceLive } from "customer/services/customer-service"
 import { Effect, Layer } from "effect"
 
 const customer = {

@@ -5,7 +5,9 @@
     "baseUrl": "../src",
     "paths": {
       "@/*": ["./*"],
-      "@order/*": ["./order/*"]
+      "@ordering/*": ["./ordering/*"],
+      "@customer/*": ["./customer/*"],
+      "@delivery/*": ["./delivery/*"]
     }
   },
   "include": ["./**/*"]
