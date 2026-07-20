@@ -1,11 +1,10 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { conflict, notFound, ok } from "@/middleware/http"
 import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
-import { DriverCreateInput, DriverResponse, DriverUpdateInput } from "delivery/dto/driver-dto"
+import { DriverCreateInput, DriverOrderResponse, DriverResponse, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverService } from "delivery/services/driver-service"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
-import { OrderResponse } from "ordering/dto/order-dto"
 
 export const DriverController = Router()
 
@@ -48,7 +47,7 @@ DriverController.get("/:driverId/orders", async (req: Request, res: Response, ne
     const { driverId } = yield* decodeParams(DriverIdParams, req)
     const driverService = yield* DriverService
     const orders = yield* driverService.listOrders(driverId)
-    return ok(orders.map(OrderResponse.fromOrderWithPackages)) // TODO: we should show a different version of order to driver, a different DTO
+    return ok(orders.map(DriverOrderResponse.fromOrderWithPackages))
   }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
 
   runEffect(req, res, next, program)

@@ -1,5 +1,6 @@
 import { Schema } from "effect"
 import Driver from "delivery/domain/driver"
+import type { OrderWithPackages } from "ordering/repository/order-repository"
 
 export class DriverCreateInput extends Schema.Class<DriverCreateInput>("order/DriverCreateInput")({
   name: Schema.String.annotations({
@@ -59,3 +60,53 @@ export class DriverUpdateInput extends Schema.Class<DriverUpdateInput>("order/Dr
   vehicleType: Schema.optional(Schema.String),
   isAvailable: Schema.optional(Schema.Boolean),
 }) {}
+
+class DriverPackageView extends Schema.Class<DriverPackageView>("delivery/DriverPackageView")({
+  id: Schema.NonEmptyString,
+  description: Schema.NonEmptyString,
+  weightKg: Schema.Number,
+  dimensions: Schema.String,
+  fragile: Schema.Boolean,
+  perishable: Schema.Boolean,
+  insured: Schema.Boolean,
+  trackingNumber: Schema.NonEmptyString,
+  status: Schema.String,
+}) {
+  static fromPackage(pkg: OrderWithPackages["packages"][number]): DriverPackageView {
+    return {
+      id: pkg.id,
+      description: pkg.description,
+      weightKg: pkg.weightKg,
+      dimensions: pkg.dimensions,
+      fragile: pkg.fragile,
+      perishable: pkg.perishable,
+      insured: pkg.insured,
+      trackingNumber: pkg.trackingNumber,
+      status: pkg.status,
+    }
+  }
+}
+
+export class DriverOrderResponse extends Schema.Class<DriverOrderResponse>("delivery/DriverOrderResponse")({
+  id: Schema.NonEmptyString,
+  pickupAddress: Schema.NonEmptyString,
+  deliveryAddress: Schema.NonEmptyString,
+  pickupDate: Schema.Date,
+  deliveryDate: Schema.optional(Schema.Date),
+  specialInstructions: Schema.optional(Schema.String),
+  status: Schema.String,
+  packages: Schema.Array(DriverPackageView),
+}) {
+  static fromOrderWithPackages(order: OrderWithPackages): DriverOrderResponse {
+    return {
+      id: order.id,
+      pickupAddress: order.pickupAddress,
+      deliveryAddress: order.deliveryAddress,
+      pickupDate: order.pickupDate,
+      deliveryDate: order.deliveryDate ?? undefined,
+      specialInstructions: order.specialInstructions ?? undefined,
+      status: order.status,
+      packages: order.packages.map(DriverPackageView.fromPackage),
+    }
+  }
+}
