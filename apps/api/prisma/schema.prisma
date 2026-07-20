@@ -13,7 +13,7 @@ model Order {
   customerId  String
 
   // Driver assignment
-  driver      Driver?       @relation(fields: [driverId], references: [id])
+  driver      Driver?       @relation(fields: [driverId], references: [id], onDelete: Restrict)
   driverId    String?
   assignedAt  DateTime?
 
