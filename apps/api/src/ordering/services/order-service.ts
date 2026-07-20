@@ -6,7 +6,7 @@ import { DriverNotFoundError, DriverService } from "delivery/services/driver-ser
 import { Context, Data, Effect, Layer } from "effect"
 import { EventPublisher } from "events/event-publisher"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
-import { OrderRepository, OrderWithRelations } from "ordering/repository/order-repository"
+import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
 
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
   readonly orderId: string
@@ -29,32 +29,32 @@ export class OrderService extends Context.Tag("order/OrderService")<
   {
     readonly createOrder: (
       orderInput: OrderCreateInput
-    ) => Effect.Effect<OrderWithRelations, CustomerNotFoundError | PersistenceError>
-    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithRelations, OrderNotFoundError | PersistenceError>
-    readonly listOrders: () => Effect.Effect<OrderWithRelations[], PersistenceError>
+    ) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | PersistenceError>
+    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
+    readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
       orderId: string,
       updateInput: OrderUpdateInput
-    ) => Effect.Effect<OrderWithRelations, OrderNotFoundError | PersistenceError>
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly cancelOrder: (
       orderId: string
-    ) => Effect.Effect<OrderWithRelations, OrderNotFoundError | OrderStatusError | PersistenceError>
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
     readonly assignDriver: (
       orderId: string,
       driverId: string
     ) => Effect.Effect<
-      OrderWithRelations,
+      OrderWithPackages,
       OrderNotFoundError | DriverNotFoundError | OrderStatusError | PersistenceError
     >
     readonly addPackageToOrder: (
       orderId: string,
       packageInput: AddPackageInput
-    ) => Effect.Effect<OrderWithRelations, OrderNotFoundError | PersistenceError>
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly updatePackageStatus: (
       orderId: string,
       packageId: string,
       status: PackageStatus
-    ) => Effect.Effect<OrderWithRelations, OrderNotFoundError | PackageNotFoundError | PersistenceError>
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PackageNotFoundError | PersistenceError>
   }
 >() {}
 
