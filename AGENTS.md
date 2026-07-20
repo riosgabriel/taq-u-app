@@ -94,7 +94,7 @@ Things an agent would confidently do wrong:
 - **OTel installed, DB not instrumented**: OpenTelemetry middleware is wired but database queries (`prismaService.execute`) aren't traced. Don't assume OTel is complete.
 - **Known correctness footguns in @repos/effect**: Serialization trap in RpcSerialization.ts (Map/Set -> `{}`), shared reference leaks in FiberMap/FiberSet iterators. If working with serialization or fiber management, inspect the vendored source for these patterns.
 - **No typecheck in validate**: `pnpm validate` is lint + format only. Web has typecheck (web `lint` runs `tsc --noEmit`), api does not.
-- **No test suite**: Application code has zero tests. Verification relies on `pnpm dev` and Bruno collections.
+- **Test suite**: API has 8 tests under `apps/api/test/order/services/` using `@effect/vitest`. Mock repository layer — no DB needed. Run with `pnpm test`. CI runs them in `.github/workflows/tests.yml`. Currently coverage is limited to customer & driver service tests.
 
 ## Boundaries
 
