@@ -9,12 +9,12 @@ describe("OrderStatus state machine", () => {
       expect(canTransition(OrderStatus.PENDING, OrderStatus.CONFIRMED)).toBe(true)
     })
 
-    it("PENDING → CANCELLED is valid", () => {
-      expect(canTransition(OrderStatus.PENDING, OrderStatus.CANCELLED)).toBe(true)
+    it("PENDING → ASSIGNED is valid (preserved from pre-state-machine behavior)", () => {
+      expect(canTransition(OrderStatus.PENDING, OrderStatus.ASSIGNED)).toBe(true)
     })
 
-    it("PENDING → ASSIGNED is invalid (needs CONFIRMED first)", () => {
-      expect(canTransition(OrderStatus.PENDING, OrderStatus.ASSIGNED)).toBe(false)
+    it("PENDING → CANCELLED is valid", () => {
+      expect(canTransition(OrderStatus.PENDING, OrderStatus.CANCELLED)).toBe(true)
     })
 
     it("PENDING → COMPLETED is invalid", () => {
@@ -100,11 +100,12 @@ describe("OrderStatus state machine", () => {
   })
 
   describe("validTargets", () => {
-    it("returns CONFIRMED and CANCELLED for PENDING", () => {
+    it("returns CONFIRMED, ASSIGNED, and CANCELLED for PENDING", () => {
       const targets = validTargets(OrderStatus.PENDING)
       expect(targets.has(OrderStatus.CONFIRMED)).toBe(true)
+      expect(targets.has(OrderStatus.ASSIGNED)).toBe(true)
       expect(targets.has(OrderStatus.CANCELLED)).toBe(true)
-      expect(targets.size).toBe(2)
+      expect(targets.size).toBe(3)
     })
 
     it("returns empty set for COMPLETED", () => {

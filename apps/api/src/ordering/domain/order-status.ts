@@ -5,7 +5,7 @@ export type ValidatedOrderStatus = OrderStatus & Brand.Brand<"ValidatedOrderStat
 export const ValidatedOrderStatus = Brand.nominal<ValidatedOrderStatus>()
 
 const allowedTransitions: Record<OrderStatus, ReadonlySet<OrderStatus>> = {
-  [OrderStatus.PENDING]: new Set([OrderStatus.CONFIRMED, OrderStatus.CANCELLED]),
+  [OrderStatus.PENDING]: new Set([OrderStatus.CONFIRMED, OrderStatus.ASSIGNED, OrderStatus.CANCELLED]),
   [OrderStatus.CONFIRMED]: new Set([OrderStatus.ASSIGNED, OrderStatus.CANCELLED]),
   [OrderStatus.ASSIGNED]: new Set([OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED]),
   [OrderStatus.IN_PROGRESS]: new Set([OrderStatus.COMPLETED, OrderStatus.CANCELLED]),
