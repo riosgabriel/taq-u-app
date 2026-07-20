@@ -5,8 +5,11 @@ on:
     paths:
       - "apps/api/src/**"
       - "apps/api/test/**"
-      - "apps/api/package.json"
+      - "apps/api/prisma/**"
+      - "apps/api/vitest.config.ts"
       - "apps/api/tsconfig.json"
+      - "apps/api/test/tsconfig.json"
+      - "apps/api/package.json"
       - "pnpm-lock.yaml"
 
 jobs:
