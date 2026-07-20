@@ -207,7 +207,7 @@ export const OrderRepositoryLive = Layer.effect(
             const event: DomainEvent = {
               type: "DriverAssigned",
               streamId: `order:${order.id}`,
-              payload: { orderId: order.id, driverId, assignedAt: assignedAt.toISOString() },
+              payload: { orderId: order.id, driverId, assignedAt },
             }
             const written = await eventPublisher.writeInTransaction(tx, [event])
 
