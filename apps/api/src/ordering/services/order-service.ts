@@ -1,12 +1,12 @@
 import { PersistenceError } from "@/persistence-errors"
-import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
-import { CustomerRepository } from "customer/repository/customer-repository"
-import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
 import { OrderStatus, PackageStatus } from "@prisma/client"
-import { Context, Data, Effect, Layer } from "effect"
+import { CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError } from "customer/services/customer-service"
-import { EventPublisher } from "events/event-publisher"
 import { DriverNotFoundError, DriverService } from "delivery/services/driver-service"
+import { Context, Data, Effect, Layer } from "effect"
+import { EventPublisher } from "events/event-publisher"
+import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
+import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
 
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
   readonly orderId: string
@@ -32,9 +32,6 @@ export class OrderService extends Context.Tag("order/OrderService")<
     ) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | PersistenceError>
     readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
-    readonly listOrdersForDriver: (
-      driverId: string
-    ) => Effect.Effect<OrderWithPackages[], DriverNotFoundError | PersistenceError>
     readonly updateOrder: (
       orderId: string,
       updateInput: OrderUpdateInput
@@ -105,13 +102,6 @@ export const OrderServiceLive = Layer.effect(
 
       listOrders: () => orderRepository.listOrders(),
 
-      listOrdersForDriver: (driverId: string) => {
-        return Effect.gen(function* () {
-          yield* driverService.getById(driverId)
-          return yield* orderRepository.findByDriverId(driverId)
-        })
-      },
-
       updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
         return orderRepository
           .updateOrder(orderId, updateInput)
@@ -149,13 +139,7 @@ export const OrderServiceLive = Layer.effect(
 
       assignDriver: (orderId: string, driverId: string) => {
         return Effect.gen(function* () {
-          yield* driverService
-            .getById(driverId)
-            .pipe(
-              Effect.catchTag("order/RecordNotFoundError", (error) =>
-                Effect.fail(new DriverNotFoundError({ id: driverId, message: error.message }))
-              )
-            )
+          yield* driverService.getById(driverId)
 
           const existingOrder = yield* orderRepository
             .getOrderById(orderId)
