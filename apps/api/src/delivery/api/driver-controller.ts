@@ -1,9 +1,9 @@
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
 import { runEffect } from "@/middleware/effect-runner"
 import { conflict, notFound, ok } from "@/middleware/http"
-import { DriverCreateInput, DriverResponse, DriverUpdateInput } from "delivery/dto/driver-dto"
+import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { DriverCreateInput, DriverOrderResponse, DriverResponse, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverService } from "delivery/services/driver-service"
-import { Effect } from "effect"
+import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 
 export const DriverController = Router()
@@ -33,7 +33,22 @@ DriverController.get("/:id", async (req: Request, res: Response, next: NextFunct
     const { id } = yield* decodeParams(IdParams, req)
     const driverService = yield* DriverService
     return ok(DriverResponse.fromDriver(yield* driverService.getById(id)))
-  }).pipe(Effect.catchTag("order/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
+  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
+
+  runEffect(req, res, next, program)
+})
+
+DriverController.get("/:driverId/orders", async (req: Request, res: Response, next: NextFunction) => {
+  class DriverIdParams extends Schema.Class<DriverIdParams>("DriverIdParams")({
+    driverId: Schema.String,
+  }) {}
+
+  const program = Effect.gen(function* (_) {
+    const { driverId } = yield* decodeParams(DriverIdParams, req)
+    const driverService = yield* DriverService
+    const orders = yield* driverService.listOrders(driverId)
+    return ok(orders.map(DriverOrderResponse.fromOrderWithPackages))
+  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
 
   runEffect(req, res, next, program)
 })
@@ -44,7 +59,7 @@ DriverController.patch("/:id", async (req: Request, res: Response, next: NextFun
     const driverInput = yield* decodeBody(DriverUpdateInput, req)
     const driverService = yield* DriverService
     return ok(DriverResponse.fromDriver(yield* driverService.update(id, driverInput)))
-  }).pipe(Effect.catchTag("order/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
+  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
 
   runEffect(req, res, next, program)
 })
@@ -55,7 +70,7 @@ DriverController.delete("/:id", async (req: Request, res: Response, next: NextFu
     const driverService = yield* DriverService
     yield* driverService.delete(id)
     return ok({ message: "Driver deleted successfully" })
-  }).pipe(Effect.catchTag("order/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
+  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
 
   runEffect(req, res, next, program)
 })

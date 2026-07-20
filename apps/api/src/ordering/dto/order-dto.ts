@@ -131,6 +131,13 @@ export class PackageResponse extends Schema.Class<PackageResponse>("order/Packag
   }
 }
 
+export class AssignDriverInput extends Schema.Class<AssignDriverInput>("order/AssignDriverInput")({
+  driverId: Schema.NonEmptyString.annotations({
+    required: true,
+    identifier: "driverId",
+  }),
+}) {}
+
 export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")({
   id: Schema.NonEmptyString,
   pickupAddress: Schema.NonEmptyString,
@@ -140,6 +147,8 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
   specialInstructions: Schema.optional(Schema.String),
   priority: Schema.String,
   status: Schema.String,
+  driverId: Schema.optional(Schema.String),
+  assignedAt: Schema.optional(Schema.Date),
   packages: Schema.Array(PackageResponse),
 }) {
   static fromOrderWithPackages(order: OrderWithPackages): OrderResponse {
@@ -152,6 +161,8 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
       specialInstructions: order.specialInstructions || undefined,
       priority: order.priority,
       status: order.status,
+      driverId: order.driverId ?? undefined,
+      assignedAt: order.assignedAt ?? undefined,
       packages: order.packages.map((pkg) => PackageResponse.fromPackage(pkg)),
     }
   }

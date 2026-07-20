@@ -11,31 +11,38 @@ model Order {
   id          String        @id @default(cuid())
   customer    Customer      @relation(fields: [customerId], references: [id])
   customerId  String
-  
+
+  // Driver assignment
+  driver      Driver?       @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  driverId    String?
+  assignedAt  DateTime?
+
   // Customer's delivery requirements
   pickupAddress    String
   deliveryAddress  String
   pickupDate       DateTime
   deliveryDate     DateTime?
-  
+
   // Package information
   packages         Package[]
-  
+
   // Customer preferences
   specialInstructions String?
   priority           OrderPriority @default(STANDARD)
-  
+
   // Status tracking
   status            OrderStatus    @default(PENDING)
-  
+
   // Timestamps
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
-  
+
   // Relations
   deliveries        Delivery[]     @relation("OrderDeliveries")
   payments          Payment[]
   estimates         Estimate[]
+
+  @@index([driverId])
 }
 
 enum OrderPriority {
@@ -48,6 +55,7 @@ enum OrderPriority {
 enum OrderStatus {
   PENDING
   CONFIRMED
+  ASSIGNED
   IN_PROGRESS
   COMPLETED
   CANCELLED
@@ -102,10 +110,11 @@ model Driver {
   licenseNumber String?
   vehicleType VehicleType
   isAvailable Boolean     @default(true)
-  
+
   // Relations
   deliveries  Delivery[]
-  
+  orders      Order[]
+
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
