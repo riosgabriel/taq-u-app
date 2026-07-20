@@ -73,7 +73,7 @@ class DriverPackageView extends Schema.Class<DriverPackageView>("delivery/Driver
   status: Schema.String,
 }) {
   static fromPackage(pkg: OrderWithPackages["packages"][number]): DriverPackageView {
-    return {
+    return new DriverPackageView({
       id: pkg.id,
       description: pkg.description,
       weightKg: pkg.weightKg,
@@ -83,7 +83,7 @@ class DriverPackageView extends Schema.Class<DriverPackageView>("delivery/Driver
       insured: pkg.insured,
       trackingNumber: pkg.trackingNumber,
       status: pkg.status,
-    }
+    })
   }
 }
 
@@ -98,7 +98,7 @@ export class DriverOrderResponse extends Schema.Class<DriverOrderResponse>("deli
   packages: Schema.Array(DriverPackageView),
 }) {
   static fromOrderWithPackages(order: OrderWithPackages): DriverOrderResponse {
-    return {
+    return new DriverOrderResponse({
       id: order.id,
       pickupAddress: order.pickupAddress,
       deliveryAddress: order.deliveryAddress,
@@ -107,6 +107,6 @@ export class DriverOrderResponse extends Schema.Class<DriverOrderResponse>("deli
       specialInstructions: order.specialInstructions ?? undefined,
       status: order.status,
       packages: order.packages.map(DriverPackageView.fromPackage),
-    }
+    })
   }
 }
