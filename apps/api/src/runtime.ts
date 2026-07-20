@@ -36,7 +36,6 @@ const DriverInfra = DriverServiceLive.pipe(
 const OrderModuleLive = OrderServiceLive.pipe(
   Layer.provide(OrderInfra),
   Layer.provide(CustomerInfra),
-  Layer.provide(DriverInfra),
   Layer.provide(EventsInfra)
 )
 

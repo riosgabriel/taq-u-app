@@ -2,7 +2,7 @@ import { PersistenceError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus } from "@prisma/client"
 import { CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError } from "customer/services/customer-service"
-import { DriverNotFoundError, DriverService } from "delivery/services/driver-service"
+import { DriverNotFoundError } from "delivery/services/driver-service"
 import { Context, Data, Effect, Layer } from "effect"
 import { EventPublisher } from "events/event-publisher"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
@@ -66,7 +66,6 @@ export const OrderServiceLive = Layer.effect(
     const orderRepository = yield* OrderRepository
     const customerRepository = yield* CustomerRepository
     const eventPublisher = yield* EventPublisher
-    const driverService = yield* DriverService
 
     return OrderService.of({
       createOrder: (orderInput: OrderCreateInput) => {
@@ -139,8 +138,6 @@ export const OrderServiceLive = Layer.effect(
 
       assignDriver: (orderId: string, driverId: string) => {
         return Effect.gen(function* () {
-          yield* driverService.getById(driverId)
-
           const existingOrder = yield* orderRepository
             .getOrderById(orderId)
             .pipe(
@@ -164,7 +161,11 @@ export const OrderServiceLive = Layer.effect(
           yield* eventPublisher.notify(result.events)
 
           return result.order
-        })
+        }).pipe(
+          Effect.catchTag("ForeignKeyViolation", () =>
+            Effect.fail(new DriverNotFoundError({ id: driverId, message: `Driver with id ${driverId} not found` }))
+          )
+        )
       },
 
       addPackageToOrder: (orderId: string, packageInput: AddPackageInput) => {
