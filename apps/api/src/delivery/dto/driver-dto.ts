@@ -1,6 +1,28 @@
 import { Schema } from "effect"
 import Driver from "delivery/domain/driver"
-import type { OrderWithPackages } from "ordering/repository/order-repository"
+
+interface DriverOrderPackage {
+  readonly id: string
+  readonly description: string
+  readonly weightKg: number
+  readonly dimensions: string
+  readonly fragile: boolean
+  readonly perishable: boolean
+  readonly insured: boolean
+  readonly trackingNumber: string
+  readonly status: string
+}
+
+interface DriverOrder {
+  readonly id: string
+  readonly pickupAddress: string
+  readonly deliveryAddress: string
+  readonly pickupDate: Date
+  readonly deliveryDate: Date | null
+  readonly specialInstructions: string | null
+  readonly status: string
+  readonly packages: ReadonlyArray<DriverOrderPackage>
+}
 
 export class DriverCreateInput extends Schema.Class<DriverCreateInput>("order/DriverCreateInput")({
   name: Schema.String.annotations({
@@ -72,7 +94,7 @@ class DriverPackageView extends Schema.Class<DriverPackageView>("delivery/Driver
   trackingNumber: Schema.NonEmptyString,
   status: Schema.String,
 }) {
-  static fromPackage(pkg: OrderWithPackages["packages"][number]): DriverPackageView {
+  static fromPackage(pkg: DriverOrderPackage): DriverPackageView {
     return new DriverPackageView({
       id: pkg.id,
       description: pkg.description,
@@ -97,7 +119,7 @@ export class DriverOrderResponse extends Schema.Class<DriverOrderResponse>("deli
   status: Schema.String,
   packages: Schema.Array(DriverPackageView),
 }) {
-  static fromOrderWithPackages(order: OrderWithPackages): DriverOrderResponse {
+  static fromOrderWithPackages(order: DriverOrder): DriverOrderResponse {
     return new DriverOrderResponse({
       id: order.id,
       pickupAddress: order.pickupAddress,
