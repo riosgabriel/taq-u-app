@@ -1,168 +1,103 @@
 # TAQ-U App
 
-A TypeScript application with Prisma ORM and PostgreSQL database, containerized with Docker.
+Logistics delivery management platform — Express 5 + Effect + Prisma (PostgreSQL) backend, React 19 + Vite + Tailwind CSS frontend.
 
-## Prerequisites
-
-- Docker and Docker Compose
-- Node.js 20+ (for local development)
-
-## Quick Start
-
-### 1. Environment Setup
-
-Create a `.env` file in the root directory with the following variables:
+## Quick start
 
 ```bash
-# Database Configuration
-DATABASE_URL="postgresql://postgres:postgres@db:5432/taq_u_app?schema=public"
-
-# PostgreSQL Environment Variables
-POSTGRES_DB=taq_u_app
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-
-# Application Configuration
-NODE_ENV=development
-PORT=3000
-
-# Prisma Configuration
-PRISMA_GENERATE_DATAPROXY=true
+pnpm install
+pnpm dev              # API (port 3000) + web (port 5173) concurrently
 ```
 
-### 2. Run with Docker Compose
+Requires a PostgreSQL instance. Use Docker for a one-shot DB or `pnpm docker:up` for the full stack.
 
 ```bash
-# Start all services
-docker-compose up --build
+# Start just the database
+docker compose up -d db
 
-# Or run in detached mode
-docker-compose up --build -d
+# Deploy migrations
+pnpm db:deploy
 
-# Stop services
-docker-compose down
+# Run dev servers
+pnpm dev
 ```
 
-### 3. Access the Application
+Copy `.env.example` to `.env` and fill in secrets (see **Environment** below).
 
-- **API**: http://localhost:3000/api
-- **Database**: localhost:5432 (postgres/taq_u_app)
+## Project structure
 
-## Development
+```
+apps/
+  api/                  — Express 5 + Effect + Prisma backend
+    src/
+      ordering/         — Order domain (controller, service, repository, DTO, entity)
+      customer/         — Customer domain
+      delivery/         — Driver/delivery domain
+      events/           — Event sourcing (event bus, publisher, store)
+      middleware/       — effect-runner, http helpers, validation, error handler
+      runtime.ts        — Centralized layer wiring (ManagedRuntime)
+    prisma/
+      schema.prisma     — 12 models (Order, Delivery, Driver, Customer, ...)
+    test/
+      order/services/   — Service-layer tests (mock repositories, no DB needed)
+    collections/        — Bruno API request files
+  web/                  — React 19 + Vite + Tailwind frontend
+```
 
-### Local Development (without Docker)
-
-1. Install dependencies:
-
-   ```bash
-   pnpm install
-   ```
-
-2. Set up the database:
-
-   ```bash
-   pnpm db:deploy
-   ```
-
-3. Start the development server:
-   ```bash
-   pnpm dev
-   ```
-
-### Available Scripts
-
-- `pnpm dev` - Start development server
-- `pnpm build` - Build the application
-- `pnpm db:deploy` - Deploy database migrations
-- `pnpm docker:up` - Start Docker services
-- `pnpm docker:down` - Stop Docker services
-- `pnpm lint` - Run ESLint
-- `pnpm format` - Format code with Prettier
-
-### Using OpenCode (AI Assistant)
-
-This project includes MCP server integrations (Linear, Preston, GitHub) that require API keys from `.env`. Use the pnpm script to automatically load environment variables:
+## Commands
 
 ```bash
-pnpm oc
+pnpm dev              # API + web concurrently
+pnpm dev:api          # API only
+pnpm dev:web          # Web only (Vite)
+pnpm build            # Build API then web
+pnpm lint             # ESLint across all packages
+pnpm format           # Prettier --write
+pnpm test             # Run API tests (apps/api)
+pnpm validate         # lint + format --check (no typecheck)
+pnpm oc               # OpenCode AI assistant (loads .env)
+pnpm db:migrate       # Create a new migration
+pnpm db:deploy        # Deploy pending migrations + generate client
+pnpm db:reset         # Reset database
+pnpm db:studio        # Prisma Studio
+pnpm docker:up        # docker compose up --build -d
+pnpm docker:down      # docker compose down
 ```
 
-Pass any opencode arguments:
+Use `pnpm --filter @taq-u-app/<pkg>` for package-specific commands.
+
+## Environment
+
+Create `.env` from `.env.example`:
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/taq-u` | Postgres connection |
+| `POSTGRES_DB` | `taq-u` | Docker DB name |
+| `LINEAR_API_KEY` | — | Linear API key (for OpenCode) |
+
+## Tests
 
 ```bash
-pnpm oc run "explain the codebase"
+pnpm test   # vitest run in apps/api
 ```
 
-## Docker Configuration
+Service-layer tests use mocked repositories — no database required. 8 tests cover customer and driver services. CI runs them on every relevant PR via `.github/workflows/tests.yml`.
 
-The Docker Compose setup includes:
+## API
 
-- **PostgreSQL 16.3**: Database with health checks
-- **Node.js 20**: Application container with hot reload
-- **Volume mounts**: For development with live code changes
-- **Environment variables**: Configurable via `.env` file
+Base path: `/api`
 
-### Environment Variables
+| Resource | Endpoints |
+|---|---|
+| **Orders** | `GET/POST /api/orders`, `GET/DELETE/PATCH /api/orders/:id`, `POST /api/orders/:id/assign`, `POST /api/orders/:id/packages`, `GET /api/orders/:id/status`, `GET .../packages/:packageId`, `PATCH .../packages/:packageId/status` |
+| **Customers** | `GET/POST /api/customers`, `GET /api/customers/:id` |
+| **Drivers** | `GET/POST/PATCH/DELETE /api/drivers`, `GET /api/drivers/:id`, `GET /api/drivers/:driverId/orders` |
 
-| Variable                    | Default                                                          | Description                |
-| --------------------------- | ---------------------------------------------------------------- | -------------------------- |
-| `DATABASE_URL`              | `postgresql://postgres:postgres@db:5432/taq_u_app?schema=public` | Database connection string |
-| `POSTGRES_DB`               | `taq_u_app`                                                      | Database name              |
-| `POSTGRES_USER`             | `postgres`                                                       | Database user              |
-| `POSTGRES_PASSWORD`         | `postgres`                                                       | Database password          |
-| `NODE_ENV`                  | `development`                                                    | Node.js environment        |
-| `PORT`                      | `3000`                                                           | Application port           |
-| `PRISMA_GENERATE_DATAPROXY` | `true`                                                           | Prisma configuration       |
+Bruno API collections are at `apps/api/collections/`. Open with the Bruno desktop app.
 
-## Database Schema
+## Tech stack
 
-The application uses Prisma ORM with the following main entities:
-
-- **Customer**: Customer information
-- **DeliveryOrder**: Delivery orders
-- **Route**: Delivery routes
-- **Package**: Package details
-- **Payment**: Payment information
-- **Location**: Geographic locations
-- **Carrier**: Delivery carriers
-
-## API Endpoints
-
-- `GET /api/customers` - Get all customers
-- `POST /api/customers` - Create a new customer
-- `GET /api/customers/:id` - Get customer by ID
-- `PUT /api/customers/:id` - Update customer
-- `DELETE /api/customers/:id` - Delete customer
-
-## Troubleshooting
-
-### Database Connection Issues
-
-1. Ensure the `.env` file exists and contains the correct `DATABASE_URL`
-2. Check that PostgreSQL container is running: `docker-compose ps`
-3. Verify database health: `docker-compose logs db`
-
-### Port Conflicts
-
-If port 3000 or 5432 are already in use, modify the `.env` file:
-
-```bash
-PORT=3001  # Change application port
-```
-
-### Prisma Issues
-
-1. Regenerate Prisma client:
-
-   ```bash
-   docker-compose exec app pnpm prisma generate
-   ```
-
-2. Reset database:
-   ```bash
-   docker-compose exec app pnpm prisma migrate reset
-   ```
-
-## License
-
-MIT
+- **API**: Express 5, Effect (TypeScript-native algebraic effects), Prisma 6, PostgreSQL 16
+- **Web**: React 19, Vite, Tailwind CSS
+- **Infra**: Docker Compose, pnpm workspaces
