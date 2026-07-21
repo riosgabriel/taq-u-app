@@ -5,6 +5,7 @@ import dotenv from "dotenv"
 import { Effect } from "effect"
 import express from "express"
 import { CustomerController } from "customer/api/customer-controller"
+import { HealthController } from "health/api/health-controller"
 import { effectErrorHandler } from "./middleware/error-handler"
 import { AppRuntime } from "./runtime"
 
@@ -26,6 +27,7 @@ const startServer = Effect.suspend(() => {
   apiRouter.use("/drivers", DriverController)
 
   app.use("/api", apiRouter)
+  app.use(HealthController)
   app.use(effectErrorHandler)
 
   return Effect.gen(function* () {
