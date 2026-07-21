@@ -34,7 +34,8 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
     readonly assignDriver: (
       orderId: string,
       driverId: string,
-      assignedAt: Date
+      assignedAt: Date,
+      status: ValidatedOrderStatus
     ) => Effect.Effect<CreateOrderResult, PersistenceError>
     readonly addPackageToOrder: (
       orderId: string,
@@ -190,7 +191,7 @@ export const OrderRepositoryLive = Layer.effect(
         )
       },
 
-      assignDriver: (orderId: string, driverId: string, assignedAt: Date) => {
+      assignDriver: (orderId: string, driverId: string, assignedAt: Date, status: ValidatedOrderStatus) => {
         return Effect.gen(function* () {
           const { order, events } = yield* prismaService.$transaction(async (tx) => {
             const order = await tx.order.update({
@@ -198,7 +199,7 @@ export const OrderRepositoryLive = Layer.effect(
               data: {
                 driverId,
                 assignedAt,
-                status: OrderStatus.ASSIGNED,
+                status,
               },
               include: {
                 packages: true,

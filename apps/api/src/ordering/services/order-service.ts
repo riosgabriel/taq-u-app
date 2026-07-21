@@ -182,7 +182,7 @@ export const OrderServiceLive = Layer.effect(
 
           const validated = yield* statusTransition(existingOrder.status, OrderStatus.ASSIGNED)
 
-          const result = yield* orderRepository.assignDriver(orderId, driverId, new Date())
+          const result = yield* orderRepository.assignDriver(orderId, driverId, new Date(), validated)
 
           yield* eventPublisher.notify(result.events)
 
