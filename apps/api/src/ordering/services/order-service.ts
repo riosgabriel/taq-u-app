@@ -126,7 +126,7 @@ export const OrderServiceLive = Layer.effect(
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
-          const validated = yield* statusTransition(existingOrder.status as OrderStatus, OrderStatus.CANCELLED)
+          const validated = yield* statusTransition(existingOrder.status, OrderStatus.CANCELLED)
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
@@ -149,7 +149,7 @@ export const OrderServiceLive = Layer.effect(
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
-          const validated = yield* statusTransition(existingOrder.status as OrderStatus, OrderStatus.CONFIRMED)
+          const validated = yield* statusTransition(existingOrder.status, OrderStatus.CONFIRMED)
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
@@ -180,7 +180,7 @@ export const OrderServiceLive = Layer.effect(
               )
             )
 
-          yield* statusTransition(existingOrder.status as OrderStatus, OrderStatus.ASSIGNED)
+          const validated = yield* statusTransition(existingOrder.status, OrderStatus.ASSIGNED)
 
           const result = yield* orderRepository.assignDriver(orderId, driverId, new Date())
 
@@ -204,7 +204,7 @@ export const OrderServiceLive = Layer.effect(
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
-          const validated = yield* statusTransition(existingOrder.status as OrderStatus, OrderStatus.IN_PROGRESS)
+          const validated = yield* statusTransition(existingOrder.status, OrderStatus.IN_PROGRESS)
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
@@ -227,7 +227,7 @@ export const OrderServiceLive = Layer.effect(
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
-          const validated = yield* statusTransition(existingOrder.status as OrderStatus, OrderStatus.COMPLETED)
+          const validated = yield* statusTransition(existingOrder.status, OrderStatus.COMPLETED)
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
