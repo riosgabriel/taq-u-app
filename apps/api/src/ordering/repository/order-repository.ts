@@ -2,7 +2,7 @@ import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
 import { ValidatedOrderStatus } from "ordering/domain/order-status"
-import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
+import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { PrismaService } from "prisma-service"
 import { EventPublisher } from "events/event-publisher"
@@ -104,7 +104,7 @@ export const OrderRepositoryLive = Layer.effect(
                 pickupDate: orderInput.pickupDate,
                 deliveryDate: orderInput.deliveryDate,
                 specialInstructions: orderInput.specialInstructions,
-                priority: orderInput.priority as OrderPriority,
+                priority: orderInput.priority,
                 status: OrderStatus.PENDING,
               },
               include: {
@@ -170,7 +170,7 @@ export const OrderRepositoryLive = Layer.effect(
               pickupDate: updateInput.pickupDate,
               deliveryDate: updateInput.deliveryDate,
               specialInstructions: updateInput.specialInstructions,
-              priority: updateInput.priority as OrderPriority,
+              priority: updateInput.priority,
             },
             include: {
               packages: true,

@@ -1,5 +1,5 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
-import { Driver, VehicleType } from "@prisma/client"
+import { Driver } from "@prisma/client"
 import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { Context, Data, Effect, Layer } from "effect"
 import { PrismaService } from "prisma-service"
@@ -40,7 +40,7 @@ export const DriverRepositoryLive = Layer.effect(
                 email: driverInput.email,
                 phone: driverInput.phone,
                 licenseNumber: driverInput.licenseNumber ?? "",
-                vehicleType: driverInput.vehicleType.toUpperCase() as VehicleType,
+                vehicleType: driverInput.vehicleType,
                 isAvailable: driverInput.isAvailable,
               },
             })
@@ -76,7 +76,7 @@ export const DriverRepositoryLive = Layer.effect(
               email: driverUpdateInput.email,
               phone: driverUpdateInput.phone,
               licenseNumber: driverUpdateInput.licenseNumber,
-              vehicleType: driverUpdateInput.vehicleType?.toUpperCase() as VehicleType,
+              vehicleType: driverUpdateInput.vehicleType,
               isAvailable: driverUpdateInput.isAvailable,
             },
           })

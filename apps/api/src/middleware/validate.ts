@@ -9,3 +9,9 @@ export const decodeParams = <A, I, R>(schema: Schema.Schema<A, I, R>, req: Reque
   Schema.decodeUnknown(schema)(req.params)
 
 export const IdParams = Schema.Struct({ id: Schema.String })
+
+export const Email = Schema.String.pipe(
+  Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
+    message: () => "must be a valid email address",
+  })
+)

@@ -1,4 +1,6 @@
 import { Schema } from "effect"
+import { VehicleType } from "@prisma/client"
+import { Email } from "@/middleware/validate"
 import Driver from "delivery/domain/driver"
 
 interface DriverOrderPackage {
@@ -29,7 +31,7 @@ export class DriverCreateInput extends Schema.Class<DriverCreateInput>("order/Dr
     required: true,
     identifier: "name",
   }),
-  email: Schema.String.annotations({
+  email: Email.annotations({
     required: true,
     identifier: "email",
   }),
@@ -41,7 +43,14 @@ export class DriverCreateInput extends Schema.Class<DriverCreateInput>("order/Dr
     required: true,
     identifier: "licenseNumber",
   }),
-  vehicleType: Schema.String.annotations({
+  vehicleType: Schema.Literal(
+    VehicleType.CAR,
+    VehicleType.VAN,
+    VehicleType.TRUCK,
+    VehicleType.MOTORCYCLE,
+    VehicleType.BICYCLE,
+    VehicleType.ON_FOOT
+  ).annotations({
     required: true,
     identifier: "vehicleType",
   }),
@@ -76,10 +85,19 @@ export class DriverResponse extends Schema.Class<DriverResponse>("DriverResponse
 
 export class DriverUpdateInput extends Schema.Class<DriverUpdateInput>("order/DriverUpdateInput")({
   name: Schema.optional(Schema.String),
-  email: Schema.optional(Schema.String),
+  email: Schema.optional(Email),
   phone: Schema.optional(Schema.String),
   licenseNumber: Schema.optional(Schema.String),
-  vehicleType: Schema.optional(Schema.String),
+  vehicleType: Schema.optional(
+    Schema.Literal(
+      VehicleType.CAR,
+      VehicleType.VAN,
+      VehicleType.TRUCK,
+      VehicleType.MOTORCYCLE,
+      VehicleType.BICYCLE,
+      VehicleType.ON_FOOT
+    )
+  ),
   isAvailable: Schema.optional(Schema.Boolean),
 }) {}
 

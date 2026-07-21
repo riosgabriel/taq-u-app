@@ -1,4 +1,5 @@
 import { Schema } from "effect"
+import { Email } from "@/middleware/validate"
 import Customer from "customer/domain/customer"
 
 export class CustomerCreateInput extends Schema.Class<CustomerCreateInput>("CustomerCreateInput")({
@@ -6,7 +7,7 @@ export class CustomerCreateInput extends Schema.Class<CustomerCreateInput>("Cust
     required: true,
     identifier: "name",
   }),
-  email: Schema.NonEmptyString.annotations({
+  email: Email.annotations({
     required: true,
     identifier: "email",
   }),

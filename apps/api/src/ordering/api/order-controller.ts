@@ -1,7 +1,6 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { badRequest, notFound, ok } from "@/middleware/http"
 import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
-import { PackageStatus } from "@prisma/client"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 import {
@@ -9,7 +8,7 @@ import {
   AssignDriverInput,
   OrderCreateInput,
   OrderResponse,
-  OrderUpdateInput,
+  OrderUpdateInputSchema,
   PackageResponse,
   PackageStatusUpdateInput,
 } from "ordering/dto/order-dto"
@@ -143,7 +142,7 @@ OrderController.post("/:orderId/assign", async (req: Request, res: Response, nex
 OrderController.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const { id: orderId } = yield* decodeParams(IdParams, req)
-    const updateInput = yield* decodeBody(OrderUpdateInput, req)
+    const updateInput = yield* decodeBody(OrderUpdateInputSchema, req)
     const orderService = yield* OrderService
     return ok(OrderResponse.fromOrderWithPackages(yield* orderService.updateOrder(orderId, updateInput)))
   }).pipe(Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))))
@@ -197,7 +196,7 @@ OrderController.patch(
       const orderService = yield* OrderService
       return ok(
         OrderResponse.fromOrderWithPackages(
-          yield* orderService.updatePackageStatus(orderId, packageId, statusInput.status as PackageStatus)
+          yield* orderService.updatePackageStatus(orderId, packageId, statusInput.status)
         )
       )
     }).pipe(

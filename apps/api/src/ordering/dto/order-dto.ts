@@ -1,5 +1,5 @@
 import { OrderWithPackages } from "ordering/repository/order-repository"
-import { Package as PrismaPackage } from "@prisma/client"
+import { OrderPriority, Package as PrismaPackage, PackageStatus } from "@prisma/client"
 import { Schema } from "effect"
 
 export class AddPackageInput extends Schema.Class<AddPackageInput>("order/AddPackageInput")({
@@ -33,7 +33,13 @@ export class AddPackageInput extends Schema.Class<AddPackageInput>("order/AddPac
 }) {}
 
 export class PackageStatusUpdateInput extends Schema.Class<PackageStatusUpdateInput>("order/PackageStatusUpdateInput")({
-  status: Schema.NonEmptyString.annotations({
+  status: Schema.Literal(
+    PackageStatus.AWAITING_PICKUP,
+    PackageStatus.IN_TRANSIT,
+    PackageStatus.OUT_FOR_DELIVERY,
+    PackageStatus.DELIVERED,
+    PackageStatus.LOST
+  ).annotations({
     required: true,
     identifier: "status",
   }),
@@ -98,10 +104,15 @@ export class OrderCreateInput extends Schema.Class<OrderCreateInput>("OrderCreat
     required: true,
     identifier: "packages",
   }),
-  priority: Schema.NonEmptyString.annotations({
+  priority: Schema.Literal(
+    OrderPriority.LOW,
+    OrderPriority.STANDARD,
+    OrderPriority.HIGH,
+    OrderPriority.URGENT
+  ).annotations({
     required: true,
     identifier: "priority",
-    default: "NORMAL",
+    default: "STANDARD",
   }),
 }) {}
 
@@ -189,8 +200,34 @@ export class OrderUpdateInput extends Schema.Class<OrderUpdateInput>("OrderUpdat
     required: false,
     identifier: "specialInstructions",
   }),
-  priority: Schema.NonEmptyString.annotations({
+  priority: Schema.Literal(
+    OrderPriority.LOW,
+    OrderPriority.STANDARD,
+    OrderPriority.HIGH,
+    OrderPriority.URGENT
+  ).annotations({
     required: false,
     identifier: "priority",
   }),
 }) {}
+
+const hasAtLeastOneField = (input: {
+  readonly pickupAddress?: string
+  readonly deliveryAddress?: string
+  readonly pickupDate?: string
+  readonly deliveryDate?: string
+  readonly specialInstructions?: string
+  readonly priority?: "LOW" | "STANDARD" | "HIGH" | "URGENT"
+}): boolean =>
+  input.pickupAddress !== undefined ||
+  input.deliveryAddress !== undefined ||
+  input.pickupDate !== undefined ||
+  input.deliveryDate !== undefined ||
+  input.specialInstructions !== undefined ||
+  input.priority !== undefined
+
+export const OrderUpdateInputSchema = OrderUpdateInput.pipe(
+  Schema.filter(hasAtLeastOneField, {
+    message: () => "at least one field must be provided",
+  })
+)
