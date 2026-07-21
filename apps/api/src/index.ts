@@ -28,11 +28,6 @@ const startServer = Effect.suspend(() => {
   app.use("/api", apiRouter)
   app.use(effectErrorHandler)
 
-  process.on("SIGTERM", () => {
-    Effect.runPromise(AppRuntime.disposeEffect)
-    process.exit(0)
-  })
-
   return Effect.gen(function* () {
     const server = yield* Effect.try(() => {
       const s = app.listen(PORT)
@@ -41,6 +36,18 @@ const startServer = Effect.suspend(() => {
       s.headersTimeout = 31_000
       return s
     })
+
+    process.on("SIGTERM", async () => {
+      const forceExit = setTimeout(() => process.exit(1), 10_000)
+      server.closeIdleConnections?.()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+      await Effect.runPromise(AppRuntime.disposeEffect).catch((err) =>
+        console.error("Effect runtime dispose failed:", err)
+      )
+      clearTimeout(forceExit)
+      process.exit(0)
+    })
+
     yield* Effect.logInfo(`Server is running on http://localhost:${PORT}`)
     return server
   })
