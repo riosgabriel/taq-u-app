@@ -1,0 +1,11 @@
+meta {
+  name: Confirm Order
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{host}}/api/orders/order-uuid-here/confirm
+  body: none
+  auth: inherit
+}

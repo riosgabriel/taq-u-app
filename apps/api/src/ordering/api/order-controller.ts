@@ -74,6 +74,52 @@ OrderController.delete("/:id", async (req: Request, res: Response, next: NextFun
   runEffect(req, res, next, program)
 })
 
+class TransitionOrderParams extends Schema.Class<TransitionOrderParams>("TransitionOrderParams")({
+  id: Schema.String,
+}) {}
+
+OrderController.post("/:id/confirm", async (req: Request, res: Response, next: NextFunction) => {
+  const program = Effect.gen(function* (_) {
+    const { id: orderId } = yield* decodeParams(TransitionOrderParams, req)
+    const orderService = yield* OrderService
+    const confirmed = yield* orderService.confirmOrder(orderId)
+    return ok(OrderResponse.fromOrderWithPackages(confirmed))
+  }).pipe(
+    Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))),
+    Effect.catchTag("order/OrderStatusError", (error) => Effect.succeed(badRequest(error.message)))
+  )
+
+  runEffect(req, res, next, program)
+})
+
+OrderController.post("/:id/pickup", async (req: Request, res: Response, next: NextFunction) => {
+  const program = Effect.gen(function* (_) {
+    const { id: orderId } = yield* decodeParams(TransitionOrderParams, req)
+    const orderService = yield* OrderService
+    const pickedUp = yield* orderService.pickupOrder(orderId)
+    return ok(OrderResponse.fromOrderWithPackages(pickedUp))
+  }).pipe(
+    Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))),
+    Effect.catchTag("order/OrderStatusError", (error) => Effect.succeed(badRequest(error.message)))
+  )
+
+  runEffect(req, res, next, program)
+})
+
+OrderController.post("/:id/deliver", async (req: Request, res: Response, next: NextFunction) => {
+  const program = Effect.gen(function* (_) {
+    const { id: orderId } = yield* decodeParams(TransitionOrderParams, req)
+    const orderService = yield* OrderService
+    const delivered = yield* orderService.deliverOrder(orderId)
+    return ok(OrderResponse.fromOrderWithPackages(delivered))
+  }).pipe(
+    Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))),
+    Effect.catchTag("order/OrderStatusError", (error) => Effect.succeed(badRequest(error.message)))
+  )
+
+  runEffect(req, res, next, program)
+})
+
 OrderController.post("/:orderId/assign", async (req: Request, res: Response, next: NextFunction) => {
   class AssignOrderParams extends Schema.Class<AssignOrderParams>("AssignOrderParams")({
     orderId: Schema.String,

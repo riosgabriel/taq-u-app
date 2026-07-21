@@ -1,6 +1,7 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
+import { ValidatedOrderStatus } from "ordering/domain/order-status"
 import { OrderPriority, OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { PrismaService } from "prisma-service"
@@ -28,7 +29,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly updateOrderStatus: (
       orderId: string,
-      status: OrderStatus
+      status: ValidatedOrderStatus
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly assignDriver: (
       orderId: string,
@@ -177,7 +178,7 @@ export const OrderRepositoryLive = Layer.effect(
         )
       },
 
-      updateOrderStatus: (orderId: string, status: OrderStatus) => {
+      updateOrderStatus: (orderId: string, status: ValidatedOrderStatus) => {
         return prismaService.execute(() =>
           prismaService.prisma.order.update({
             where: { id: orderId },
