@@ -33,9 +33,17 @@ const startServer = Effect.suspend(() => {
     process.exit(0)
   })
 
-  return Effect.try(() => app.listen(PORT)).pipe(
-    Effect.tap((_) => Effect.logInfo(`Server is running on http://localhost:${PORT}`))
-  )
+  return Effect.gen(function* () {
+    const server = yield* Effect.try(() => {
+      const s = app.listen(PORT)
+      s.timeout = 30_000
+      s.keepAliveTimeout = 5_000
+      s.headersTimeout = 31_000
+      return s
+    })
+    yield* Effect.logInfo(`Server is running on http://localhost:${PORT}`)
+    return server
+  })
 })
 
 Effect.runPromise(startServer)
