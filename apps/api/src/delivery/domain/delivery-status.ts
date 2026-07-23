@@ -42,3 +42,10 @@ export const transitionDelivery = (
 
 export const validDeliveryTargets = (status: DeliveryStatus): ReadonlySet<DeliveryStatus> =>
   allowedTransitions[status] ?? new Set()
+
+const reassignableDeliveryStatuses: ReadonlySet<DeliveryStatus> = new Set([
+  DeliveryStatus.ASSIGNED,
+  DeliveryStatus.PICKUP_IN_PROGRESS,
+])
+
+export const isDeliveryReassignable = (status: DeliveryStatus): boolean => reassignableDeliveryStatuses.has(status)

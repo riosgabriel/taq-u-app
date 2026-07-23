@@ -1,7 +1,7 @@
 import { PersistenceError } from "@/persistence-errors"
 import { Context, Data, Effect, Layer } from "effect"
 import Delivery from "delivery/domain/delivery"
-import { transitionDelivery } from "delivery/domain/delivery-status"
+import { isDeliveryReassignable, transitionDelivery } from "delivery/domain/delivery-status"
 import { AssignDeliveryDriverInput, CreateDeliveryInput, UpdateDeliveryStatusInput } from "delivery/dto/delivery-dto"
 import { DeliveryRepository } from "delivery/repository/delivery-repository"
 import { DriverNotFoundError, DriverService } from "delivery/services/driver-service"
@@ -39,7 +39,7 @@ export class DeliveryService extends Context.Tag("delivery/DeliveryService")<
     readonly assignDriver: (
       id: string,
       input: AssignDeliveryDriverInput
-    ) => Effect.Effect<Delivery, DeliveryNotFoundError | DriverNotFoundError | PersistenceError>
+    ) => Effect.Effect<Delivery, DeliveryNotFoundError | DeliveryStatusError | DriverNotFoundError | PersistenceError>
   }
 >() {}
 
@@ -116,15 +116,27 @@ export const DeliveryServiceLive = Layer.effect(
 
       assignDriver: (id, input) => {
         return Effect.gen(function* () {
-          yield* deliveryRepository
+          const existing = yield* deliveryRepository
             .getById(id)
             .pipe(
               Effect.catchTag("order/RecordNotFoundError", (error) =>
                 Effect.fail(new DeliveryNotFoundError({ deliveryId: id, message: error.message }))
               )
             )
+
+          if (!isDeliveryReassignable(existing.status)) {
+            return yield* Effect.fail(
+              new DeliveryStatusError({
+                deliveryId: id,
+                currentStatus: existing.status,
+                message: `Cannot reassign driver on a ${existing.status} delivery; reassignment is only allowed while ASSIGNED or PICKUP_IN_PROGRESS`,
+              })
+            )
+          }
+
+          const previousDriverId = existing.driverId
           yield* driverService.getById(input.driverId)
-          const result = yield* deliveryRepository.assignDriver(id, input.driverId)
+          const result = yield* deliveryRepository.assignDriver(id, input.driverId, previousDriverId)
           yield* eventPublisher.notify(result.events)
           return Delivery.fromDelivery(result.delivery)
         })

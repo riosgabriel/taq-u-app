@@ -30,12 +30,7 @@ const buildTestLayer = (mockRepo: typeof DriverRepository.Service) => {
   })
 
   return DriverServiceLive.pipe(
-    Layer.provide(
-      Layer.merge(
-        Layer.succeed(DriverRepository, mockRepo),
-        Layer.succeed(OrderRepository, mockOrderRepo)
-      )
-    )
+    Layer.provide(Layer.merge(Layer.succeed(DriverRepository, mockRepo), Layer.succeed(OrderRepository, mockOrderRepo)))
   )
 }
 

@@ -19,8 +19,7 @@ export class InvalidTransitionError extends Data.TaggedError("order/InvalidTrans
   readonly message: string
 }> {}
 
-export const canTransition = (from: OrderStatus, to: OrderStatus): boolean =>
-  allowedTransitions[from]?.has(to) ?? false
+export const canTransition = (from: OrderStatus, to: OrderStatus): boolean => allowedTransitions[from]?.has(to) ?? false
 
 export const transition = (
   from: OrderStatus,

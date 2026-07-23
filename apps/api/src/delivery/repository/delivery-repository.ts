@@ -27,7 +27,8 @@ export class DeliveryRepository extends Context.Tag("delivery/DeliveryRepository
     ) => Effect.Effect<{ delivery: Delivery; events: ReadonlyArray<DomainEvent> }, PersistenceError>
     readonly assignDriver: (
       id: string,
-      driverId: string
+      newDriverId: string,
+      previousDriverId: string
     ) => Effect.Effect<{ delivery: Delivery; events: ReadonlyArray<DomainEvent> }, PersistenceError>
   }
 >() {}
@@ -106,18 +107,18 @@ export const DeliveryRepositoryLive = Layer.effect(
         })
       },
 
-      assignDriver: (id: string, driverId: string) => {
+      assignDriver: (id: string, newDriverId: string, previousDriverId: string) => {
         return Effect.gen(function* () {
           const result = yield* prismaService.$transaction(async (tx) => {
             const updated = await tx.delivery.update({
               where: { id },
-              data: { driverId },
+              data: { driverId: newDriverId },
             })
 
             const event: DomainEvent = {
-              type: "DeliveryDriverAssigned",
+              type: "DeliveryDriverReassigned",
               streamId: `delivery:${updated.id}`,
-              payload: { deliveryId: updated.id, driverId: updated.driverId },
+              payload: { deliveryId: updated.id, previousDriverId, newDriverId: updated.driverId },
             }
             const written = await eventPublisher.writeInTransaction(tx, [event])
 

@@ -68,6 +68,7 @@ DeliveryController.patch("/:id/assign", async (req: Request, res: Response, next
     return ok(DeliveryResponse.fromDelivery(yield* service.assignDriver(id, input)))
   }).pipe(
     Effect.catchTag("delivery/DeliveryNotFoundError", (error) => Effect.succeed(notFound(error.message))),
+    Effect.catchTag("delivery/DeliveryStatusError", (error) => Effect.succeed(badRequest(error.message))),
     Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(badRequest(error.message)))
   )
 
