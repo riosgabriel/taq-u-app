@@ -1,3 +1,4 @@
+import { DeliveryController } from "delivery/api/delivery-controller"
 import { DriverController } from "delivery/api/driver-controller"
 import { OrderController } from "ordering/api/order-controller"
 import cors from "cors"
@@ -25,6 +26,7 @@ const startServer = Effect.suspend(() => {
   apiRouter.use("/customers", CustomerController)
   apiRouter.use("/orders", OrderController)
   apiRouter.use("/drivers", DriverController)
+  apiRouter.use("/deliveries", DeliveryController)
 
   app.use("/api", apiRouter)
   app.use(HealthController)

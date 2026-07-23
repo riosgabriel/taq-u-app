@@ -1,0 +1,11 @@
+meta {
+  name: List Deliveries
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{host}}/api/deliveries
+  body: json
+  auth: inherit
+}

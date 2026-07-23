@@ -1,0 +1,21 @@
+meta {
+  name: Create Delivery
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{host}}/api/deliveries
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "driverId": "driver-uuid-here",
+    "routeId": "route-uuid-here",
+    "orderIds": ["order-uuid-here"],
+    "estimatedPickupTime": "2026-07-22T10:00:00Z",
+    "estimatedDeliveryTime": "2026-07-22T14:00:00Z"
+  }
+}

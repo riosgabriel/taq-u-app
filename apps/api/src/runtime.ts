@@ -1,6 +1,8 @@
 import { ConfigLive } from "config-service"
 import { CustomerRepositoryLive } from "customer/repository/customer-repository"
 import { CustomerServiceLive } from "customer/services/customer-service"
+import { DeliveryRepositoryLive } from "delivery/repository/delivery-repository"
+import { DeliveryServiceLive } from "delivery/services/delivery-service"
 import { DriverRepositoryLive } from "delivery/repository/driver-repository"
 import { DriverServiceLive } from "delivery/services/driver-service"
 import { Layer, ManagedRuntime } from "effect"
@@ -40,9 +42,7 @@ const OrderModuleLive = OrderServiceLive.pipe(
   Layer.provide(EventsInfra)
 )
 
-const CustomerModuleLive = CustomerServiceLive.pipe(
-  Layer.provide(CustomerInfra)
-)
+const CustomerModuleLive = CustomerServiceLive.pipe(Layer.provide(CustomerInfra))
 
 const DriverModuleLive = DriverServiceLive.pipe(
   Layer.provide(DriverRepositoryLive),
@@ -50,7 +50,14 @@ const DriverModuleLive = DriverServiceLive.pipe(
   Layer.provide(PrismaWithConfig)
 )
 
-const AppLive = Layer.mergeAll(OrderModuleLive, DriverModuleLive, CustomerModuleLive)
+const DeliveryModuleLive = DeliveryServiceLive.pipe(
+  Layer.provide(DeliveryRepositoryLive),
+  Layer.provide(EventsInfra),
+  Layer.provide(DriverModuleLive),
+  Layer.provide(PrismaWithConfig)
+)
+
+const AppLive = Layer.mergeAll(OrderModuleLive, DriverModuleLive, CustomerModuleLive, DeliveryModuleLive)
 
 export const AppRuntime = ManagedRuntime.make(
   Layer.merge(Layer.provide(AppLive, ConfigLive), Layer.provide(AppLogger, ConfigLive))

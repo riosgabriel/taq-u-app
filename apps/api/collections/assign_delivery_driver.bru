@@ -1,0 +1,17 @@
+meta {
+  name: Assign Delivery Driver
+  type: http
+  seq: 18
+}
+
+patch {
+  url: {{host}}/api/deliveries/:id/assign
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "driverId": "driver-uuid-here"
+  }
+}
