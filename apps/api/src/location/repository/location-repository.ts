@@ -14,7 +14,7 @@ export class LocationRepository extends Context.Tag("location/LocationRepository
     readonly listAll: () => Effect.Effect<Array<Location>, PersistenceError>
     readonly getById: (id: string) => Effect.Effect<Location, PersistenceError>
     readonly update: (id: string, locationUpdateInput: LocationUpdateInput) => Effect.Effect<Location, PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<Location, PersistenceError>
+    readonly delete: (id: string) => Effect.Effect<void, PersistenceError>
   }
 >() {}
 
@@ -62,7 +62,9 @@ export const LocationRepositoryLive = Layer.effect(
       },
 
       delete: (id: string) => {
-        return prismaService.execute(() => prismaService.prisma.location.delete({ where: { id } }))
+        return prismaService
+          .execute(() => prismaService.prisma.location.delete({ where: { id } }))
+          .pipe(Effect.asVoid)
       },
     })
   })
