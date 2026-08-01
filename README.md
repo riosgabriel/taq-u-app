@@ -70,11 +70,11 @@ Use `pnpm --filter @taq-u-app/<pkg>` for package-specific commands.
 
 Create `.env` from `.env.example`:
 
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/taq-u` | Postgres connection |
-| `POSTGRES_DB` | `taq-u` | Docker DB name |
-| `LINEAR_API_KEY` | — | Linear API key (for OpenCode) |
+| Variable         | Default                                               | Description                   |
+| ---------------- | ----------------------------------------------------- | ----------------------------- |
+| `DATABASE_URL`   | `postgresql://postgres:postgres@localhost:5432/taq-u` | Postgres connection           |
+| `POSTGRES_DB`    | `taq-u`                                               | Docker DB name                |
+| `LINEAR_API_KEY` | —                                                     | Linear API key (for OpenCode) |
 
 ## Tests
 
@@ -88,11 +88,11 @@ Service-layer tests use mocked repositories — no database required. 8 tests co
 
 Base path: `/api`
 
-| Resource | Endpoints |
-|---|---|
-| **Orders** | `GET/POST /api/orders`, `GET/DELETE/PATCH /api/orders/:id`, `POST /api/orders/:id/assign`, `POST /api/orders/:id/packages`, `GET /api/orders/:id/status`, `GET .../packages/:packageId`, `PATCH .../packages/:packageId/status` |
-| **Customers** | `GET/POST /api/customers`, `GET /api/customers/:id` |
-| **Drivers** | `GET/POST/PATCH/DELETE /api/drivers`, `GET /api/drivers/:id`, `GET /api/drivers/:driverId/orders` |
+| Resource      | Endpoints                                                                                                                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Orders**    | `GET/POST /api/orders`, `GET/DELETE/PATCH /api/orders/:id`, `POST /api/orders/:id/assign`, `POST /api/orders/:id/packages`, `GET /api/orders/:id/status`, `GET .../packages/:packageId`, `PATCH .../packages/:packageId/status` |
+| **Customers** | `GET/POST /api/customers`, `GET /api/customers/:id`                                                                                                                                                                             |
+| **Drivers**   | `GET/POST/PATCH/DELETE /api/drivers`, `GET /api/drivers/:id`, `GET /api/drivers/:driverId/orders`                                                                                                                               |
 
 Bruno API collections are at `apps/api/collections/`. Open with the Bruno desktop app.
 
