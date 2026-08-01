@@ -2,9 +2,22 @@ import { Latitude, Location, Longitude } from "location/domain/location"
 import { Schema } from "effect"
 
 // The latitude / longitude fields import the same schemas the domain
-// model uses. If a future change widens or narrows the valid range,
-// both layers move together — there is no DTO that silently accepts
-// a value the domain would reject.
+// model uses, so a future change to the valid range moves both layers
+// together — the DTOs cannot drift to a wider or narrower range than
+// the domain.
+//
+// CAVEAT: the domain's static factory Location.fromLocation does NOT
+// run Schema.decode on its Prisma row — it trusts the DB. The bounds
+// are therefore enforced on every write path (HTTP body, DTO decode)
+// but not on every read path. A row with latitude=200 in the DB would
+// round-trip through fromLocation as an invalid Location and the
+// service layer would happily surface it. This matches the
+// Driver.fromDriver / Delivery.fromDelivery pattern in this codebase:
+// the DB is treated as the source of truth for coordinate validity.
+// If we ever need to defend against DB-side corruption (e.g., a botched
+// migration), the right place to add the decode is here in the DTO
+// after a fetch, not in fromLocation (which would force every read
+// path to handle a validation failure).
 
 export class LocationCreateInput extends Schema.Class<LocationCreateInput>("location/LocationCreateInput")({
   name: Schema.NonEmptyString.annotations({

@@ -38,6 +38,17 @@ export class Location extends Schema.Class<Location>("location/Location")({
     identifier: "longitude",
   }),
 }) {
+  /**
+   * Trusted path: maps a Prisma row to a Location by direct field
+   * assignment. Does NOT run Schema.decode, on purpose. The DB is
+   * the source of truth for coordinate validity; every write path
+   * (the create / update DTOs) decodes through the schema, so a row
+   * with latitude outside [-90, 90] should never reach this method.
+   * If we ever need to defend against DB-side corruption, the right
+   * place to add Schema.decode is the DTOs (after a fetch), not here
+   * (which would force every read path to handle a validation
+   * failure). See the matching note in location-dto.ts.
+   */
   static fromLocation(location: PrismaLocation): Location {
     return {
       id: location.id,
