@@ -1,0 +1,11 @@
+meta {
+  name: Get Estimate
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{host}}/api/estimates/:id
+  body: none
+  auth: inherit
+}

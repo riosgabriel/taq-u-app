@@ -5,6 +5,8 @@ import { DeliveryRepositoryLive } from "delivery/repository/delivery-repository"
 import { DeliveryServiceLive } from "delivery/services/delivery-service"
 import { DriverRepositoryLive } from "delivery/repository/driver-repository"
 import { DriverServiceLive } from "delivery/services/driver-service"
+import { EstimateRepositoryLive } from "estimate/repository/estimate-repository"
+import { EstimateServiceLive } from "estimate/services/estimate-service"
 import { Layer, ManagedRuntime } from "effect"
 import { LocationRepositoryLive } from "location/repository/location-repository"
 import { LocationServiceLive } from "location/services/location-service"
@@ -69,11 +71,16 @@ const RouteInfra = RouteRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
 
 const RouteModuleLive = RouteServiceLive.pipe(Layer.provide(RouteInfra))
 
+const EstimateInfra = EstimateRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
+
+const EstimateModuleLive = EstimateServiceLive.pipe(Layer.provide(EstimateInfra))
+
 const AppLive = Layer.mergeAll(
   OrderModuleLive,
   DriverModuleLive,
   CustomerModuleLive,
   DeliveryModuleLive,
+  EstimateModuleLive,
   LocationModuleLive,
   RouteModuleLive
 )

@@ -1,5 +1,6 @@
 import { DeliveryController } from "delivery/api/delivery-controller"
 import { DriverController } from "delivery/api/driver-controller"
+import { EstimateController } from "estimate/api/estimate-controller"
 import { LocationController } from "location/api/location-controller"
 import { OrderController } from "ordering/api/order-controller"
 import { RouteController } from "route/api/route-controller"
@@ -29,6 +30,7 @@ const startServer = Effect.suspend(() => {
   apiRouter.use("/orders", OrderController)
   apiRouter.use("/drivers", DriverController)
   apiRouter.use("/deliveries", DeliveryController)
+  apiRouter.use("/estimates", EstimateController)
   apiRouter.use("/locations", LocationController)
   apiRouter.use("/routes", RouteController)
 
