@@ -55,6 +55,13 @@ class ApiClient {
     })
   }
 
+  async assignOrderToDriver(orderId: string, driverId: string) {
+    return this.request(`/orders/${orderId}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ driverId }),
+    })
+  }
+
   async cancelOrder(id: string) {
     return this.request(`/orders/${id}`, {
       method: "DELETE",
