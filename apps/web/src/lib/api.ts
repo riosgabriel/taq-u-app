@@ -20,7 +20,7 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `API Error: ${response.statusText}`)
+      throw new Error(errorData.error || errorData.message || `API Error: ${response.statusText}`)
     }
 
     return response.json()
@@ -35,9 +35,15 @@ class ApiClient {
     return this.request(`/orders/${id}`)
   }
 
-  async createOrder(data: any) {
+  /**
+   * Create an order. When `idempotencyKey` is provided, the backend
+   * caches the response so retries with the same key return the
+   * cached result instead of creating a duplicate.
+   */
+  async createOrder(data: any, idempotencyKey?: string) {
     return this.request("/orders", {
       method: "POST",
+      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
       body: JSON.stringify(data),
     })
   }
@@ -97,6 +103,14 @@ class ApiClient {
   async deleteDriver(id: string) {
     return this.request(`/drivers/${id}`, {
       method: "DELETE",
+    })
+  }
+
+  // Estimates
+  async createEstimate(data: { weightKg: number; serviceLevel: "STANDARD" | "EXPRESS" | "OVERNIGHT"; insured: boolean; orderId?: string }) {
+    return this.request("/estimates", {
+      method: "POST",
+      body: JSON.stringify(data),
     })
   }
 }
