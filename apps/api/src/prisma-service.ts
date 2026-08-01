@@ -64,7 +64,7 @@ export const PrismaLive = Layer.scoped(
     const { databaseUrl } = yield* ConfigService
     const client = new PrismaClient({
       datasources: { db: { url: databaseUrl } },
-      log: ["error", "warn"],
+      log: process.env.LOG_PRISMA === "true" ? ["query", "info", "warn", "error"] : ["error", "warn"],
     })
     return PrismaService.of({
       prisma: client,
