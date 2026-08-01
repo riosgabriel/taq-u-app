@@ -9,6 +9,7 @@ import express from "express"
 import { HealthController } from "health/api/health-controller"
 import { LocationController } from "location/api/location-controller"
 import { OrderController } from "ordering/api/order-controller"
+import { PackageController } from "ordering/api/package-controller"
 import { PaymentController } from "payment/api/payment-controller"
 import { RouteController } from "route/api/route-controller"
 import { effectErrorHandler } from "./middleware/error-handler"
@@ -29,6 +30,7 @@ const startServer = Effect.suspend(() => {
 
   apiRouter.use("/customers", CustomerController)
   apiRouter.use("/orders", OrderController)
+  apiRouter.use("/packages", PackageController)
   apiRouter.use("/drivers", DriverController)
   apiRouter.use("/deliveries", DeliveryController)
   apiRouter.use("/estimates", EstimateController)
