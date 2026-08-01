@@ -1,5 +1,5 @@
-import { Schema } from "effect"
-import { CalculateEstimateParams, Estimate, SERVICE_LEVELS } from "estimate/domain/estimate"
+import { Schema } from "effect";
+import { CalculateEstimateParams, Estimate, SERVICE_LEVELS } from "estimate/domain/estimate";
 
 export class CalculateEstimateInput extends Schema.Class<CalculateEstimateInput>("estimate/CalculateEstimateInput")({
   weightKg: Schema.Number.pipe(Schema.between(0.01, 1000)).annotations({
