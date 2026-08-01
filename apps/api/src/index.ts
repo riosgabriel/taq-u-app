@@ -3,6 +3,7 @@ import { DriverController } from "delivery/api/driver-controller"
 import { EstimateController } from "estimate/api/estimate-controller"
 import { LocationController } from "location/api/location-controller"
 import { OrderController } from "ordering/api/order-controller"
+import { PaymentController } from "payment/api/payment-controller"
 import { RouteController } from "route/api/route-controller"
 import cors from "cors"
 import dotenv from "dotenv"
@@ -32,6 +33,7 @@ const startServer = Effect.suspend(() => {
   apiRouter.use("/deliveries", DeliveryController)
   apiRouter.use("/estimates", EstimateController)
   apiRouter.use("/locations", LocationController)
+  apiRouter.use("/payments", PaymentController)
   apiRouter.use("/routes", RouteController)
 
   app.use("/api", apiRouter)
