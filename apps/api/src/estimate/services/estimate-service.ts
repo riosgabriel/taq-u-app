@@ -39,6 +39,7 @@ export const EstimateServiceLive = Layer.effect(
               weightKg: input.weightKg,
               serviceLevel: input.serviceLevel as ServiceLevel,
               insured: input.insured,
+              distanceKm: input.distanceKm,
             },
             new Date()
           )
@@ -53,6 +54,7 @@ export const EstimateServiceLive = Layer.effect(
                 weightKg: input.weightKg,
                 serviceLevel: input.serviceLevel as ServiceLevel,
                 insured: input.insured,
+                distanceKm: input.distanceKm,
               },
               new Date()
             )
