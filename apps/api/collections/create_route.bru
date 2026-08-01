@@ -1,0 +1,33 @@
+meta {
+  name: Create Route
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{host}}/api/routes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "pickupId": "location-pickup-id",
+    "dropoffId": "location-dropoff-id",
+    "carrierId": "carrier-id",
+    "legs": [
+      {
+        "transportMode": "TRUCK",
+        "pickupLocationId": "location-leg-1-pickup",
+        "dropoffLocationId": "location-leg-1-dropoff",
+        "startTime": "2026-09-01T08:00:00Z",
+        "endTime": "2026-09-01T18:00:00Z"
+      },
+      {
+        "transportMode": "AIRPLANE",
+        "pickupLocationId": "location-leg-2-pickup",
+        "dropoffLocationId": "location-leg-2-dropoff"
+      }
+    ]
+  }
+}

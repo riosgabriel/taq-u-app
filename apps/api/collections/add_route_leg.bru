@@ -1,0 +1,22 @@
+meta {
+  name: Add Route Leg
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{host}}/api/routes/:id/legs
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "transportMode": "TRAIN",
+    "pickupLocationId": "location-leg-3-pickup",
+    "dropoffLocationId": "location-leg-3-dropoff",
+    "carrierId": "carrier-id",
+    "startTime": "2026-09-02T10:00:00Z",
+    "endTime": "2026-09-02T20:00:00Z"
+  }
+}
