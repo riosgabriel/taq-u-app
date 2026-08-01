@@ -125,6 +125,10 @@ class ApiClient {
   async getPackageByTrackingNumber(trackingNumber: string) {
     return this.request(`/packages/track/${encodeURIComponent(trackingNumber)}`)
   }
+
+  getPackageStreamUrl(trackingNumber: string) {
+    return `${this.baseUrl}/packages/track/${encodeURIComponent(trackingNumber)}/stream`
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL)

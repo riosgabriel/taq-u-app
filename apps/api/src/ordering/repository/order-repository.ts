@@ -257,13 +257,15 @@ export const OrderRepositoryLive = Layer.effect(
       },
 
       findPackageByTrackingNumber: (trackingNumber: string) => {
-        return prismaService.execute(() =>
-          prismaService.prisma.package
-            .findUnique({
+        return prismaService
+          .execute(() =>
+            prismaService.prisma.package.findUnique({
               where: { trackingNumber },
               include: { order: { include: { customer: true } } },
             })
-            .then((pkg) => {
+          )
+          .pipe(
+            Effect.map((pkg) => {
               if (!pkg) return null
               return {
                 package: {
@@ -280,7 +282,7 @@ export const OrderRepositoryLive = Layer.effect(
                 },
               }
             })
-        )
+          )
       },
 
       updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {

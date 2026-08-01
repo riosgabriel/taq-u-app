@@ -281,13 +281,41 @@ export const OrderServiceLive = Layer.effect(
       },
 
       updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
-        return orderRepository
-          .updatePackageStatus(orderId, packageId, status)
-          .pipe(
-            Effect.catchTag("order/RecordNotFoundError", (error) =>
-              Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+        return Effect.gen(function* () {
+          // Capture the previous status so the event carries a before/after.
+          const order = yield* orderRepository.getOrderById(orderId)
+          const previous = order.packages.find((p) => p.id === packageId)
+          if (!previous) {
+            return yield* Effect.fail(
+              new PackageNotFoundError({
+                packageId,
+                message: `Package ${packageId} not found in order ${orderId}`,
+              })
             )
+          }
+
+          const result = yield* orderRepository.updatePackageStatus(orderId, packageId, status)
+
+          yield* eventPublisher.notify([
+            {
+              type: "PackageStatusChanged",
+              streamId: `package:${packageId}`,
+              payload: {
+                packageId,
+                trackingNumber: previous.trackingNumber,
+                previousStatus: previous.status,
+                newStatus: status,
+                timestamp: new Date().toISOString(),
+              },
+            },
+          ])
+
+          return result
+        }).pipe(
+          Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           )
+        )
       },
     })
   })

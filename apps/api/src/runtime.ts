@@ -75,14 +75,23 @@ const EstimateInfra = EstimateRepositoryLive.pipe(Layer.provide(PrismaWithConfig
 
 const EstimateModuleLive = EstimateServiceLive.pipe(Layer.provide(EstimateInfra))
 
-const AppLive = Layer.mergeAll(
-  OrderModuleLive,
-  DriverModuleLive,
-  CustomerModuleLive,
-  DeliveryModuleLive,
-  EstimateModuleLive,
-  LocationModuleLive,
-  RouteModuleLive
+const AppLive = Layer.merge(
+  Layer.mergeAll(
+    OrderModuleLive,
+    DriverModuleLive,
+    CustomerModuleLive,
+    DeliveryModuleLive,
+    EstimateModuleLive,
+    LocationModuleLive,
+    PaymentModuleLive,
+    RouteModuleLive
+  ),
+  // Expose the EventBus at the top level so non-domain consumers
+  // (e.g., the SSE stream endpoint) can subscribe without going
+  // through a service module. The instance is the same as the one
+  // the modules publish to; Effect's layer deduplication keeps a
+  // single PubSub.
+  EventBusLive
 )
 
 export const AppRuntime = ManagedRuntime.make(

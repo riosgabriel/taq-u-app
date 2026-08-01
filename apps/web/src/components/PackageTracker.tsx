@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
 
@@ -95,6 +95,35 @@ export function PackageTracker() {
       setHasSearched(true)
     }
   }
+
+  // Subscribe to the SSE stream for live status updates whenever we
+  // have a search result. The EventSource auto-reconnects on network
+  // drops, so a transient backend restart or wifi blip is recovered
+  // without user action. The teardown closes the connection.
+  useEffect(() => {
+    if (!searchResult) return
+    const source = new EventSource(api.getPackageStreamUrl(searchResult.trackingNumber))
+    source.onmessage = (event) => {
+      try {
+        const update = JSON.parse(event.data) as { newStatus?: string; previousStatus?: string }
+        if (update.newStatus) {
+          setSearchResult((prev) => (prev ? { ...prev, status: update.newStatus! } : prev))
+          toast.info(`Status updated: ${update.newStatus}`, {
+            description: update.previousStatus ? `from ${update.previousStatus}` : undefined,
+          })
+        }
+      } catch (err) {
+        console.error("Failed to parse SSE message", err)
+      }
+    }
+    source.onerror = () => {
+      // EventSource auto-reconnects; we just log so the user can see
+      // the connection state in the dev tools.
+      console.warn("SSE connection error, will auto-reconnect")
+    }
+    return () => source.close()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchResult?.trackingNumber])
 
   return (
     <div className="p-6">
