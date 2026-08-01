@@ -74,6 +74,7 @@ Existing domains: `ordering`, `customer`, `delivery`.
 - **Domain entities**: separate `Schema.Class` in `domain/<entity>.ts` with a `fromPrisma()` static. One file per entity.
 - **Events**: publish inside the same Prisma transaction as the domain write via `EventPublisher.writeInTransaction()`. Don't publish events outside a transaction.
 - **Layer provisioning**: all wiring in `runtime.ts`. Don't create per-controller layers.
+- **Comments**: do not add a comment unless the code's intent is not obvious from the code itself. Comments drift, restate the code, and go stale. The code should read like prose; a comment is justified only when it explains a "why" that the code cannot express (a non-obvious invariant, a deliberate deviation from a pattern, a load-bearing comment that the next reader would otherwise second-guess). Do not narrate what the code does; the code does that.
 
 ## Agent hazards
 
