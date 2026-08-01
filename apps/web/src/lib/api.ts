@@ -113,6 +113,11 @@ class ApiClient {
       body: JSON.stringify(data),
     })
   }
+
+  // Packages (tracking)
+  async getPackageByTrackingNumber(trackingNumber: string) {
+    return this.request(`/packages/track/${encodeURIComponent(trackingNumber)}`)
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL)

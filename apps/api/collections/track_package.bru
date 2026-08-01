@@ -1,0 +1,11 @@
+meta {
+  name: Track Package
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{host}}/api/packages/track/:trackingNumber
+  body: none
+  auth: inherit
+}
