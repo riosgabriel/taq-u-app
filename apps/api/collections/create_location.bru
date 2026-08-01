@@ -1,0 +1,20 @@
+meta {
+  name: Create Location
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{host}}/api/locations
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Downtown Hub",
+    "address": "123 Main St, Springfield, IL 62701",
+    "latitude": 39.7817,
+    "longitude": -89.6501
+  }
+}

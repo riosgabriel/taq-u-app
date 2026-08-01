@@ -1,0 +1,18 @@
+meta {
+  name: Update Location
+  type: http
+  seq: 22
+}
+
+patch {
+  url: {{host}}/api/locations/:id
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Downtown Hub (Renovated)",
+    "latitude": 39.7900
+  }
+}
