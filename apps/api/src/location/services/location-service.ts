@@ -19,7 +19,7 @@ export class LocationService extends Context.Tag("location/LocationService")<
       id: string,
       locationUpdateInput: LocationUpdateInput
     ) => Effect.Effect<Location, LocationNotFoundError | PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<Location, LocationNotFoundError | PersistenceError>
+    readonly delete: (id: string) => Effect.Effect<void, LocationNotFoundError | PersistenceError>
   }
 >() {}
 
@@ -63,7 +63,6 @@ export const LocationServiceLive = Layer.effect(
 
       delete: (id: string) => {
         return repository.delete(id).pipe(
-          Effect.map((location) => Location.fromLocation(location)),
           Effect.catchTag("order/RecordNotFoundError", (error) =>
             Effect.fail(new LocationNotFoundError({ id, message: error.message }))
           )
