@@ -1,5 +1,10 @@
+import { Latitude, Location, Longitude } from "location/domain/location"
 import { Schema } from "effect"
-import Location from "location/domain/location"
+
+// The latitude / longitude fields import the same schemas the domain
+// model uses. If a future change widens or narrows the valid range,
+// both layers move together — there is no DTO that silently accepts
+// a value the domain would reject.
 
 export class LocationCreateInput extends Schema.Class<LocationCreateInput>("location/LocationCreateInput")({
   name: Schema.NonEmptyString.annotations({
@@ -10,11 +15,11 @@ export class LocationCreateInput extends Schema.Class<LocationCreateInput>("loca
     required: true,
     identifier: "address",
   }),
-  latitude: Schema.Number.pipe(Schema.between(-90, 90)).annotations({
+  latitude: Latitude.annotations({
     required: true,
     identifier: "latitude",
   }),
-  longitude: Schema.Number.pipe(Schema.between(-180, 180)).annotations({
+  longitude: Longitude.annotations({
     required: true,
     identifier: "longitude",
   }),
@@ -23,14 +28,18 @@ export class LocationCreateInput extends Schema.Class<LocationCreateInput>("loca
 export class LocationUpdateInput extends Schema.Class<LocationUpdateInput>("location/LocationUpdateInput")({
   name: Schema.optional(Schema.NonEmptyString),
   address: Schema.optional(Schema.NonEmptyString),
-  latitude: Schema.optional(Schema.Number.pipe(Schema.between(-90, 90))),
-  longitude: Schema.optional(Schema.Number.pipe(Schema.between(-180, 180))),
+  latitude: Schema.optional(Latitude),
+  longitude: Schema.optional(Longitude),
 }) {}
 
 export class LocationResponse extends Schema.Class<LocationResponse>("location/LocationResponse")({
   id: Schema.NonEmptyString,
   name: Schema.NonEmptyString,
   address: Schema.NonEmptyString,
+  // The response intentionally uses plain Number. A response is data
+  // being read out; validating the response's coordinates would be a
+  // no-op (the data came from a Location that was already validated).
+  // The domain is where the invariant lives; the response trusts it.
   latitude: Schema.Number,
   longitude: Schema.Number,
 }) {
