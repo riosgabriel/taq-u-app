@@ -5,6 +5,8 @@ import { DeliveryRepositoryLive } from "delivery/repository/delivery-repository"
 import { DeliveryServiceLive } from "delivery/services/delivery-service"
 import { DriverRepositoryLive } from "delivery/repository/driver-repository"
 import { DriverServiceLive } from "delivery/services/driver-service"
+import { EstimateRepositoryLive } from "estimate/repository/estimate-repository"
+import { EstimateServiceLive } from "estimate/services/estimate-service"
 import { Layer, ManagedRuntime } from "effect"
 import { LocationRepositoryLive } from "location/repository/location-repository"
 import { LocationServiceLive } from "location/services/location-service"
@@ -14,6 +16,8 @@ import { EventStoreLive } from "events/event-store"
 import { OrderRepositoryLive } from "ordering/repository/order-repository"
 import { OrderServiceLive } from "ordering/services/order-service"
 import { TrackingNumberServiceLive } from "ordering/services/tracking-number-service"
+import { PaymentRepositoryLive } from "payment/repository/payment-repository"
+import { PaymentServiceLive } from "payment/services/payment-service"
 import { PrismaLive } from "prisma-service"
 import { RouteRepositoryLive } from "route/repository/route-repository"
 import { RouteServiceLive } from "route/services/route-service"
@@ -69,12 +73,22 @@ const RouteInfra = RouteRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
 
 const RouteModuleLive = RouteServiceLive.pipe(Layer.provide(RouteInfra))
 
+const EstimateInfra = EstimateRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
+
+const EstimateModuleLive = EstimateServiceLive.pipe(Layer.provide(EstimateInfra))
+
+const PaymentInfra = PaymentRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
+
+const PaymentModuleLive = PaymentServiceLive.pipe(Layer.provide(PaymentInfra))
+
 const AppLive = Layer.mergeAll(
   OrderModuleLive,
   DriverModuleLive,
   CustomerModuleLive,
   DeliveryModuleLive,
+  EstimateModuleLive,
   LocationModuleLive,
+  PaymentModuleLive,
   RouteModuleLive
 )
 

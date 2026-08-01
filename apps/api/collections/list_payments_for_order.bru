@@ -1,0 +1,11 @@
+meta {
+  name: List Payments For Order
+  type: http
+  seq: 37
+}
+
+get {
+  url: {{host}}/api/payments/order/:orderId
+  body: none
+  auth: inherit
+}

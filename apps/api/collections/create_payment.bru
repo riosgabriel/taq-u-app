@@ -1,0 +1,20 @@
+meta {
+  name: Create Payment
+  type: http
+  seq: 33
+}
+
+post {
+  url: {{host}}/api/payments
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "method": "CREDIT_CARD",
+    "amount": 49.99,
+    "currency": "USD",
+    "orderId": "order-id-here"
+  }
+}
