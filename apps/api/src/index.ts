@@ -9,6 +9,7 @@ import express from "express"
 import { HealthController } from "health/api/health-controller"
 import { LocationController } from "location/api/location-controller"
 import { OrderController } from "ordering/api/order-controller"
+import { PaymentController } from "payment/api/payment-controller"
 import { RouteController } from "route/api/route-controller"
 import { effectErrorHandler } from "./middleware/error-handler"
 import { AppRuntime } from "./runtime"
@@ -33,6 +34,7 @@ const startServer = Effect.suspend(() => {
   apiRouter.use("/estimates", EstimateController)
   apiRouter.use("/locations", LocationController)
   apiRouter.use("/routes", RouteController)
+  apiRouter.use("/payments", PaymentController)
 
   app.use("/api", apiRouter)
   app.use(HealthController)
