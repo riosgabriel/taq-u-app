@@ -1,0 +1,17 @@
+meta {
+  name: Update Route
+  type: http
+  seq: 27
+}
+
+patch {
+  url: {{host}}/api/routes/:id
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "carrierId": "carrier-id-updated"
+  }
+}

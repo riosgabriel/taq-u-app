@@ -15,6 +15,8 @@ import { OrderRepositoryLive } from "ordering/repository/order-repository"
 import { OrderServiceLive } from "ordering/services/order-service"
 import { TrackingNumberServiceLive } from "ordering/services/tracking-number-service"
 import { PrismaLive } from "prisma-service"
+import { RouteRepositoryLive } from "route/repository/route-repository"
+import { RouteServiceLive } from "route/services/route-service"
 import { AppLogger } from "./logger"
 
 const PrismaWithConfig = PrismaLive.pipe(Layer.provide(ConfigLive))
@@ -63,12 +65,17 @@ const LocationInfra = LocationRepositoryLive.pipe(Layer.provide(PrismaWithConfig
 
 const LocationModuleLive = LocationServiceLive.pipe(Layer.provide(LocationInfra))
 
+const RouteInfra = RouteRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
+
+const RouteModuleLive = RouteServiceLive.pipe(Layer.provide(RouteInfra))
+
 const AppLive = Layer.mergeAll(
   OrderModuleLive,
   DriverModuleLive,
   CustomerModuleLive,
   DeliveryModuleLive,
-  LocationModuleLive
+  LocationModuleLive,
+  RouteModuleLive
 )
 
 export const AppRuntime = ManagedRuntime.make(
