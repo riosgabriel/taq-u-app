@@ -13,9 +13,9 @@
  *      TypeScript JSDoc parser tries to read the script name, which
  *      contains a colon, as a type annotation.)
  *
- * The default `pnpm test` does NOT run this file. The vitest config
- * excludes the `*.integration.test.ts` pattern from the default test
- * run, so a missing local Postgres cannot break fast feedback loops.
+ * The default `pnpm test` does NOT run this file. The `test` script in
+ * apps/api/package.json excludes the integration directory so a missing
+ * local Postgres cannot break fast feedback loops.
  *
  * ─── How this file satisfies each axiom ────────────────────────────────
  *
@@ -40,13 +40,9 @@
  *     test (and the next developer run) starts from a known state.
  *   - Self-cleaning on failure: the rollback throw runs whether or not
  *     assertions pass.
- *   - Tagged by FILENAME pattern (`*.integration.test.ts`), not by
- *     directory. This is cleaner than a path-based exclusion because
- *     a new integration test can live anywhere and the exclusion
- *     still works. The vitest config in apps/api/vitest.config.ts
- *     excludes `**/*.integration.test.ts` from the default `pnpm test`.
- *     The `test:integration` script runs `vitest run test/integration`
- *     which matches by directory and includes all files there.
+ *   - Tagged by directory: `apps/api/test/integration/`. The `test`
+ *     script in `package.json` excludes this path so unit-tier
+ *     feedback stays fast.
  *
  * Rule 3 — All tests: behavior, not implementation.
  *   - We assert the observable round-trip: a customer row written
@@ -68,16 +64,16 @@
  *     in this file or by adding new files under
  *     `apps/api/test/integration/`. Each new test must roll back its
  *     own state.
- *   - The Prisma client is a SHARED singleton, not a per-file one.
- *     See `./prisma.ts` for the lifecycle. A new integration test
- *     file just `import { prisma } from "./prisma"` and gets the
- *     same client for free — no constructor, no disconnect.
  */
 
+import { Prisma, PrismaClient } from "@prisma/client"
 import { describe, expect, it } from "@effect/vitest"
 import { Effect } from "effect"
 import { afterAll } from "vitest"
-import { prisma } from "./prisma"
+
+const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/taq-u"
+
+const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } })
 
 /**
  * A sentinel error that, when thrown inside a `prisma.$transaction`
@@ -167,11 +163,10 @@ describe("Customer persistence (integration)", () => {
   )
 })
 
-// Tear down the shared Prisma client. Runs after the suite finishes,
+// Tear down the Prisma connection. Runs after the suite finishes,
 // whether tests passed or failed. A missing `afterAll` would leak
-// the connection pool; on a CI runner that hosts many concurrent
-// integration runs, that leaks fast enough to exhaust the local
-// Postgres `max_connections` (default 100).
+// the connection pool, which over many test runs in dev would
+// exhaust Postgres connection slots.
 afterAll(async () => {
   await prisma.$disconnect()
 })
