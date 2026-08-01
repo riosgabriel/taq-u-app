@@ -1,6 +1,7 @@
 import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
 import { runEffect } from "@/middleware/effect-runner"
 import { conflict, notFound, ok } from "@/middleware/http"
+import { withIdempotency } from "@/middleware/idempotency"
 import { CustomerCreateInput, CustomerResponse } from "customer/dto/customer-dto"
 import { CustomerService } from "customer/services/customer-service"
 import { Effect } from "effect"
@@ -28,7 +29,13 @@ CustomerController.get("/:id", async (req: Request, res: Response, next: NextFun
   runEffect(req, res, next, program)
 })
 
-CustomerController.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/customers — idempotency-wrapped.
+// A request that includes the `Idempotency-Key` header will be
+// cached (default TTL 24h) so retries return the same response
+// without creating a duplicate customer. A request that reuses the
+// same key with a different body returns 422 — the same key must
+// always carry the same intent.
+const createCustomerHandler: (req: Request, res: Response, next: NextFunction) => void = (req, res, next) => {
   const program = Effect.gen(function* (_) {
     const customerInput = yield* decodeBody(CustomerCreateInput, req)
     const customerService = yield* CustomerService
@@ -36,4 +43,6 @@ CustomerController.post("/", async (req: Request, res: Response, next: NextFunct
   }).pipe(Effect.catchTag("order/CustomerEmailAlreadyExistsError", (error) => Effect.succeed(conflict(error.message))))
 
   runEffect(req, res, next, program)
-})
+}
+
+CustomerController.post("/", withIdempotency()(createCustomerHandler))

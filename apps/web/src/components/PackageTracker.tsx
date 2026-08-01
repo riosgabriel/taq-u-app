@@ -1,99 +1,129 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
+import { api } from "@/lib/api"
 
-// Example tracking data - in a real app, this would come from Convex
-const examplePackages = {
-  TAQ12345678ABCD: {
-    trackingNumber: "TAQ12345678ABCD",
-    status: "in_transit",
-    senderName: "Tokyo Electronics Store",
-    recipientName: "Yamada Taro",
-    recipientAddress: "Shibuya, Tokyo",
-    estimatedDelivery: Date.now() + 24 * 60 * 60 * 1000,
-    updates: [
-      {
-        status: "Package picked up",
-        location: "Tokyo Distribution Center",
-        timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000,
-        notes: "Package collected from sender",
-      },
-      {
-        status: "In transit",
-        location: "Osaka Hub",
-        timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000,
-        notes: "Package sorted and loaded for delivery",
-      },
-      {
-        status: "Out for delivery",
-        location: "Shibuya Delivery Center",
-        timestamp: Date.now() - 2 * 60 * 60 * 1000,
-        notes: "Package loaded on delivery vehicle",
-      },
-    ],
-  },
-  TAQ87654321EFGH: {
-    trackingNumber: "TAQ87654321EFGH",
-    status: "delivered",
-    senderName: "Amazon Japan",
-    recipientName: "Sato Hanako",
-    recipientAddress: "Harajuku, Tokyo",
-    estimatedDelivery: Date.now() - 1 * 24 * 60 * 60 * 1000,
-    updates: [
-      {
-        status: "Package picked up",
-        location: "Amazon Fulfillment Center",
-        timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000,
-        notes: "Package collected from sender",
-      },
-      {
-        status: "Delivered",
-        location: "Harajuku, Tokyo",
-        timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000,
-        notes: "Package delivered to recipient",
-      },
-    ],
-  },
+/**
+ * PackageTracker — connected to the real backend.
+ *
+ * Flow:
+ *   1. User enters a tracking number and clicks Track.
+ *   2. We call GET /api/packages/track/:trackingNumber.
+ *   3. The backend returns the package's status, the customer (sender)
+ *      name, the order's pickup/delivery addresses and dates.
+ *   4. The tracking timeline (updates[]) is currently empty — a
+ *      proper history requires a PackageUpdate model that the
+ *      backend does not have yet. We render the empty state.
+ *
+ * Status mapping from the backend's PackageStatus enum
+ * (AWAITING_PICKUP | IN_TRANSIT | OUT_FOR_DELIVERY | DELIVERED | LOST)
+ * to the UI's status buckets.
+ */
+
+type TrackedPackage = {
+  trackingNumber: string
+  status: string
+  senderName: string
+  recipientAddress: string
+  pickupAddress: string
+  pickupDate: string
+  estimatedDelivery: string
+  updates: Array<{ status: string; location?: string; timestamp?: string; notes?: string }>
+}
+
+const statusBucket = (status: string): "delivered" | "out_for_delivery" | "in_transit" | "pending" => {
+  switch (status) {
+    case "DELIVERED":
+      return "delivered"
+    case "OUT_FOR_DELIVERY":
+      return "out_for_delivery"
+    case "IN_TRANSIT":
+    case "LOST":
+      return "in_transit"
+    case "AWAITING_PICKUP":
+    default:
+      return "pending"
+  }
+}
+
+const getStatusColor = (status: string) => {
+  const bucket = statusBucket(status)
+  switch (bucket) {
+    case "delivered":
+      return "text-green-600 bg-green-50"
+    case "out_for_delivery":
+      return "text-blue-600 bg-blue-50"
+    case "in_transit":
+      return "text-yellow-600 bg-yellow-50"
+    default:
+      return "text-gray-600 bg-gray-50"
+  }
+}
+
+const getStatusIcon = (status: string) => {
+  const bucket = statusBucket(status)
+  switch (bucket) {
+    case "delivered":
+      return "✅"
+    case "out_for_delivery":
+      return "🚛"
+    case "in_transit":
+      return "📦"
+    default:
+      return "⏳"
+  }
 }
 
 export function PackageTracker() {
   const [trackingNumber, setTrackingNumber] = useState("")
-  const [searchResult, setSearchResult] = useState<any>(null)
+  const [searchResult, setSearchResult] = useState<TrackedPackage | null>(null)
   const [isSearching, setIsSearching] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
 
   const handleSearch = async () => {
     setIsSearching(true)
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const result = examplePackages[trackingNumber as keyof typeof examplePackages]
-    setSearchResult(result || null)
-    setIsSearching(false)
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "text-green-600 bg-green-50"
-      case "out_for_delivery":
-        return "text-blue-600 bg-blue-50"
-      case "in_transit":
-        return "text-yellow-600 bg-yellow-50"
-      default:
-        return "text-gray-600 bg-gray-50"
+    setHasSearched(false)
+    try {
+      const result = await api.getPackageByTrackingNumber(trackingNumber)
+      setSearchResult(result as TrackedPackage)
+    } catch (err) {
+      setSearchResult(null)
+      toast.error("Package not found", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      })
+    } finally {
+      setIsSearching(false)
+      setHasSearched(true)
     }
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "✅"
-      case "out_for_delivery":
-        return "🚛"
-      case "in_transit":
-        return "📦"
-      default:
-        return "⏳"
+  // Subscribe to the SSE stream for live status updates whenever we
+  // have a search result. The EventSource auto-reconnects on network
+  // drops, so a transient backend restart or wifi blip is recovered
+  // without user action. The teardown closes the connection.
+  useEffect(() => {
+    if (!searchResult) return
+    const source = new EventSource(api.getPackageStreamUrl(searchResult.trackingNumber))
+    source.onmessage = (event) => {
+      try {
+        const update = JSON.parse(event.data) as { newStatus?: string; previousStatus?: string }
+        if (update.newStatus) {
+          setSearchResult((prev) => (prev ? { ...prev, status: update.newStatus! } : prev))
+          toast.info(`Status updated: ${update.newStatus}`, {
+            description: update.previousStatus ? `from ${update.previousStatus}` : undefined,
+          })
+        }
+      } catch (err) {
+        console.error("Failed to parse SSE message", err)
+      }
     }
-  }
+    source.onerror = () => {
+      // EventSource auto-reconnects; we just log so the user can see
+      // the connection state in the dev tools.
+      console.warn("SSE connection error, will auto-reconnect")
+    }
+    return () => source.close()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchResult?.trackingNumber])
 
   return (
     <div className="p-6">
@@ -108,13 +138,14 @@ export function PackageTracker() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Enter tracking number (e.g., TAQ12345678ABCD)"
+              placeholder="Enter tracking number"
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
           <button
+            type="button"
             onClick={handleSearch}
             disabled={!trackingNumber || isSearching}
             className="px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -132,7 +163,7 @@ export function PackageTracker() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold">Package Details</h3>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(searchResult.status)}`}>
-                {getStatusIcon(searchResult.status)} {searchResult.status.replace("_", " ").toUpperCase()}
+                {getStatusIcon(searchResult.status)} {searchResult.status.replace(/_/g, " ")}
               </span>
             </div>
 
@@ -142,17 +173,21 @@ export function PackageTracker() {
                 <p className="font-mono font-semibold">{searchResult.trackingNumber}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Estimated Delivery</p>
-                <p className="font-semibold">{new Date(searchResult.estimatedDelivery).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-600">Status</p>
+                <p className="font-semibold">{searchResult.status}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">From</p>
                 <p className="font-semibold">{searchResult.senderName}</p>
+                <p className="text-sm text-gray-500">{searchResult.pickupAddress}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">To</p>
-                <p className="font-semibold">{searchResult.recipientName}</p>
                 <p className="text-sm text-gray-500">{searchResult.recipientAddress}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Pickup Date</p>
+                <p className="font-semibold">{new Date(searchResult.pickupDate).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -160,50 +195,45 @@ export function PackageTracker() {
           {/* Tracking Timeline */}
           <div>
             <h3 className="text-xl font-semibold mb-4">Tracking History</h3>
-            <div className="space-y-4">
-              {searchResult.updates.map((update: any, index: number) => (
-                <div key={index} className="flex gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <span className="text-yellow-600 font-semibold">{index + 1}</span>
-                  </div>
-                  <div className="flex-1 pb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-semibold text-gray-900">{update.status}</h4>
-                      <span className="text-sm text-gray-500">{new Date(update.timestamp).toLocaleString()}</span>
+            {searchResult.updates.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center text-gray-500">
+                No tracking updates yet. The package status is{" "}
+                <span className="font-mono">{searchResult.status}</span>.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {searchResult.updates.map((update) => (
+                  <div key={`${update.status}-${update.timestamp ?? ""}`} className="flex gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                      <span className="text-yellow-600 font-semibold">•</span>
                     </div>
-                    <p className="text-gray-600 mb-1">{update.location}</p>
-                    {update.notes && <p className="text-sm text-gray-500">{update.notes}</p>}
+                    <div className="flex-1 pb-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-semibold text-gray-900">{update.status}</h4>
+                        {update.timestamp && (
+                          <span className="text-sm text-gray-500">
+                            {new Date(update.timestamp).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      {update.location && <p className="text-gray-600 mb-1">{update.location}</p>}
+                      {update.notes && <p className="text-sm text-gray-500">{update.notes}</p>}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {searchResult === null && trackingNumber && !isSearching && (
+      {searchResult === null && hasSearched && !isSearching && (
         <div className="text-center py-8">
           <div className="text-4xl mb-4">❌</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Package Not Found</h3>
           <p className="text-gray-600">Please check your tracking number and try again.</p>
         </div>
       )}
-
-      {/* Quick Access */}
-      <div className="mt-8 p-4 bg-yellow-50 rounded-lg">
-        <h4 className="font-semibold text-yellow-800 mb-2">Try these example tracking numbers:</h4>
-        <div className="flex flex-wrap gap-2">
-          {Object.keys(examplePackages).map((trackingNum) => (
-            <button
-              key={trackingNum}
-              onClick={() => setTrackingNumber(trackingNum)}
-              className="px-3 py-1 bg-white text-yellow-700 rounded border border-yellow-200 hover:bg-yellow-100 transition-colors text-sm font-mono"
-            >
-              {trackingNum}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

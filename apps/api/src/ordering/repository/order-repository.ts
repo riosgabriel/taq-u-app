@@ -41,6 +41,15 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
       orderId: string,
       packageInput: AddPackageInput
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly findPackageByTrackingNumber: (
+      trackingNumber: string
+    ) => Effect.Effect<
+      {
+        package: { id: string; trackingNumber: string; status: string }
+        order: { id: string; pickupAddress: string; deliveryAddress: string; pickupDate: Date; customerName: string }
+      } | null,
+      PersistenceError
+    >
     readonly updatePackageStatus: (
       orderId: string,
       packageId: string,
@@ -245,6 +254,35 @@ export const OrderRepositoryLive = Layer.effect(
             })
           })
         })
+      },
+
+      findPackageByTrackingNumber: (trackingNumber: string) => {
+        return prismaService
+          .execute(() =>
+            prismaService.prisma.package.findUnique({
+              where: { trackingNumber },
+              include: { order: { include: { customer: true } } },
+            })
+          )
+          .pipe(
+            Effect.map((pkg) => {
+              if (!pkg) return null
+              return {
+                package: {
+                  id: pkg.id,
+                  trackingNumber: pkg.trackingNumber,
+                  status: pkg.status,
+                },
+                order: {
+                  id: pkg.order.id,
+                  pickupAddress: pkg.order.pickupAddress,
+                  deliveryAddress: pkg.order.deliveryAddress,
+                  pickupDate: pkg.order.pickupDate,
+                  customerName: pkg.order.customer.name,
+                },
+              }
+            })
+          )
       },
 
       updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
