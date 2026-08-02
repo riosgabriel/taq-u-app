@@ -1,12 +1,16 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { notFound, ok } from "@/middleware/http"
 import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
-import { PaymentCreateInput, PaymentResponse, PaymentUpdateStatusInput } from "payment/dto/payment-dto"
-import { PaymentService } from "payment/services/payment-service"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
+import { PaymentCreateInput, PaymentResponse, PaymentUpdateStatusInput } from "payment/dto/payment-dto"
+import { PaymentService } from "payment/services/payment-service"
 
 export const PaymentController = Router()
+
+class OrderIdParams extends Schema.Class<OrderIdParams>("payment/OrderIdParams")({
+  orderId: Schema.String,
+}) {}
 
 PaymentController.post("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
@@ -29,10 +33,6 @@ PaymentController.get("/", async (req: Request, res: Response, next: NextFunctio
 })
 
 PaymentController.get("/order/:orderId", async (req: Request, res: Response, next: NextFunction) => {
-  class OrderIdParams extends Schema.Class<OrderIdParams>("payment/OrderIdParams")({
-    orderId: Schema.String,
-  }) {}
-
   const program = Effect.gen(function* (_) {
     const { orderId } = yield* decodeParams(OrderIdParams, req)
     const paymentService = yield* PaymentService
