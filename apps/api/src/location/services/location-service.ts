@@ -46,7 +46,7 @@ export const LocationServiceLive = Layer.effect(
       getById: (id: string) => {
         return repository.getById(id).pipe(
           Effect.map((location) => Location.fromLocation(location)),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new LocationNotFoundError({ id, message: error.message }))
           )
         )
@@ -55,7 +55,7 @@ export const LocationServiceLive = Layer.effect(
       update: (id: string, locationUpdateInput: LocationUpdateInput) => {
         return repository.update(id, locationUpdateInput).pipe(
           Effect.map((location) => Location.fromLocation(location)),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new LocationNotFoundError({ id, message: error.message }))
           )
         )
@@ -63,7 +63,7 @@ export const LocationServiceLive = Layer.effect(
 
       delete: (id: string) => {
         return repository.delete(id).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new LocationNotFoundError({ id, message: error.message }))
           )
         )

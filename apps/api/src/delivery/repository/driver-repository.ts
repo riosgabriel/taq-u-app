@@ -46,7 +46,7 @@ export const DriverRepositoryLive = Layer.effect(
             })
           )
           .pipe(
-            Effect.catchTag("UniqueConstraintViolation", () =>
+            Effect.catchTag("persistence/UniqueConstraintViolation", () =>
               Effect.fail(
                 new DriverEmailAlreadyExistsError({
                   email: driverInput.email,

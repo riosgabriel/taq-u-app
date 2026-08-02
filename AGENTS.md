@@ -66,7 +66,7 @@ Existing domains: `ordering`, `customer`, `delivery`.
 
 ## Conventions
 
-- **Error tags**: `Data.TaggedError` with `"domain/ErrorName"` format (e.g. `"order/OrderNotFoundError"`, `"delivery/DriverNotFoundError"`, `"customer/CustomerEmailAlreadyExistsError"`). Keep the tag format consistent — error matching in controllers uses it.
+- **Error tags**: `Data.TaggedError` with `"domain/ErrorName"` format (e.g. `"order/OrderNotFoundError"`, `"delivery/DriverNotFoundError"`, `"customer/CustomerEmailAlreadyExistsError"`). Persistence-layer errors (in `persistence-errors.ts`) use the `"persistence/ErrorName"` prefix instead. Keep the tag format consistent — error matching in controllers uses it.
 - **Controllers**: always use `runEffect(req, res, next, program)`. Never `Effect.runPromise` directly. The middleware handles logging, parse errors -> 400, and forwards unhandled to the global handler.
 - **HTTP responses**: use helpers from `@/middleware/http` (`ok`, `notFound`, `badRequest`, `conflict`). Never construct raw `res.status().json()` in business logic.
 - **DTOs**: one `Schema.Class` per input/output shape. Include a `fromEntity()` static method for mapping Prisma types to response DTOs.

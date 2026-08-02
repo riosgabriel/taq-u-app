@@ -44,7 +44,7 @@ export const CustomerRepositoryLive = Layer.effect(
             })
           )
           .pipe(
-            Effect.catchTag("UniqueConstraintViolation", () =>
+            Effect.catchTag("persistence/UniqueConstraintViolation", () =>
               Effect.fail(
                 new CustomerEmailAlreadyExistsError({
                   message: `Customer with email ${customerInput.email} already exists`,
