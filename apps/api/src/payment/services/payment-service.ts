@@ -1,7 +1,7 @@
 import { PersistenceError } from "@/persistence-errors"
 import { Context, Data, Effect, Layer } from "effect"
-import { PaymentCreateInput } from "payment/dto/payment-dto"
 import { type PaymentStatus, Payment } from "payment/domain/payment"
+import { PaymentCreateInput } from "payment/dto/payment-dto"
 import { PaymentRepository } from "payment/repository/payment-repository"
 
 export class PaymentNotFoundError extends Data.TaggedError("payment/PaymentNotFoundError")<{
@@ -46,7 +46,7 @@ export const PaymentServiceLive = Layer.effect(
       getById: (id: string) => {
         return repository.getById(id).pipe(
           Effect.map((payment) => Payment.fromPrisma(payment)),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new PaymentNotFoundError({ id, message: error.message }))
           )
         )
@@ -55,7 +55,7 @@ export const PaymentServiceLive = Layer.effect(
       updateStatus: (id: string, status: PaymentStatus) => {
         return repository.updateStatus(id, status).pipe(
           Effect.map((payment) => Payment.fromPrisma(payment)),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new PaymentNotFoundError({ id, message: error.message }))
           )
         )
