@@ -1,15 +1,16 @@
+import cors from "cors"
+import { CustomerController } from "customer/api/customer-controller"
 import { DeliveryController } from "delivery/api/delivery-controller"
 import { DriverController } from "delivery/api/driver-controller"
-import { EstimateController } from "estimate/api/estimate-controller"
-import { LocationController } from "location/api/location-controller"
-import { OrderController } from "ordering/api/order-controller"
-import { RouteController } from "route/api/route-controller"
-import cors from "cors"
 import dotenv from "dotenv"
 import { Effect } from "effect"
+import { EstimateController } from "estimate/api/estimate-controller"
 import express from "express"
-import { CustomerController } from "customer/api/customer-controller"
 import { HealthController } from "health/api/health-controller"
+import { LocationController } from "location/api/location-controller"
+import { OrderController } from "ordering/api/order-controller"
+import { PaymentController } from "payment/api/payment-controller"
+import { RouteController } from "route/api/route-controller"
 import { effectErrorHandler } from "./middleware/error-handler"
 import { AppRuntime } from "./runtime"
 
@@ -33,6 +34,7 @@ const startServer = Effect.suspend(() => {
   apiRouter.use("/estimates", EstimateController)
   apiRouter.use("/locations", LocationController)
   apiRouter.use("/routes", RouteController)
+  apiRouter.use("/payments", PaymentController)
 
   app.use("/api", apiRouter)
   app.use(HealthController)
