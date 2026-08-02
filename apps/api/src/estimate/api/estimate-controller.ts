@@ -6,6 +6,10 @@ import { EstimateService } from "estimate/services/estimate-service"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 
+class OrderIdParams extends Schema.Class<OrderIdParams>("estimate/OrderIdParams")({
+  orderId: Schema.String,
+}) {}
+
 export const EstimateController = Router()
 
 EstimateController.post("/", async (req: Request, res: Response, next: NextFunction) => {
@@ -26,10 +30,6 @@ EstimateController.post("/", async (req: Request, res: Response, next: NextFunct
 })
 
 EstimateController.get("/order/:orderId", async (req: Request, res: Response, next: NextFunction) => {
-  class OrderIdParams extends Schema.Class<OrderIdParams>("estimate/OrderIdParams")({
-    orderId: Schema.String,
-  }) {}
-
   const program = Effect.gen(function* (_) {
     const { orderId } = yield* decodeParams(OrderIdParams, req)
     const estimateService = yield* EstimateService
