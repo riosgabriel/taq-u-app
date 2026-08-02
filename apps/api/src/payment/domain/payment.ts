@@ -1,12 +1,18 @@
-import { Payment as PrismaPayment, PaymentMethod, PaymentStatus } from "@prisma/client"
+import { Payment as PrismaPayment } from "@prisma/client"
 import { Schema } from "effect"
+
+export const PAYMENT_METHODS = ["CREDIT_CARD", "CASH", "BANK_TRANSFER", "MOBILE"] as const
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
+
+export const PAYMENT_STATUSES = ["PENDING", "PAID", "REFUNDED", "FAILED"] as const
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
 
 export class Payment extends Schema.Class<Payment>("payment/Payment")({
   id: Schema.NonEmptyString.annotations({
     required: true,
     identifier: "id",
   }),
-  method: Schema.String.annotations({
+  method: Schema.Literal(...PAYMENT_METHODS).annotations({
     required: true,
     identifier: "method",
   }),
@@ -18,7 +24,7 @@ export class Payment extends Schema.Class<Payment>("payment/Payment")({
     required: true,
     identifier: "currency",
   }),
-  status: Schema.String.annotations({
+  status: Schema.Literal(...PAYMENT_STATUSES).annotations({
     required: true,
     identifier: "status",
   }),
@@ -46,19 +52,5 @@ export class Payment extends Schema.Class<Payment>("payment/Payment")({
     }
   }
 }
-
-export const PAYMENT_METHODS = [
-  PaymentMethod.CREDIT_CARD,
-  PaymentMethod.CASH,
-  PaymentMethod.BANK_TRANSFER,
-  PaymentMethod.MOBILE,
-] as const
-
-export const PAYMENT_STATUSES = [
-  PaymentStatus.PENDING,
-  PaymentStatus.PAID,
-  PaymentStatus.REFUNDED,
-  PaymentStatus.FAILED,
-] as const
 
 export default Payment

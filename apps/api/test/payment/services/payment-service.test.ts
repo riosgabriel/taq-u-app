@@ -1,8 +1,8 @@
 import { RecordNotFoundError } from "@/persistence-errors"
-import { PaymentStatus } from "@prisma/client"
 import { describe, expect, it } from "@effect/vitest"
 import { assertLeft } from "@effect/vitest/utils"
 import { Effect, Layer } from "effect"
+import { type PaymentStatus } from "payment/domain/payment"
 import { PaymentRepository } from "payment/repository/payment-repository"
 import { PaymentNotFoundError, PaymentService, PaymentServiceLive } from "payment/services/payment-service"
 
@@ -159,7 +159,7 @@ describe("PaymentService", () => {
     it.effect("updates the status and returns the payment", () =>
       Effect.gen(function* () {
         const service = yield* PaymentService
-        const result = yield* service.updateStatus("pay-123", PaymentStatus.PAID)
+        const result = yield* service.updateStatus("pay-123", "PAID")
         expect(result.id).toBe("pay-123")
         expect(result.status).toBe("PAID")
       }).pipe(
@@ -169,7 +169,7 @@ describe("PaymentService", () => {
               create: () => Effect.die("unexpected"),
               listAll: () => Effect.die("unexpected"),
               getById: () => Effect.die("unexpected"),
-              updateStatus: (_id, _status) => Effect.succeed({ ...payment, status: PaymentStatus.PAID }),
+              updateStatus: (_id, _status) => Effect.succeed({ ...payment, status: "PAID" }),
               listByOrderId: () => Effect.die("unexpected"),
             })
           )
@@ -181,7 +181,7 @@ describe("PaymentService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* PaymentService
-          return yield* service.updateStatus("missing-id", PaymentStatus.PAID)
+          return yield* service.updateStatus("missing-id", "PAID")
         }).pipe(Effect.either)
 
         const result = yield* program

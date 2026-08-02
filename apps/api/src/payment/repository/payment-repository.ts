@@ -1,11 +1,26 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
-import { Payment, PaymentStatus } from "@prisma/client"
+import { Payment, PaymentMethod as PrismaPaymentMethod, PaymentStatus as PrismaPaymentStatus } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { PaymentCreateInput } from "payment/dto/payment-dto"
+import { type PaymentMethod, type PaymentStatus } from "payment/domain/payment"
 import { PrismaService } from "prisma-service"
 
 const paymentNotFound = (id: string) =>
   new RecordNotFoundError({ model: "Payment", id, message: `Payment with id ${id} not found` })
+
+const toPrismaMethod: Record<PaymentMethod, PrismaPaymentMethod> = {
+  CREDIT_CARD: "CREDIT_CARD",
+  CASH: "CASH",
+  BANK_TRANSFER: "BANK_TRANSFER",
+  MOBILE: "MOBILE",
+}
+
+const toPrismaStatus: Record<PaymentStatus, PrismaPaymentStatus> = {
+  PENDING: "PENDING",
+  PAID: "PAID",
+  REFUNDED: "REFUNDED",
+  FAILED: "FAILED",
+}
 
 export class PaymentRepository extends Context.Tag("payment/PaymentRepository")<
   PaymentRepository,
@@ -28,10 +43,10 @@ export const PaymentRepositoryLive = Layer.effect(
         return prismaService.execute(() =>
           prismaService.prisma.payment.create({
             data: {
-              method: input.method,
+              method: toPrismaMethod[input.method],
               amount: input.amount,
               currency: input.currency,
-              status: input.status,
+              status: input.status ? toPrismaStatus[input.status] : undefined,
               transactionId: input.transactionId,
               order: input.orderId ? { connect: { id: input.orderId } } : undefined,
             },
@@ -53,7 +68,7 @@ export const PaymentRepositoryLive = Layer.effect(
         return prismaService.execute(() =>
           prismaService.prisma.payment.update({
             where: { id },
-            data: { status },
+            data: { status: toPrismaStatus[status] },
           })
         )
       },

@@ -1,8 +1,7 @@
 import { PersistenceError } from "@/persistence-errors"
-import { PaymentStatus } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
 import { PaymentCreateInput } from "payment/dto/payment-dto"
-import { Payment } from "payment/domain/payment"
+import { type PaymentStatus, Payment } from "payment/domain/payment"
 import { PaymentRepository } from "payment/repository/payment-repository"
 
 export class PaymentNotFoundError extends Data.TaggedError("payment/PaymentNotFoundError")<{
