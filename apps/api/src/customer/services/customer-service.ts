@@ -42,7 +42,7 @@ export const CustomerServiceLive = Layer.effect(
         return repository
           .getCustomerById(id)
           .pipe(
-            Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
               Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
             )
           )

@@ -89,7 +89,7 @@ export const OrderServiceLive = Layer.effect(
 
           return result.order
         }).pipe(
-          Effect.catchTag("order/RecordNotFoundError", () =>
+          Effect.catchTag("persistence/RecordNotFoundError", () =>
             Effect.fail(
               new CustomerNotFoundError({
                 customerId: orderInput.customerId,
@@ -104,7 +104,7 @@ export const OrderServiceLive = Layer.effect(
         return orderRepository
           .getOrderById(orderId)
           .pipe(
-            Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
               Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
             )
           )
@@ -116,7 +116,7 @@ export const OrderServiceLive = Layer.effect(
         return orderRepository
           .updateOrder(orderId, updateInput)
           .pipe(
-            Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
               Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
             )
           )
@@ -130,7 +130,7 @@ export const OrderServiceLive = Layer.effect(
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
           Effect.catchTag("order/InvalidTransitionError", (error) =>
@@ -153,7 +153,7 @@ export const OrderServiceLive = Layer.effect(
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
           Effect.catchTag("order/InvalidTransitionError", (error) =>
@@ -175,7 +175,7 @@ export const OrderServiceLive = Layer.effect(
           const existingOrder = yield* orderRepository
             .getOrderById(orderId)
             .pipe(
-              Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.catchTag("persistence/RecordNotFoundError", (error) =>
                 Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
               )
             )
@@ -208,7 +208,7 @@ export const OrderServiceLive = Layer.effect(
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
           Effect.catchTag("order/InvalidTransitionError", (error) =>
@@ -231,7 +231,7 @@ export const OrderServiceLive = Layer.effect(
 
           return yield* orderRepository.updateOrderStatus(orderId, validated)
         }).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
           Effect.catchTag("order/InvalidTransitionError", (error) =>
@@ -250,7 +250,7 @@ export const OrderServiceLive = Layer.effect(
         return orderRepository
           .addPackageToOrder(orderId, packageInput)
           .pipe(
-            Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
               Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
             )
           )
@@ -260,7 +260,7 @@ export const OrderServiceLive = Layer.effect(
         return orderRepository
           .updatePackageStatus(orderId, packageId, status)
           .pipe(
-            Effect.catchTag("order/RecordNotFoundError", (error) =>
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
               Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
             )
           )

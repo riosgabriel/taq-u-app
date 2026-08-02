@@ -53,7 +53,7 @@ export const DriverServiceLive = Layer.effect(
       getById: (id: string) => {
         return repository.getById(id).pipe(
           Effect.map((driver) => Driver.fromDriver(driver)),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new DriverNotFoundError({ id, message: error.message }))
           )
         )
@@ -62,7 +62,7 @@ export const DriverServiceLive = Layer.effect(
       update: (id: string, driverUpdateInput: DriverUpdateInput) => {
         return repository.update(id, driverUpdateInput).pipe(
           Effect.map((driver) => Driver.fromDriver(driver)),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new DriverNotFoundError({ id, message: error.message }))
           )
         )
@@ -70,7 +70,7 @@ export const DriverServiceLive = Layer.effect(
 
       delete: (id: string) => {
         return repository.delete(id).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new DriverNotFoundError({ id, message: error.message }))
           )
         )
@@ -81,7 +81,7 @@ export const DriverServiceLive = Layer.effect(
           yield* repository.getById(driverId)
           return yield* orderRepository.findByDriverId(driverId)
         }).pipe(
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new DriverNotFoundError({ id: driverId, message: error.message }))
           )
         )
