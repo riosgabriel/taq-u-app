@@ -82,7 +82,7 @@ export const DeliveryServiceLive = Layer.effect(
       getDeliveryById: (id) => {
         return deliveryRepository.getById(id).pipe(
           Effect.map(Delivery.fromDelivery),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new DeliveryNotFoundError({ deliveryId: id, message: error.message }))
           )
         )
@@ -93,7 +93,7 @@ export const DeliveryServiceLive = Layer.effect(
           const existing = yield* deliveryRepository
             .getById(id)
             .pipe(
-              Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.catchTag("persistence/RecordNotFoundError", (error) =>
                 Effect.fail(new DeliveryNotFoundError({ deliveryId: id, message: error.message }))
               )
             )
@@ -119,7 +119,7 @@ export const DeliveryServiceLive = Layer.effect(
           const existing = yield* deliveryRepository
             .getById(id)
             .pipe(
-              Effect.catchTag("order/RecordNotFoundError", (error) =>
+              Effect.catchTag("persistence/RecordNotFoundError", (error) =>
                 Effect.fail(new DeliveryNotFoundError({ deliveryId: id, message: error.message }))
               )
             )

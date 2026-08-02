@@ -67,7 +67,7 @@ export const EstimateServiceLive = Layer.effect(
       getById: (id) => {
         return repository.getById(id).pipe(
           Effect.map((estimate) => Estimate.fromPrisma(estimate)),
-          Effect.catchTag("order/RecordNotFoundError", (error) =>
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new EstimateNotFoundError({ id, message: error.message }))
           )
         )
