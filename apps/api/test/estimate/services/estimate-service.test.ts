@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
 import { CalculateEstimateInput } from "estimate/dto/estimate-dto"
-import { EstimateService, EstimateServiceLive } from "estimate/services/estimate-service"
 import { EstimateRepository } from "estimate/repository/estimate-repository"
+import { EstimateService, EstimateServiceLive } from "estimate/services/estimate-service"
 
 const baseInput: CalculateEstimateInput = {
   weightKg: 1,
@@ -55,7 +55,7 @@ describe("EstimateService", () => {
             currency: calculation.currency,
             estimatedDeliveryTime: calculation.estimatedDeliveryTime,
             orderId: null,
-          } as never)
+          })
         },
         getById: () => Effect.die("not used"),
         listByOrderId: () => Effect.die("not used"),

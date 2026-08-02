@@ -1,7 +1,7 @@
 import { PersistenceError } from "@/persistence-errors"
 import { Context, Data, Effect, Layer } from "effect"
+import { calculateEstimate, Estimate } from "estimate/domain/estimate"
 import { CalculateEstimateInput } from "estimate/dto/estimate-dto"
-import { calculateEstimate, Estimate, ServiceLevel } from "estimate/domain/estimate"
 import { EstimateRepository } from "estimate/repository/estimate-repository"
 
 export class EstimateNotFoundError extends Data.TaggedError("estimate/EstimateNotFoundError")<{
@@ -37,7 +37,7 @@ export const EstimateServiceLive = Layer.effect(
           calculateEstimate(
             {
               weightKg: input.weightKg,
-              serviceLevel: input.serviceLevel as ServiceLevel,
+              serviceLevel: input.serviceLevel,
               insured: input.insured,
               distanceKm: input.distanceKm,
             },
@@ -52,7 +52,7 @@ export const EstimateServiceLive = Layer.effect(
             calculateEstimate(
               {
                 weightKg: input.weightKg,
-                serviceLevel: input.serviceLevel as ServiceLevel,
+                serviceLevel: input.serviceLevel,
                 insured: input.insured,
                 distanceKm: input.distanceKm,
               },

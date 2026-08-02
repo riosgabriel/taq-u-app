@@ -1,7 +1,7 @@
 import js from "@eslint/js"
-import globals from "globals"
 import reactHooks from "eslint-plugin-react-hooks"
 import reactRefresh from "eslint-plugin-react-refresh"
+import globals from "globals"
 import tseslint from "typescript-eslint"
 
 export default tseslint.config(
@@ -46,7 +46,10 @@ export default tseslint.config(
       "@typescript-eslint/ban-ts-comment": "error",
 
       // Allow explicit `any`s
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/consistent-type-assertions": [
+        "error", { "assertionStyle": "never" }
+      ],
 
       // START: Allow implicit `any`s
       "@typescript-eslint/no-unsafe-argument": "off",
