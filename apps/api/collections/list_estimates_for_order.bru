@@ -1,0 +1,11 @@
+meta {
+  name: List Estimates For Order
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{host}}/api/estimates/order/:orderId
+  body: none
+  auth: inherit
+}
