@@ -21,7 +21,7 @@ export class DriverRepository extends Context.Tag("order/DriverRepository")<
     readonly listAll: () => Effect.Effect<Array<Driver>, PersistenceError>
     readonly getById: (id: string) => Effect.Effect<Driver, PersistenceError>
     readonly update: (id: string, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<Driver, PersistenceError>
+    readonly delete: (id: string) => Effect.Effect<void, PersistenceError>
   }
 >() {}
 
@@ -84,7 +84,9 @@ export const DriverRepositoryLive = Layer.effect(
       },
 
       delete: (id: string) => {
-        return prismaService.execute(() => prismaService.prisma.driver.delete({ where: { id } }))
+        return prismaService
+          .execute(() => prismaService.prisma.driver.delete({ where: { id } }))
+          .pipe(Effect.asVoid)
       },
     })
   })

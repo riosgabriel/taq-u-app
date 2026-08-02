@@ -22,7 +22,7 @@ export class DriverService extends Context.Tag("delivery/DriverService")<
       id: string,
       driverUpdateInput: DriverUpdateInput
     ) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
+    readonly delete: (id: string) => Effect.Effect<void, DriverNotFoundError | PersistenceError>
     readonly listOrders: (
       driverId: string
     ) => Effect.Effect<OrderWithPackages[], DriverNotFoundError | PersistenceError>
@@ -70,7 +70,6 @@ export const DriverServiceLive = Layer.effect(
 
       delete: (id: string) => {
         return repository.delete(id).pipe(
-          Effect.map((driver) => Driver.fromDriver(driver)),
           Effect.catchTag("order/RecordNotFoundError", (error) =>
             Effect.fail(new DriverNotFoundError({ id, message: error.message }))
           )
