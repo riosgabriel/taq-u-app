@@ -237,11 +237,7 @@ export function PackageList() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-mono font-semibold text-lg">{pkg.trackingNumber}</h3>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
-                        pkg.status
-                      )}`}
-                    >
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(pkg.status)}`}>
                       {getStatusIcon(pkg.status)} {pkg.status.replace(/_/g, " ")}
                     </span>
                   </div>

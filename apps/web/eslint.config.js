@@ -47,9 +47,7 @@ export default tseslint.config(
 
       // Allow explicit `any`s
       "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/consistent-type-assertions": [
-        "error", { "assertionStyle": "never" }
-      ],
+      "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
 
       // START: Allow implicit `any`s
       "@typescript-eslint/no-unsafe-argument": "off",

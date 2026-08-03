@@ -60,9 +60,7 @@ export class OrderService extends Context.Tag("order/OrderService")<
       orderId: string,
       packageInput: AddPackageInput
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
-    readonly findPackageByTrackingNumber: (
-      trackingNumber: string
-    ) => Effect.Effect<
+    readonly findPackageByTrackingNumber: (trackingNumber: string) => Effect.Effect<
       {
         package: { id: string; trackingNumber: string; status: string }
         order: { id: string; pickupAddress: string; deliveryAddress: string; pickupDate: Date; customerName: string }

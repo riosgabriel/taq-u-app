@@ -168,8 +168,7 @@ export function PackageTracker() {
             <h3 className="text-xl font-semibold mb-4">Tracking History</h3>
             {searchResult.updates.length === 0 ? (
               <div className="bg-gray-50 rounded-lg p-6 text-center text-gray-500">
-                No tracking updates yet. The package status is{" "}
-                <span className="font-mono">{searchResult.status}</span>.
+                No tracking updates yet. The package status is <span className="font-mono">{searchResult.status}</span>.
               </div>
             ) : (
               <div className="space-y-4">
@@ -182,9 +181,7 @@ export function PackageTracker() {
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="font-semibold text-gray-900">{update.status}</h4>
                         {update.timestamp && (
-                          <span className="text-sm text-gray-500">
-                            {new Date(update.timestamp).toLocaleString()}
-                          </span>
+                          <span className="text-sm text-gray-500">{new Date(update.timestamp).toLocaleString()}</span>
                         )}
                       </div>
                       {update.location && <p className="text-gray-600 mb-1">{update.location}</p>}

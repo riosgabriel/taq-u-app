@@ -126,8 +126,7 @@ describe("RouteService", () => {
             RouteRepository.of({
               create: () => Effect.die("unexpected"),
               listAll: () => Effect.die("unexpected"),
-              getById: (id) =>
-                Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
+              getById: (id) => Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
               update: () => Effect.die("unexpected"),
               delete: () => Effect.die("unexpected"),
               addLeg: () => Effect.die("unexpected"),
@@ -244,8 +243,7 @@ describe("RouteService", () => {
               create: () => Effect.die("unexpected"),
               listAll: () => Effect.die("unexpected"),
               getById: () => Effect.die("unexpected"),
-              update: (id) =>
-                Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
+              update: (id) => Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
               delete: () => Effect.die("unexpected"),
               addLeg: () => Effect.die("unexpected"),
             })
@@ -295,8 +293,7 @@ describe("RouteService", () => {
               listAll: () => Effect.die("unexpected"),
               getById: () => Effect.die("unexpected"),
               update: () => Effect.die("unexpected"),
-              delete: (id) =>
-                Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
+              delete: (id) => Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
               addLeg: () => Effect.die("unexpected"),
             })
           )
@@ -370,8 +367,7 @@ describe("RouteService", () => {
               getById: () => Effect.die("unexpected"),
               update: () => Effect.die("unexpected"),
               delete: () => Effect.die("unexpected"),
-              addLeg: (id) =>
-                Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
+              addLeg: (id) => Effect.fail(new RecordNotFoundError({ model: "Route", id, message: "Not found" })),
             })
           )
         )

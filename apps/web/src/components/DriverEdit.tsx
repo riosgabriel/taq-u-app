@@ -70,13 +70,13 @@ const DriverEdit: React.FC<DriverEditProps> = ({ driverId, onCancel, onSave }) =
       <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">{isEditing ? "Edit Driver" : "Create New Driver"}</h2>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
-            >
-              Cancel
-            </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+          >
+            Cancel
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

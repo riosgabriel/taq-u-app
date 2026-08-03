@@ -62,9 +62,7 @@ export const LocationRepositoryLive = Layer.effect(
       },
 
       delete: (id: string) => {
-        return prismaService
-          .execute(() => prismaService.prisma.location.delete({ where: { id } }))
-          .pipe(Effect.asVoid)
+        return prismaService.execute(() => prismaService.prisma.location.delete({ where: { id } })).pipe(Effect.asVoid)
       },
     })
   })
