@@ -10,12 +10,14 @@ export const runEffect = <E, R>(
   next: NextFunction,
   program: Effect.Effect<HttpResponse, E, R>
 ) => {
+  const start = Date.now()
   const handled = program.pipe(
     Effect.annotateLogs({
       requestId: req.headers["x-request-id"] ?? crypto.randomUUID(),
       method: req.method,
       path: req.path,
     }),
+    Effect.ensuring(Effect.logInfo("http_request").pipe(Effect.annotateLogs({ durationMs: Date.now() - start }))),
     Effect.matchEffect({
       onSuccess: (response) =>
         Effect.sync(() => {
