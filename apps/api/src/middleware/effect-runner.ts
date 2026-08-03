@@ -17,7 +17,11 @@ export const runEffect = <E, R>(
       method: req.method,
       path: req.path,
     }),
-    Effect.ensuring(Effect.logInfo("http_request").pipe(Effect.annotateLogs({ durationMs: Date.now() - start }))),
+    Effect.ensuring(
+      Effect.sync(() => Date.now() - start).pipe(
+        Effect.flatMap((d) => Effect.logInfo("http_request").pipe(Effect.annotateLogs({ durationMs: d })))
+      )
+    ),
     Effect.matchEffect({
       onSuccess: (response) =>
         Effect.sync(() => {
