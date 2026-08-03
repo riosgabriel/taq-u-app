@@ -91,7 +91,7 @@ describe("OrderStatus state machine", () => {
       })
     )
 
-    it.effect("fails with InvalidTransitionError for invalid transitions", () =>
+    it.effect("fails with InvalidOrderStatusTransitionError for invalid transitions", () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(transition(OrderStatus.PENDING, OrderStatus.COMPLETED))
         expect(Exit.isFailure(exit)).toBe(true)

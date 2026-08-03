@@ -133,7 +133,7 @@ export const OrderServiceLive = Layer.effect(
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
-          Effect.catchTag("order/InvalidTransitionError", (error) =>
+          Effect.catchTag("order/InvalidOrderStatusTransitionError", (error) =>
             Effect.fail(
               new OrderStatusError({
                 orderId,
@@ -156,7 +156,7 @@ export const OrderServiceLive = Layer.effect(
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
-          Effect.catchTag("order/InvalidTransitionError", (error) =>
+          Effect.catchTag("order/InvalidOrderStatusTransitionError", (error) =>
             Effect.fail(
               new OrderStatusError({
                 orderId,
@@ -188,7 +188,7 @@ export const OrderServiceLive = Layer.effect(
 
           return result.order
         }).pipe(
-          Effect.catchTag("order/InvalidTransitionError", (error) =>
+          Effect.catchTag("order/InvalidOrderStatusTransitionError", (error) =>
             Effect.fail(
               new OrderStatusError({
                 orderId,
@@ -211,7 +211,7 @@ export const OrderServiceLive = Layer.effect(
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
-          Effect.catchTag("order/InvalidTransitionError", (error) =>
+          Effect.catchTag("order/InvalidOrderStatusTransitionError", (error) =>
             Effect.fail(
               new OrderStatusError({
                 orderId,
@@ -234,7 +234,7 @@ export const OrderServiceLive = Layer.effect(
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
             Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
           ),
-          Effect.catchTag("order/InvalidTransitionError", (error) =>
+          Effect.catchTag("order/InvalidOrderStatusTransitionError", (error) =>
             Effect.fail(
               new OrderStatusError({
                 orderId,

@@ -13,7 +13,7 @@ const allowedTransitions: Record<OrderStatus, ReadonlySet<OrderStatus>> = {
   [OrderStatus.CANCELLED]: new Set([]),
 }
 
-export class InvalidTransitionError extends Data.TaggedError("order/InvalidTransitionError")<{
+export class InvalidOrderStatusTransitionError extends Data.TaggedError("order/InvalidOrderStatusTransitionError")<{
   readonly currentStatus: string
   readonly targetStatus: string
   readonly message: string
@@ -24,11 +24,11 @@ export const canTransition = (from: OrderStatus, to: OrderStatus): boolean => al
 export const transition = (
   from: OrderStatus,
   to: OrderStatus
-): Effect.Effect<ValidatedOrderStatus, InvalidTransitionError> =>
+): Effect.Effect<ValidatedOrderStatus, InvalidOrderStatusTransitionError> =>
   canTransition(from, to)
     ? Effect.succeed(ValidatedOrderStatus(to))
     : Effect.fail(
-        new InvalidTransitionError({
+        new InvalidOrderStatusTransitionError({
           currentStatus: from,
           targetStatus: to,
           message: `Cannot transition from ${from} to ${to}. Valid transitions: ${[...validTargets(from)].join(", ")}`,
