@@ -1,7 +1,8 @@
+import { OrderId, PaymentId } from "@/ids"
 import { RecordNotFoundError } from "@/persistence-errors"
 import { describe, expect, it } from "@effect/vitest"
 import { assertLeft } from "@effect/vitest/utils"
-import { Effect, Layer } from "effect"
+import { Effect, Layer, Schema } from "effect"
 import { type PaymentStatus } from "payment/domain/payment"
 import { PaymentRepository } from "payment/repository/payment-repository"
 import { PaymentNotFoundError, PaymentService, PaymentServiceLive } from "payment/services/payment-service"
@@ -70,7 +71,7 @@ describe("PaymentService", () => {
     it.effect("returns the payment when found", () =>
       Effect.gen(function* () {
         const service = yield* PaymentService
-        const result = yield* service.getById("pay-123")
+        const result = yield* service.getById(Schema.decodeSync(PaymentId)("pay-123"))
         expect(result.id).toBe("pay-123")
         expect(result.amount).toBe(49.99)
         expect(result.status).toBe("PENDING")
@@ -93,7 +94,7 @@ describe("PaymentService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* PaymentService
-          return yield* service.getById("missing-id")
+          return yield* service.getById(Schema.decodeSync(PaymentId)("missing-id"))
         }).pipe(Effect.either)
 
         const result = yield* program
@@ -119,7 +120,7 @@ describe("PaymentService", () => {
       method: "CREDIT_CARD" as const,
       amount: 49.99,
       currency: "USD",
-      orderId: "order-abc",
+      orderId: Schema.decodeSync(OrderId)("order-abc"),
     }
 
     it.effect("creates and returns the payment", () =>
@@ -159,7 +160,7 @@ describe("PaymentService", () => {
     it.effect("updates the status and returns the payment", () =>
       Effect.gen(function* () {
         const service = yield* PaymentService
-        const result = yield* service.updateStatus("pay-123", "PAID")
+        const result = yield* service.updateStatus(Schema.decodeSync(PaymentId)("pay-123"), "PAID")
         expect(result.id).toBe("pay-123")
         expect(result.status).toBe("PAID")
       }).pipe(
@@ -181,7 +182,7 @@ describe("PaymentService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* PaymentService
-          return yield* service.updateStatus("missing-id", "PAID")
+          return yield* service.updateStatus(Schema.decodeSync(PaymentId)("missing-id"), "PAID")
         }).pipe(Effect.either)
 
         const result = yield* program
@@ -207,7 +208,7 @@ describe("PaymentService", () => {
     it.effect("returns payments for the order", () =>
       Effect.gen(function* () {
         const service = yield* PaymentService
-        const result = yield* service.listByOrderId("order-abc")
+        const result = yield* service.listByOrderId(Schema.decodeSync(OrderId)("order-abc"))
         expect(result).toHaveLength(1)
         expect(result[0].orderId).toBe("order-abc")
       }).pipe(

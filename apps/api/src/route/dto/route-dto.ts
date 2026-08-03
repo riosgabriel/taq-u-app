@@ -1,4 +1,5 @@
 import { Schema } from "effect"
+import { CarrierId, LocationId, RouteId, RouteLegId } from "@/ids"
 import Route from "route/domain/route"
 import RouteLeg, { TransportModeSchema } from "route/domain/route-leg"
 
@@ -10,12 +11,12 @@ import RouteLeg, { TransportModeSchema } from "route/domain/route-leg"
  * decode step in the runtime handler before reaching the client.
  */
 export class RouteLegResponse extends Schema.Class<RouteLegResponse>("route/RouteLegResponse")({
-  id: Schema.NonEmptyString,
-  routeId: Schema.NonEmptyString,
+  id: RouteLegId,
+  routeId: RouteId,
   transportMode: TransportModeSchema,
-  pickupLocationId: Schema.NonEmptyString,
-  dropoffLocationId: Schema.NonEmptyString,
-  carrierId: Schema.String,
+  pickupLocationId: LocationId,
+  dropoffLocationId: LocationId,
+  carrierId: Schema.NullishOr(CarrierId),
   startTime: Schema.optional(Schema.Date),
   endTime: Schema.optional(Schema.Date),
 }) {
@@ -26,7 +27,7 @@ export class RouteLegResponse extends Schema.Class<RouteLegResponse>("route/Rout
       transportMode: leg.transportMode,
       pickupLocationId: leg.pickupLocationId,
       dropoffLocationId: leg.dropoffLocationId,
-      carrierId: leg.carrierId ?? "",
+      carrierId: leg.carrierId,
       startTime: leg.startTime ?? undefined,
       endTime: leg.endTime ?? undefined,
     }
@@ -44,15 +45,15 @@ const RouteLegFields = Schema.Struct({
     required: true,
     identifier: "transportMode",
   }),
-  pickupLocationId: Schema.NonEmptyString.annotations({
+  pickupLocationId: LocationId.annotations({
     required: true,
     identifier: "pickupLocationId",
   }),
-  dropoffLocationId: Schema.NonEmptyString.annotations({
+  dropoffLocationId: LocationId.annotations({
     required: true,
     identifier: "dropoffLocationId",
   }),
-  carrierId: Schema.optional(Schema.NonEmptyString),
+  carrierId: Schema.optional(CarrierId),
   startTime: Schema.optional(Schema.Date),
   endTime: Schema.optional(Schema.Date),
 })
@@ -68,29 +69,29 @@ export class RouteLegCreateInput extends Schema.Class<RouteLegCreateInput>("rout
 export class AddRouteLegInput extends Schema.Class<AddRouteLegInput>("route/AddRouteLegInput")(RouteLegFields) {}
 
 export class RouteCreateInput extends Schema.Class<RouteCreateInput>("route/RouteCreateInput")({
-  pickupId: Schema.NonEmptyString.annotations({
+  pickupId: LocationId.annotations({
     required: true,
     identifier: "pickupId",
   }),
-  dropoffId: Schema.NonEmptyString.annotations({
+  dropoffId: LocationId.annotations({
     required: true,
     identifier: "dropoffId",
   }),
-  carrierId: Schema.optional(Schema.NonEmptyString),
+  carrierId: Schema.optional(CarrierId),
   legs: Schema.optional(Schema.Array(RouteLegCreateInput)),
 }) {}
 
 export class RouteUpdateInput extends Schema.Class<RouteUpdateInput>("route/RouteUpdateInput")({
-  pickupId: Schema.optional(Schema.NonEmptyString),
-  dropoffId: Schema.optional(Schema.NonEmptyString),
-  carrierId: Schema.optional(Schema.NonEmptyString),
+  pickupId: Schema.optional(LocationId),
+  dropoffId: Schema.optional(LocationId),
+  carrierId: Schema.optional(CarrierId),
 }) {}
 
 export class RouteResponse extends Schema.Class<RouteResponse>("route/RouteResponse")({
-  id: Schema.NonEmptyString,
-  pickupId: Schema.NonEmptyString,
-  dropoffId: Schema.NonEmptyString,
-  carrierId: Schema.String,
+  id: RouteId,
+  pickupId: LocationId,
+  dropoffId: LocationId,
+  carrierId: Schema.NullishOr(CarrierId),
   legs: Schema.Array(RouteLegResponse),
 }) {
   static fromRoute(route: Route): RouteResponse {
@@ -98,7 +99,7 @@ export class RouteResponse extends Schema.Class<RouteResponse>("route/RouteRespo
       id: route.id,
       pickupId: route.pickupId,
       dropoffId: route.dropoffId,
-      carrierId: route.carrierId ?? "",
+      carrierId: route.carrierId,
       legs: route.legs.map(RouteLegResponse.fromRouteLeg),
     }
   }

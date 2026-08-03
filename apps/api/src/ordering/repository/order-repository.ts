@@ -3,7 +3,8 @@ import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dt
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
 import { ValidatedOrderStatus } from "ordering/domain/order-status"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
-import { Context, Effect, Layer } from "effect"
+import { Context, Effect, Layer, Schema } from "effect"
+import { DriverId, OrderId, PackageId } from "@/ids"
 import { PrismaService } from "prisma-service"
 import { EventPublisher } from "events/event-publisher"
 import { DomainEvent } from "events/domain-event"
@@ -20,39 +21,39 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<CreateOrderResult, PersistenceError>
-    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, PersistenceError>
+    readonly getOrderById: (orderId: OrderId) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
-    readonly findByDriverId: (driverId: string) => Effect.Effect<OrderWithPackages[], PersistenceError>
+    readonly findByDriverId: (driverId: DriverId) => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
-      orderId: string,
+      orderId: OrderId,
       updateInput: OrderUpdateInput
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly updateOrderStatus: (
-      orderId: string,
+      orderId: OrderId,
       status: ValidatedOrderStatus
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly assignDriver: (
-      orderId: string,
-      driverId: string,
+      orderId: OrderId,
+      driverId: DriverId,
       assignedAt: Date,
       status: ValidatedOrderStatus
     ) => Effect.Effect<CreateOrderResult, PersistenceError>
     readonly addPackageToOrder: (
-      orderId: string,
+      orderId: OrderId,
       packageInput: AddPackageInput
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
     readonly findPackageByTrackingNumber: (
       trackingNumber: string
     ) => Effect.Effect<
       {
-        package: { id: string; trackingNumber: string; status: string }
-        order: { id: string; pickupAddress: string; deliveryAddress: string; pickupDate: Date; customerName: string }
+        package: { id: PackageId; trackingNumber: string; status: string }
+        order: { id: OrderId; pickupAddress: string; deliveryAddress: string; pickupDate: Date; customerName: string }
       } | null,
       PersistenceError
     >
     readonly updatePackageStatus: (
-      orderId: string,
-      packageId: string,
+      orderId: OrderId,
+      packageId: PackageId,
       status: PackageStatus
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
   }
@@ -135,7 +136,7 @@ export const OrderRepositoryLive = Layer.effect(
         })
       },
 
-      getOrderById: (orderId: string) => {
+      getOrderById: (orderId: OrderId) => {
         return prismaService
           .execute(() =>
             prismaService.prisma.order.findUnique({
@@ -158,7 +159,7 @@ export const OrderRepositoryLive = Layer.effect(
         )
       },
 
-      findByDriverId: (driverId: string) => {
+      findByDriverId: (driverId: DriverId) => {
         return prismaService.execute(() =>
           prismaService.prisma.order.findMany({
             where: { driverId },
@@ -169,7 +170,7 @@ export const OrderRepositoryLive = Layer.effect(
         )
       },
 
-      updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
+      updateOrder: (orderId: OrderId, updateInput: OrderUpdateInput) => {
         return prismaService.execute(() =>
           prismaService.prisma.order.update({
             where: { id: orderId },
@@ -188,7 +189,7 @@ export const OrderRepositoryLive = Layer.effect(
         )
       },
 
-      updateOrderStatus: (orderId: string, status: ValidatedOrderStatus) => {
+      updateOrderStatus: (orderId: OrderId, status: ValidatedOrderStatus) => {
         return prismaService.execute(() =>
           prismaService.prisma.order.update({
             where: { id: orderId },
@@ -200,7 +201,7 @@ export const OrderRepositoryLive = Layer.effect(
         )
       },
 
-      assignDriver: (orderId: string, driverId: string, assignedAt: Date, status: ValidatedOrderStatus) => {
+      assignDriver: (orderId: OrderId, driverId: DriverId, assignedAt: Date, status: ValidatedOrderStatus) => {
         return Effect.gen(function* () {
           const { order, events } = yield* prismaService.$transaction(async (tx) => {
             const order = await tx.order.update({
@@ -229,7 +230,7 @@ export const OrderRepositoryLive = Layer.effect(
         })
       },
 
-      addPackageToOrder: (orderId: string, packageInput: AddPackageInput) => {
+      addPackageToOrder: (orderId: OrderId, packageInput: AddPackageInput) => {
         return Effect.gen(function* () {
           return yield* prismaService.$transaction(async (tx) => {
             const trackingNumber = await trackingNumberService.generateInTx(tx)
@@ -257,22 +258,24 @@ export const OrderRepositoryLive = Layer.effect(
       },
 
       findPackageByTrackingNumber: (trackingNumber: string) => {
-        return prismaService.execute(() =>
-          prismaService.prisma.package
-            .findUnique({
+        return prismaService
+          .execute(() =>
+            prismaService.prisma.package.findUnique({
               where: { trackingNumber },
               include: { order: { include: { customer: true } } },
             })
-            .then((pkg) => {
+          )
+          .pipe(
+            Effect.map((pkg) => {
               if (!pkg) return null
               return {
                 package: {
-                  id: pkg.id,
+                  id: Schema.decodeSync(PackageId)(pkg.id),
                   trackingNumber: pkg.trackingNumber,
                   status: pkg.status,
                 },
                 order: {
-                  id: pkg.order.id,
+                  id: Schema.decodeSync(OrderId)(pkg.order.id),
                   pickupAddress: pkg.order.pickupAddress,
                   deliveryAddress: pkg.order.deliveryAddress,
                   pickupDate: pkg.order.pickupDate,
@@ -280,10 +283,10 @@ export const OrderRepositoryLive = Layer.effect(
                 },
               }
             })
-        )
+          )
       },
 
-      updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
+      updatePackageStatus: (orderId: OrderId, packageId: PackageId, status: PackageStatus) => {
         return Effect.gen(function* () {
           yield* prismaService.execute(() =>
             prismaService.prisma.package.update({

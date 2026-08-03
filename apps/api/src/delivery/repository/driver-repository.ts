@@ -1,4 +1,5 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
+import { DriverId } from "@/ids"
 import { Driver } from "@prisma/client"
 import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { Context, Data, Effect, Layer } from "effect"
@@ -19,9 +20,9 @@ export class DriverRepository extends Context.Tag("order/DriverRepository")<
       driverInput: DriverCreateInput
     ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Driver>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Driver, PersistenceError>
-    readonly update: (id: string, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<void, PersistenceError>
+    readonly getById: (id: DriverId) => Effect.Effect<Driver, PersistenceError>
+    readonly update: (id: DriverId, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, PersistenceError>
+    readonly delete: (id: DriverId) => Effect.Effect<void, PersistenceError>
   }
 >() {}
 
@@ -61,13 +62,13 @@ export const DriverRepositoryLive = Layer.effect(
         return prismaService.execute(() => prismaService.prisma.driver.findMany())
       },
 
-      getById: (id: string) => {
+      getById: (id: DriverId) => {
         return prismaService
           .execute(() => prismaService.prisma.driver.findUnique({ where: { id } }))
           .pipe(Effect.flatMap((driver) => (driver ? Effect.succeed(driver) : Effect.fail(driverNotFound(id)))))
       },
 
-      update: (id: string, driverUpdateInput: DriverUpdateInput) => {
+      update: (id: DriverId, driverUpdateInput: DriverUpdateInput) => {
         return prismaService.execute(() =>
           prismaService.prisma.driver.update({
             where: { id },
@@ -83,7 +84,7 @@ export const DriverRepositoryLive = Layer.effect(
         )
       },
 
-      delete: (id: string) => {
+      delete: (id: DriverId) => {
         return prismaService
           .execute(() => prismaService.prisma.driver.delete({ where: { id } }))
           .pipe(Effect.asVoid)

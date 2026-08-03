@@ -1,4 +1,5 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
+import { CustomerId } from "@/ids"
 import { Customer } from "@prisma/client"
 import { Context, Data, Effect, Layer } from "effect"
 import { CustomerCreateInput } from "customer/dto/customer-dto"
@@ -19,7 +20,7 @@ export class CustomerRepository extends Context.Tag("order/CustomerRepository")<
       customerInput: CustomerCreateInput
     ) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | PersistenceError>
     readonly getCustomers: () => Effect.Effect<Array<Customer>, PersistenceError>
-    readonly getCustomerById: (id: string) => Effect.Effect<Customer, PersistenceError>
+    readonly getCustomerById: (id: CustomerId) => Effect.Effect<Customer, PersistenceError>
   }
 >() {}
 
@@ -57,7 +58,7 @@ export const CustomerRepositoryLive = Layer.effect(
       getCustomers: () => {
         return prismaService.execute(() => prismaService.prisma.customer.findMany())
       },
-      getCustomerById: (id: string) => {
+      getCustomerById: (id: CustomerId) => {
         return prismaService
           .execute(() => prismaService.prisma.customer.findUnique({ where: { id } }))
           .pipe(Effect.flatMap((customer) => (customer ? Effect.succeed(customer) : Effect.fail(customerNotFound(id)))))

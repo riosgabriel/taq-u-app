@@ -1,4 +1,5 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
+import { RouteId } from "@/ids"
 import { Context, Effect, Layer } from "effect"
 import { AddRouteLegInput, RouteCreateInput, RouteUpdateInput } from "route/dto/route-dto"
 import { RouteWithLegs } from "route/domain/route"
@@ -12,10 +13,10 @@ export class RouteRepository extends Context.Tag("route/RouteRepository")<
   {
     readonly create: (input: RouteCreateInput) => Effect.Effect<RouteWithLegs, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<RouteWithLegs>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<RouteWithLegs, PersistenceError>
-    readonly update: (id: string, input: RouteUpdateInput) => Effect.Effect<RouteWithLegs, PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<RouteWithLegs, PersistenceError>
-    readonly addLeg: (routeId: string, input: AddRouteLegInput) => Effect.Effect<RouteWithLegs, PersistenceError>
+    readonly getById: (id: RouteId) => Effect.Effect<RouteWithLegs, PersistenceError>
+    readonly update: (id: RouteId, input: RouteUpdateInput) => Effect.Effect<RouteWithLegs, PersistenceError>
+    readonly delete: (id: RouteId) => Effect.Effect<RouteWithLegs, PersistenceError>
+    readonly addLeg: (routeId: RouteId, input: AddRouteLegInput) => Effect.Effect<RouteWithLegs, PersistenceError>
   }
 >() {}
 
@@ -60,7 +61,7 @@ export const RouteRepositoryLive = Layer.effect(
         )
       },
 
-      getById: (id: string) => {
+      getById: (id: RouteId) => {
         return prismaService
           .execute(() =>
             prismaService.prisma.route.findUnique({
@@ -71,7 +72,7 @@ export const RouteRepositoryLive = Layer.effect(
           .pipe(Effect.flatMap((route) => (route ? Effect.succeed(route) : Effect.fail(routeNotFound(id)))))
       },
 
-      update: (id: string, input: RouteUpdateInput) => {
+      update: (id: RouteId, input: RouteUpdateInput) => {
         return prismaService.execute(() =>
           prismaService.prisma.route.update({
             where: { id },
@@ -85,7 +86,7 @@ export const RouteRepositoryLive = Layer.effect(
         )
       },
 
-      delete: (id: string) => {
+      delete: (id: RouteId) => {
         return prismaService.execute(() =>
           prismaService.prisma.route.delete({
             where: { id },
@@ -94,7 +95,7 @@ export const RouteRepositoryLive = Layer.effect(
         )
       },
 
-      addLeg: (routeId: string, input: AddRouteLegInput) => {
+      addLeg: (routeId: RouteId, input: AddRouteLegInput) => {
         return prismaService.$transaction(async (tx) => {
           await tx.routeLeg.create({
             data: {

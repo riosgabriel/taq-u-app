@@ -1,3 +1,4 @@
+import { OrderId, PaymentId } from "@/ids"
 import { PersistenceError } from "@/persistence-errors"
 import { Context, Data, Effect, Layer } from "effect"
 import { type PaymentStatus, Payment } from "payment/domain/payment"
@@ -14,12 +15,12 @@ export class PaymentService extends Context.Tag("payment/PaymentService")<
   {
     readonly create: (input: PaymentCreateInput) => Effect.Effect<Payment, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Payment>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Payment, PaymentNotFoundError | PersistenceError>
+    readonly getById: (id: PaymentId) => Effect.Effect<Payment, PaymentNotFoundError | PersistenceError>
     readonly updateStatus: (
-      id: string,
+      id: PaymentId,
       status: PaymentStatus
     ) => Effect.Effect<Payment, PaymentNotFoundError | PersistenceError>
-    readonly listByOrderId: (orderId: string) => Effect.Effect<Array<Payment>, PersistenceError>
+    readonly listByOrderId: (orderId: OrderId) => Effect.Effect<Array<Payment>, PersistenceError>
   }
 >() {}
 
@@ -43,7 +44,7 @@ export const PaymentServiceLive = Layer.effect(
         })
       },
 
-      getById: (id: string) => {
+      getById: (id: PaymentId) => {
         return repository.getById(id).pipe(
           Effect.map((payment) => Payment.fromPrisma(payment)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -52,7 +53,7 @@ export const PaymentServiceLive = Layer.effect(
         )
       },
 
-      updateStatus: (id: string, status: PaymentStatus) => {
+      updateStatus: (id: PaymentId, status: PaymentStatus) => {
         return repository.updateStatus(id, status).pipe(
           Effect.map((payment) => Payment.fromPrisma(payment)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -61,7 +62,7 @@ export const PaymentServiceLive = Layer.effect(
         )
       },
 
-      listByOrderId: (orderId: string) => {
+      listByOrderId: (orderId: OrderId) => {
         return repository
           .listByOrderId(orderId)
           .pipe(Effect.map((payments) => payments.map((payment) => Payment.fromPrisma(payment))))

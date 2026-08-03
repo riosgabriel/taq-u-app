@@ -1,14 +1,17 @@
+import { EstimateId, OrderId } from "@/ids"
 import { runEffect } from "@/middleware/effect-runner"
 import { notFound, ok } from "@/middleware/http"
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { decodeBody, decodeParams } from "@/middleware/validate"
 import { Effect, Schema } from "effect"
 import { CalculateEstimateInput, EstimateResponse } from "estimate/dto/estimate-dto"
 import { EstimateService } from "estimate/services/estimate-service"
 import { NextFunction, Request, Response, Router } from "express"
 
 class OrderIdParams extends Schema.Class<OrderIdParams>("estimate/OrderIdParams")({
-  orderId: Schema.String,
+  orderId: OrderId,
 }) {}
+
+const EstimateIdParams = Schema.Struct({ id: EstimateId })
 
 export const EstimateController = Router()
 
@@ -42,7 +45,7 @@ EstimateController.get("/order/:orderId", async (req: Request, res: Response, ne
 
 EstimateController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(EstimateIdParams, req)
     const estimateService = yield* EstimateService
     return ok(EstimateResponse.fromEstimate(yield* estimateService.getById(id)))
   }).pipe(Effect.catchTag("estimate/EstimateNotFoundError", (error) => Effect.succeed(notFound(error.message))))

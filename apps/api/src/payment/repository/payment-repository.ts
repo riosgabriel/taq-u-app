@@ -1,3 +1,4 @@
+import { OrderId, PaymentId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { Payment, PaymentMethod as PrismaPaymentMethod, PaymentStatus as PrismaPaymentStatus } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
@@ -27,9 +28,9 @@ export class PaymentRepository extends Context.Tag("payment/PaymentRepository")<
   {
     readonly create: (input: PaymentCreateInput) => Effect.Effect<Payment, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Payment>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Payment, PersistenceError>
-    readonly updateStatus: (id: string, status: PaymentStatus) => Effect.Effect<Payment, PersistenceError>
-    readonly listByOrderId: (orderId: string) => Effect.Effect<Array<Payment>, PersistenceError>
+    readonly getById: (id: PaymentId) => Effect.Effect<Payment, PersistenceError>
+    readonly updateStatus: (id: PaymentId, status: PaymentStatus) => Effect.Effect<Payment, PersistenceError>
+    readonly listByOrderId: (orderId: OrderId) => Effect.Effect<Array<Payment>, PersistenceError>
   }
 >() {}
 

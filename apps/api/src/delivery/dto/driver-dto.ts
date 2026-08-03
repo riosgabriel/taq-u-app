@@ -1,6 +1,7 @@
 import { Schema } from "effect"
 import { VehicleType } from "@prisma/client"
 import { Email } from "@/middleware/validate"
+import { DriverId, OrderId, PackageId } from "@/ids"
 import Driver from "delivery/domain/driver"
 
 interface DriverOrderPackage {
@@ -62,7 +63,7 @@ export class DriverCreateInput extends Schema.Class<DriverCreateInput>("order/Dr
 }) {}
 
 export class DriverResponse extends Schema.Class<DriverResponse>("DriverResponse")({
-  id: Schema.NonEmptyString,
+  id: DriverId,
   name: Schema.String,
   email: Schema.String,
   phone: Schema.String,
@@ -72,7 +73,7 @@ export class DriverResponse extends Schema.Class<DriverResponse>("DriverResponse
 }) {
   static fromDriver(driver: Driver): DriverResponse {
     return {
-      id: driver.id,
+      id: Schema.decodeSync(DriverId)(driver.id),
       name: driver.name,
       email: driver.email,
       phone: driver.phone,
@@ -102,7 +103,7 @@ export class DriverUpdateInput extends Schema.Class<DriverUpdateInput>("order/Dr
 }) {}
 
 class DriverPackageView extends Schema.Class<DriverPackageView>("delivery/DriverPackageView")({
-  id: Schema.NonEmptyString,
+  id: PackageId,
   description: Schema.NonEmptyString,
   weightKg: Schema.Number,
   dimensions: Schema.String,
@@ -114,7 +115,7 @@ class DriverPackageView extends Schema.Class<DriverPackageView>("delivery/Driver
 }) {
   static fromPackage(pkg: DriverOrderPackage): DriverPackageView {
     return new DriverPackageView({
-      id: pkg.id,
+      id: Schema.decodeSync(PackageId)(pkg.id),
       description: pkg.description,
       weightKg: pkg.weightKg,
       dimensions: pkg.dimensions,
@@ -128,7 +129,7 @@ class DriverPackageView extends Schema.Class<DriverPackageView>("delivery/Driver
 }
 
 export class DriverOrderResponse extends Schema.Class<DriverOrderResponse>("delivery/DriverOrderResponse")({
-  id: Schema.NonEmptyString,
+  id: OrderId,
   pickupAddress: Schema.NonEmptyString,
   deliveryAddress: Schema.NonEmptyString,
   pickupDate: Schema.Date,
@@ -139,7 +140,7 @@ export class DriverOrderResponse extends Schema.Class<DriverOrderResponse>("deli
 }) {
   static fromOrderWithPackages(order: DriverOrder): DriverOrderResponse {
     return new DriverOrderResponse({
-      id: order.id,
+      id: Schema.decodeSync(OrderId)(order.id),
       pickupAddress: order.pickupAddress,
       deliveryAddress: order.deliveryAddress,
       pickupDate: order.pickupDate,

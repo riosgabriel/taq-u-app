@@ -1,8 +1,9 @@
 import { Driver as PrismaDriver } from "@prisma/client"
 import { Schema } from "effect"
+import { DriverId } from "@/ids"
 
 export class Driver extends Schema.Class<Driver>("order/Driver")({
-  id: Schema.NonEmptyString.annotations({
+  id: DriverId.annotations({
     required: true,
     identifier: "id",
   }),
@@ -33,7 +34,7 @@ export class Driver extends Schema.Class<Driver>("order/Driver")({
 }) {
   static fromDriver(driver: PrismaDriver): Driver {
     return {
-      id: driver.id,
+      id: Schema.decodeSync(DriverId)(driver.id),
       name: driver.name,
       email: driver.email,
       phone: driver.phone,

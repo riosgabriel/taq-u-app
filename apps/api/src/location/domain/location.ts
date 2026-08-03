@@ -1,5 +1,6 @@
 import { Location as PrismaLocation } from "@prisma/client"
 import { Schema } from "effect"
+import { LocationId } from "@/ids"
 
 /**
  * The latitude invariant: a valid Earth latitude is in [-90, 90].
@@ -17,7 +18,7 @@ export const Latitude = Schema.Number.pipe(Schema.between(-90, 90))
 export const Longitude = Schema.Number.pipe(Schema.between(-180, 180))
 
 export class Location extends Schema.Class<Location>("location/Location")({
-  id: Schema.NonEmptyString.annotations({
+  id: LocationId.annotations({
     required: true,
     identifier: "id",
   }),
@@ -51,7 +52,7 @@ export class Location extends Schema.Class<Location>("location/Location")({
    */
   static fromLocation(location: PrismaLocation): Location {
     return {
-      id: location.id,
+      id: Schema.decodeSync(LocationId)(location.id),
       name: location.name,
       address: location.address,
       latitude: location.latitude,

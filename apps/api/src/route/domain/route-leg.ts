@@ -1,5 +1,6 @@
 import { RouteLeg as PrismaRouteLeg, TransportMode } from "@prisma/client"
 import { Schema } from "effect"
+import { CarrierId, LocationId, RouteId, RouteLegId } from "@/ids"
 
 /**
  * The single source of truth for the valid transportMode values.
@@ -17,55 +18,23 @@ export const TransportModeSchema = Schema.Literal(
 )
 
 export class RouteLeg extends Schema.Class<RouteLeg>("route/RouteLeg")({
-  id: Schema.NonEmptyString.annotations({
-    required: true,
-    identifier: "id",
-  }),
-  routeId: Schema.NonEmptyString.annotations({
-    required: true,
-    identifier: "routeId",
-  }),
-  transportMode: TransportModeSchema.annotations({
-    required: true,
-    identifier: "transportMode",
-  }),
-  pickupLocationId: Schema.NonEmptyString.annotations({
-    required: true,
-    identifier: "pickupLocationId",
-  }),
-  dropoffLocationId: Schema.NonEmptyString.annotations({
-    required: true,
-    identifier: "dropoffLocationId",
-  }),
-  carrierId: Schema.NullishOr(Schema.String).annotations({
-    identifier: "carrierId",
-  }),
-  startTime: Schema.NullishOr(Schema.Date).annotations({
-    identifier: "startTime",
-  }),
-  endTime: Schema.NullishOr(Schema.Date).annotations({
-    identifier: "endTime",
-  }),
+  id: RouteLegId,
+  routeId: RouteId,
+  transportMode: TransportModeSchema,
+  pickupLocationId: LocationId,
+  dropoffLocationId: LocationId,
+  carrierId: Schema.NullishOr(CarrierId),
+  startTime: Schema.NullishOr(Schema.Date),
+  endTime: Schema.NullishOr(Schema.Date),
 }) {
-  /**
-   * Trusted path: maps a Prisma row to a RouteLeg by direct field
-   * assignment. Does NOT run Schema.decode, on purpose. The DB is
-   * the source of truth for transportMode validity; every write
-   * path (RouteLegCreateInput, AddRouteLegInput) decodes through
-   * TransportModeSchema, so a row with an unknown mode should never
-   * reach this method. If we ever need to defend against DB-side
-   * corruption, the right place to add the decode is the DTOs (after
-   * a fetch), not here (which would force every read path to handle
-   * a validation failure). See the matching note in route-dto.ts.
-   */
   static fromRouteLeg(leg: PrismaRouteLeg): RouteLeg {
     return {
-      id: leg.id,
-      routeId: leg.routeId,
+      id: Schema.decodeSync(RouteLegId)(leg.id),
+      routeId: Schema.decodeSync(RouteId)(leg.routeId),
       transportMode: leg.transportMode,
-      pickupLocationId: leg.pickupLocationId,
-      dropoffLocationId: leg.dropoffLocationId,
-      carrierId: leg.carrierId,
+      pickupLocationId: Schema.decodeSync(LocationId)(leg.pickupLocationId),
+      dropoffLocationId: Schema.decodeSync(LocationId)(leg.dropoffLocationId),
+      carrierId: leg.carrierId ? Schema.decodeSync(CarrierId)(leg.carrierId) : null,
       startTime: leg.startTime,
       endTime: leg.endTime,
     }

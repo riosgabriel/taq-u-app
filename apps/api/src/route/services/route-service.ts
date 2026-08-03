@@ -1,4 +1,5 @@
 import { PersistenceError } from "@/persistence-errors"
+import { RouteId } from "@/ids"
 import { Context, Data, Effect, Layer } from "effect"
 import Route from "route/domain/route"
 import { AddRouteLegInput, RouteCreateInput, RouteUpdateInput } from "route/dto/route-dto"
@@ -14,14 +15,14 @@ export class RouteService extends Context.Tag("route/RouteService")<
   {
     readonly create: (input: RouteCreateInput) => Effect.Effect<Route, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Route>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Route, RouteNotFoundError | PersistenceError>
+    readonly getById: (id: RouteId) => Effect.Effect<Route, RouteNotFoundError | PersistenceError>
     readonly update: (
-      id: string,
+      id: RouteId,
       input: RouteUpdateInput
     ) => Effect.Effect<Route, RouteNotFoundError | PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<Route, RouteNotFoundError | PersistenceError>
+    readonly delete: (id: RouteId) => Effect.Effect<Route, RouteNotFoundError | PersistenceError>
     readonly addLeg: (
-      routeId: string,
+      routeId: RouteId,
       input: AddRouteLegInput
     ) => Effect.Effect<Route, RouteNotFoundError | PersistenceError>
   }
@@ -45,7 +46,7 @@ export const RouteServiceLive = Layer.effect(
         })
       },
 
-      getById: (id: string) => {
+      getById: (id: RouteId) => {
         return repository.getById(id).pipe(
           Effect.map((route) => Route.fromRoute(route)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -54,7 +55,7 @@ export const RouteServiceLive = Layer.effect(
         )
       },
 
-      update: (id: string, input: RouteUpdateInput) => {
+      update: (id: RouteId, input: RouteUpdateInput) => {
         return repository.update(id, input).pipe(
           Effect.map((route) => Route.fromRoute(route)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -63,7 +64,7 @@ export const RouteServiceLive = Layer.effect(
         )
       },
 
-      delete: (id: string) => {
+      delete: (id: RouteId) => {
         return repository.delete(id).pipe(
           Effect.map((route) => Route.fromRoute(route)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -72,7 +73,7 @@ export const RouteServiceLive = Layer.effect(
         )
       },
 
-      addLeg: (routeId: string, input: AddRouteLegInput) => {
+      addLeg: (routeId: RouteId, input: AddRouteLegInput) => {
         return repository.addLeg(routeId, input).pipe(
           Effect.map((route) => Route.fromRoute(route)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>

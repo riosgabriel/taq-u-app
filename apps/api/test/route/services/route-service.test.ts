@@ -1,7 +1,8 @@
 import { RecordNotFoundError } from "@/persistence-errors"
 import { describe, expect, it } from "@effect/vitest"
 import { assertLeft } from "@effect/vitest/utils"
-import { Effect, Layer } from "effect"
+import { Effect, Layer, Schema } from "effect"
+import { CarrierId, LocationId, RouteId } from "@/ids"
 import { RouteRepository } from "route/repository/route-repository"
 import { RouteNotFoundError, RouteService, RouteServiceLive } from "route/services/route-service"
 
@@ -89,7 +90,7 @@ describe("RouteService", () => {
     it.effect("returns the route with legs when found", () =>
       Effect.gen(function* () {
         const service = yield* RouteService
-        const result = yield* service.getById("route-1")
+        const result = yield* service.getById(Schema.decodeSync(RouteId)("route-1"))
         expect(result.id).toBe("route-1")
         expect(result.pickupId).toBe("loc-pickup")
         expect(result.dropoffId).toBe("loc-dropoff")
@@ -115,7 +116,7 @@ describe("RouteService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* RouteService
-          return yield* service.getById("missing-id")
+          return yield* service.getById(Schema.decodeSync(RouteId)("missing-id"))
         }).pipe(Effect.either)
 
         const result = yield* program
@@ -140,8 +141,8 @@ describe("RouteService", () => {
 
   describe("create", () => {
     const input = {
-      pickupId: "loc-new-pickup",
-      dropoffId: "loc-new-dropoff",
+      pickupId: Schema.decodeSync(LocationId)("loc-new-pickup"),
+      dropoffId: Schema.decodeSync(LocationId)("loc-new-dropoff"),
     }
 
     it.effect("creates a route without legs and returns it", () =>
@@ -173,13 +174,13 @@ describe("RouteService", () => {
       Effect.gen(function* () {
         const service = yield* RouteService
         const result = yield* service.create({
-          pickupId: "loc-new-pickup",
-          dropoffId: "loc-new-dropoff",
+          pickupId: Schema.decodeSync(LocationId)("loc-new-pickup"),
+          dropoffId: Schema.decodeSync(LocationId)("loc-new-dropoff"),
           legs: [
             {
               transportMode: "TRUCK",
-              pickupLocationId: "loc-leg-1-pickup",
-              dropoffLocationId: "loc-leg-1-dropoff",
+              pickupLocationId: Schema.decodeSync(LocationId)("loc-leg-1-pickup"),
+              dropoffLocationId: Schema.decodeSync(LocationId)("loc-leg-1-dropoff"),
             },
           ],
         })
@@ -204,12 +205,12 @@ describe("RouteService", () => {
   })
 
   describe("update", () => {
-    const input = { carrierId: "carrier-2" }
+    const input = { carrierId: Schema.decodeSync(CarrierId)("carrier-2") }
 
     it.effect("updates and returns the route", () =>
       Effect.gen(function* () {
         const service = yield* RouteService
-        const result = yield* service.update("route-1", input)
+        const result = yield* service.update(Schema.decodeSync(RouteId)("route-1"), input)
         expect(result.id).toBe("route-1")
         expect(result.carrierId).toBeNull()
       }).pipe(
@@ -232,7 +233,7 @@ describe("RouteService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* RouteService
-          return yield* service.update("missing-id", input)
+          return yield* service.update(Schema.decodeSync(RouteId)("missing-id"), input)
         }).pipe(Effect.either)
 
         const result = yield* program
@@ -259,7 +260,7 @@ describe("RouteService", () => {
     it.effect("deletes and returns the route", () =>
       Effect.gen(function* () {
         const service = yield* RouteService
-        const result = yield* service.delete("route-1")
+        const result = yield* service.delete(Schema.decodeSync(RouteId)("route-1"))
         expect(result.id).toBe("route-1")
         expect(result.legs).toHaveLength(1)
       }).pipe(
@@ -282,7 +283,7 @@ describe("RouteService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* RouteService
-          return yield* service.delete("missing-id")
+          return yield* service.delete(Schema.decodeSync(RouteId)("missing-id"))
         }).pipe(Effect.either)
 
         const result = yield* program
@@ -308,8 +309,8 @@ describe("RouteService", () => {
   describe("addLeg", () => {
     const input = {
       transportMode: "AIRPLANE" as const,
-      pickupLocationId: "loc-new-leg-pickup",
-      dropoffLocationId: "loc-new-leg-dropoff",
+      pickupLocationId: Schema.decodeSync(LocationId)("loc-new-leg-pickup"),
+      dropoffLocationId: Schema.decodeSync(LocationId)("loc-new-leg-dropoff"),
     }
 
     const routeWithNewLeg = {
@@ -332,7 +333,7 @@ describe("RouteService", () => {
     it.effect("adds a leg and returns the route with the new leg", () =>
       Effect.gen(function* () {
         const service = yield* RouteService
-        const result = yield* service.addLeg("route-1", input)
+        const result = yield* service.addLeg(Schema.decodeSync(RouteId)("route-1"), input)
         expect(result.legs).toHaveLength(2)
         expect(result.legs[1].transportMode).toBe("AIRPLANE")
         expect(result.legs[1].pickupLocationId).toBe("loc-new-leg-pickup")
@@ -356,7 +357,7 @@ describe("RouteService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* RouteService
-          return yield* service.addLeg("missing-id", input)
+          return yield* service.addLeg(Schema.decodeSync(RouteId)("missing-id"), input)
         }).pipe(Effect.either)
 
         const result = yield* program

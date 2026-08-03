@@ -1,17 +1,18 @@
 import { DeliveryStatus } from "@prisma/client"
 import { Schema } from "effect"
 import Delivery from "delivery/domain/delivery"
+import { DeliveryId, DriverId, OrderId, RouteId } from "@/ids"
 
 export class CreateDeliveryInput extends Schema.Class<CreateDeliveryInput>("delivery/CreateDeliveryInput")({
-  driverId: Schema.NonEmptyString.annotations({
+  driverId: DriverId.annotations({
     required: true,
     identifier: "driverId",
   }),
-  routeId: Schema.NonEmptyString.annotations({
+  routeId: RouteId.annotations({
     required: true,
     identifier: "routeId",
   }),
-  orderIds: Schema.optional(Schema.Array(Schema.NonEmptyString)).annotations({
+  orderIds: Schema.optional(Schema.Array(OrderId)).annotations({
     required: false,
     identifier: "orderIds",
   }),
@@ -45,16 +46,16 @@ export class UpdateDeliveryStatusInput extends Schema.Class<UpdateDeliveryStatus
 export class AssignDeliveryDriverInput extends Schema.Class<AssignDeliveryDriverInput>(
   "delivery/AssignDeliveryDriverInput"
 )({
-  driverId: Schema.NonEmptyString.annotations({
+  driverId: DriverId.annotations({
     required: true,
     identifier: "driverId",
   }),
 }) {}
 
 export class DeliveryResponse extends Schema.Class<DeliveryResponse>("delivery/DeliveryResponse")({
-  id: Schema.NonEmptyString,
-  driverId: Schema.NonEmptyString,
-  routeId: Schema.NonEmptyString,
+  id: DeliveryId,
+  driverId: DriverId,
+  routeId: RouteId,
   estimatedPickupTime: Schema.NullishOr(Schema.Date),
   estimatedDeliveryTime: Schema.NullishOr(Schema.Date),
   actualPickupTime: Schema.NullishOr(Schema.Date),

@@ -2,7 +2,8 @@ import { describe, expect, it } from "@effect/vitest"
 import { DriverService, DriverServiceLive } from "delivery/services/driver-service"
 import { DriverRepository } from "delivery/repository/driver-repository"
 import { OrderRepository, type OrderWithPackages } from "ordering/repository/order-repository"
-import { Effect, Layer } from "effect"
+import { Effect, Layer, Schema } from "effect"
+import { DriverId } from "@/ids"
 
 const driver = {
   id: "driver-123",
@@ -63,7 +64,7 @@ describe("DriverService", () => {
     it.effect("returns the driver when found", () =>
       Effect.gen(function* () {
         const service = yield* DriverService
-        const result = yield* service.getById("driver-123")
+        const result = yield* service.getById(Schema.decodeSync(DriverId)("driver-123"))
         expect(result.id).toBe("driver-123")
         expect(result.name).toBe("Jane Smith")
       }).pipe(

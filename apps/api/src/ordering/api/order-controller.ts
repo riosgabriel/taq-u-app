@@ -1,8 +1,9 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { badRequest, notFound, ok } from "@/middleware/http"
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { decodeBody, decodeParams } from "@/middleware/validate"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
+import { OrderId, PackageId } from "@/ids"
 import {
   AddPackageInput,
   AssignDriverInput,
@@ -15,6 +16,8 @@ import {
 import { OrderService } from "ordering/services/order-service"
 
 export const OrderController = Router()
+
+const OrderIdPathParams = Schema.Struct({ id: OrderId })
 
 OrderController.post("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
@@ -38,7 +41,7 @@ OrderController.get("/", async (req: Request, res: Response, next: NextFunction)
 
 OrderController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id: orderId } = yield* decodeParams(IdParams, req)
+    const { id: orderId } = yield* decodeParams(OrderIdPathParams, req)
     const orderService = yield* OrderService
     return ok(OrderResponse.fromOrderWithPackages(yield* orderService.getOrderById(orderId)))
   }).pipe(Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))))
@@ -48,7 +51,7 @@ OrderController.get("/:id", async (req: Request, res: Response, next: NextFuncti
 
 OrderController.get("/:id/status", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id: orderId } = yield* decodeParams(IdParams, req)
+    const { id: orderId } = yield* decodeParams(OrderIdPathParams, req)
     const orderService = yield* OrderService
     const order = yield* orderService.getOrderById(orderId)
     return ok({ status: order.status })
@@ -57,7 +60,9 @@ OrderController.get("/:id/status", async (req: Request, res: Response, next: Nex
   runEffect(req, res, next, program)
 })
 
-class CancelOrderParams extends IdParams {}
+class CancelOrderParams extends Schema.Class<CancelOrderParams>("CancelOrderParams")({
+  id: OrderId,
+}) {}
 
 OrderController.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
@@ -74,7 +79,7 @@ OrderController.delete("/:id", async (req: Request, res: Response, next: NextFun
 })
 
 class TransitionOrderParams extends Schema.Class<TransitionOrderParams>("TransitionOrderParams")({
-  id: Schema.String,
+  id: OrderId,
 }) {}
 
 OrderController.post("/:id/confirm", async (req: Request, res: Response, next: NextFunction) => {
@@ -121,7 +126,7 @@ OrderController.post("/:id/deliver", async (req: Request, res: Response, next: N
 
 OrderController.post("/:orderId/assign", async (req: Request, res: Response, next: NextFunction) => {
   class AssignOrderParams extends Schema.Class<AssignOrderParams>("AssignOrderParams")({
-    orderId: Schema.String,
+    orderId: OrderId,
   }) {}
 
   const program = Effect.gen(function* (_) {
@@ -141,7 +146,7 @@ OrderController.post("/:orderId/assign", async (req: Request, res: Response, nex
 
 OrderController.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id: orderId } = yield* decodeParams(IdParams, req)
+    const { id: orderId } = yield* decodeParams(OrderIdPathParams, req)
     const updateInput = yield* decodeBody(OrderUpdateInputSchema, req)
     const orderService = yield* OrderService
     return ok(OrderResponse.fromOrderWithPackages(yield* orderService.updateOrder(orderId, updateInput)))
@@ -152,7 +157,7 @@ OrderController.patch("/:id", async (req: Request, res: Response, next: NextFunc
 
 OrderController.post("/:orderId/packages", async (req: Request, res: Response, next: NextFunction) => {
   class AddPackageParams extends Schema.Class<AddPackageParams>("AddPackageParams")({
-    orderId: Schema.String,
+    orderId: OrderId,
   }) {}
 
   const program = Effect.gen(function* (_) {
@@ -167,8 +172,8 @@ OrderController.post("/:orderId/packages", async (req: Request, res: Response, n
 
 OrderController.get("/:orderId/packages/:packageId", async (req: Request, res: Response, next: NextFunction) => {
   class PackageParams extends Schema.Class<PackageParams>("PackageParams")({
-    orderId: Schema.String,
-    packageId: Schema.String,
+    orderId: OrderId,
+    packageId: PackageId,
   }) {}
 
   const program = Effect.gen(function* (_) {
@@ -186,8 +191,8 @@ OrderController.patch(
   "/:orderId/packages/:packageId/status",
   async (req: Request, res: Response, next: NextFunction) => {
     class PackageStatusParams extends Schema.Class<PackageStatusParams>("PackageStatusParams")({
-      orderId: Schema.String,
-      packageId: Schema.String,
+      orderId: OrderId,
+      packageId: PackageId,
     }) {}
 
     const program = Effect.gen(function* (_) {

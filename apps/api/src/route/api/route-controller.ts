@@ -1,12 +1,15 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { notFound, ok } from "@/middleware/http"
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { decodeBody, decodeParams } from "@/middleware/validate"
 import { AddRouteLegInput, RouteCreateInput, RouteResponse, RouteUpdateInput } from "route/dto/route-dto"
 import { RouteService } from "route/services/route-service"
+import { RouteId } from "@/ids"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 
 export const RouteController = Router()
+
+const RouteIdPathParams = Schema.Struct({ id: RouteId })
 
 RouteController.post("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
@@ -30,7 +33,7 @@ RouteController.get("/", async (req: Request, res: Response, next: NextFunction)
 
 RouteController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(RouteIdPathParams, req)
     const routeService = yield* RouteService
     return ok(RouteResponse.fromRoute(yield* routeService.getById(id)))
   }).pipe(Effect.catchTag("route/RouteNotFoundError", (error) => Effect.succeed(notFound(error.message))))
@@ -40,7 +43,7 @@ RouteController.get("/:id", async (req: Request, res: Response, next: NextFuncti
 
 RouteController.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(RouteIdPathParams, req)
     const input = yield* decodeBody(RouteUpdateInput, req)
     const routeService = yield* RouteService
     return ok(RouteResponse.fromRoute(yield* routeService.update(id, input)))
@@ -51,7 +54,7 @@ RouteController.patch("/:id", async (req: Request, res: Response, next: NextFunc
 
 RouteController.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(RouteIdPathParams, req)
     const routeService = yield* RouteService
     yield* routeService.delete(id)
     return ok({ message: "Route deleted successfully" })
@@ -62,7 +65,7 @@ RouteController.delete("/:id", async (req: Request, res: Response, next: NextFun
 
 RouteController.post("/:id/legs", async (req: Request, res: Response, next: NextFunction) => {
   class RouteIdParams extends Schema.Class<RouteIdParams>("route/RouteIdParams")({
-    id: Schema.String,
+    id: RouteId,
   }) {}
 
   const program = Effect.gen(function* (_) {

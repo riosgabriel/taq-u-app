@@ -1,12 +1,15 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { conflict, notFound, ok } from "@/middleware/http"
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { decodeBody, decodeParams } from "@/middleware/validate"
+import { DriverId } from "@/ids"
 import { DriverCreateInput, DriverOrderResponse, DriverResponse, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverService } from "delivery/services/driver-service"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 
 export const DriverController = Router()
+
+const DriverIdPathParams = Schema.Struct({ id: DriverId })
 
 DriverController.post("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
@@ -30,7 +33,7 @@ DriverController.get("/", async (req: Request, res: Response, next: NextFunction
 
 DriverController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(DriverIdPathParams, req)
     const driverService = yield* DriverService
     return ok(DriverResponse.fromDriver(yield* driverService.getById(id)))
   }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
@@ -40,7 +43,7 @@ DriverController.get("/:id", async (req: Request, res: Response, next: NextFunct
 
 DriverController.get("/:driverId/orders", async (req: Request, res: Response, next: NextFunction) => {
   class DriverIdParams extends Schema.Class<DriverIdParams>("DriverIdParams")({
-    driverId: Schema.String,
+    driverId: DriverId,
   }) {}
 
   const program = Effect.gen(function* (_) {
@@ -55,7 +58,7 @@ DriverController.get("/:driverId/orders", async (req: Request, res: Response, ne
 
 DriverController.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(DriverIdPathParams, req)
     const driverInput = yield* decodeBody(DriverUpdateInput, req)
     const driverService = yield* DriverService
     return ok(DriverResponse.fromDriver(yield* driverService.update(id, driverInput)))
@@ -66,7 +69,7 @@ DriverController.patch("/:id", async (req: Request, res: Response, next: NextFun
 
 DriverController.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(DriverIdPathParams, req)
     const driverService = yield* DriverService
     yield* driverService.delete(id)
     return ok({ message: "Driver deleted successfully" })
