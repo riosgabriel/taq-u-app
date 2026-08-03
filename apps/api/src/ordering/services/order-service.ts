@@ -60,6 +60,15 @@ export class OrderService extends Context.Tag("order/OrderService")<
       orderId: string,
       packageInput: AddPackageInput
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
+    readonly findPackageByTrackingNumber: (
+      trackingNumber: string
+    ) => Effect.Effect<
+      {
+        package: { id: string; trackingNumber: string; status: string }
+        order: { id: string; pickupAddress: string; deliveryAddress: string; pickupDate: Date; customerName: string }
+      },
+      PackageNotFoundError | PersistenceError
+    >
     readonly updatePackageStatus: (
       orderId: string,
       packageId: string,
@@ -254,6 +263,21 @@ export const OrderServiceLive = Layer.effect(
               Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
             )
           )
+      },
+
+      findPackageByTrackingNumber: (trackingNumber: string) => {
+        return Effect.gen(function* () {
+          const result = yield* orderRepository.findPackageByTrackingNumber(trackingNumber)
+          if (!result) {
+            return yield* Effect.fail(
+              new PackageNotFoundError({
+                packageId: trackingNumber,
+                message: `Package with tracking number ${trackingNumber} not found`,
+              })
+            )
+          }
+          return result
+        })
       },
 
       updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
