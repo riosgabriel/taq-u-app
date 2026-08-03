@@ -80,8 +80,8 @@ public contract. They do not assert the shape of the machinery.
   internal call sequence of collaborators, on non-observable state, or on
   module structure (file paths, import order, internal helpers).
 - **Mock at the boundary, not the seam inside the SUT.** For unit tests:
-  replace what the SUT *depends on*. For integration tests: don't replace
-  the boundary under test; do replace collaborators *outside* that boundary.
+  replace what the SUT _depends on_. For integration tests: don't replace
+  the boundary under test; do replace collaborators _outside_ that boundary.
 - **Survive refactors.** A test that breaks when internals are refactored
   while behavior is preserved is testing the wrong thing. If a rename of a
   private helper breaks 40 tests, the tests are wrong, not the rename.
@@ -96,7 +96,7 @@ copy their shape:
 
 - `apps/api/test/order/services/driver-service.test.ts` — tests through
   `DriverService`, mocks `DriverRepository` with `Effect.die("unexpected")` on
-  every method the path under test should *not* touch. That `die` pattern is
+  every method the path under test should _not_ touch. That `die` pattern is
   not a quirk; it is a load-bearing assertion that the service does not call
   what it shouldn't.
 - `apps/api/test/order/services/customer-service.test.ts` — same shape.
@@ -119,7 +119,7 @@ Conventions to keep:
 - Layer the system under test with `Layer.provide`. Each test owns its
   layer graph; no shared `beforeAll` layer.
 - Name tests for the behavior, not the method. `it.effect("returns 400 when
-  email is malformed")` not `it.effect("validates email")`.
+email is malformed")` not `it.effect("validates email")`.
 
 ## Quick checks before you commit a test
 

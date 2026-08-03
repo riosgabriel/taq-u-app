@@ -114,7 +114,12 @@ class ApiClient {
   }
 
   // Estimates
-  async createEstimate(data: { weightKg: number; serviceLevel: "STANDARD" | "EXPRESS" | "OVERNIGHT"; insured: boolean; orderId?: string }) {
+  async createEstimate(data: {
+    weightKg: number
+    serviceLevel: "STANDARD" | "EXPRESS" | "OVERNIGHT"
+    insured: boolean
+    orderId?: string
+  }) {
     return this.request("/estimates", {
       method: "POST",
       body: JSON.stringify(data),

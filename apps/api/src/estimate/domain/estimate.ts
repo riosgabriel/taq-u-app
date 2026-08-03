@@ -80,8 +80,7 @@ export interface CalculatedEstimate {
  * Delivery time = baseDays + Math.ceil((distanceKm ?? 0) / AVERAGE_KM_PER_DAY).
  */
 export const calculateEstimate = (params: CalculateEstimateParams, now: Date): CalculatedEstimate => {
-  const baseCost =
-    BASE_FEE + params.weightKg * BASE_RATE_PER_KG + (params.distanceKm ?? 0) * DISTANCE_RATE_PER_KM
+  const baseCost = BASE_FEE + params.weightKg * BASE_RATE_PER_KG + (params.distanceKm ?? 0) * DISTANCE_RATE_PER_KM
   const multiplier = SERVICE_MULTIPLIERS[params.serviceLevel]
   const subtotal = baseCost * multiplier
   const insuranceSurcharge = params.insured ? subtotal * INSURANCE_RATE : 0

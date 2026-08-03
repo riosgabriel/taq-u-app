@@ -35,9 +35,7 @@ PackageController.get("/track/:trackingNumber", async (req: Request, res: Respon
       estimatedDelivery: result.order.pickupDate,
       updates: [],
     })
-  }).pipe(
-    Effect.catchTag("order/PackageNotFoundError", (error) => Effect.succeed(notFound(error.message)))
-  )
+  }).pipe(Effect.catchTag("order/PackageNotFoundError", (error) => Effect.succeed(notFound(error.message))))
 
   runEffect(req, res, next, program)
 })

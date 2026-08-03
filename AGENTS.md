@@ -17,7 +17,8 @@ pnpm build            # api then web
 pnpm build:api        # api only
 pnpm build:web        # web only
 pnpm lint             # ESLint across all packages
-pnpm format           # Prettier --write
+pnpm format           # Prettier --check (non-destructive)
+pnpm format:write     # Prettier --write
 pnpm validate         # lint + format --check (no typecheck)
 pnpm oc               # opencode helper script
 
@@ -39,15 +40,15 @@ Use `pnpm --filter @taq-u-app/<pkg>` for single-package commands.
 
 These were settled. Don't undo or re-argue them.
 
-| Decision | Reasoning | Commits |
-|---|---|---|
-| **Centralized runtime** (not per-controller layers) | All layer wiring in `apps/api/src/runtime.ts` via `ManagedRuntime`; controllers import `AppRuntime` and pass programs to `runEffect()` middleware. Eliminates per-controller setup duplication. | `86cb29275` |
-| **Three DDD domains** (`ordering/`, `customer/`, `delivery/`) | Bounded contexts with own api/ dto/ services/ repository/ domain/ subdirs. Cross-domain coupling is explicit (e.g. OrderService imports CustomerService). | `67327880f` |
-| **Event sourcing via `Event` Prisma model** | Cross-context events published via `EventPublisher` inside Prisma transactions (same tx as the domain write). Events are stored as JSON payload in a single `Event` table with `streamId` + `type`. | `4876581a3` |
-| **Effect Schema for input validation** | DTOs are `Schema.Class` decoded via `decodeBody`/`decodeParams` from `@/middleware/validate`. No global validation middleware. | `075db52b0` |
-| **Controllers use `runEffect()` not `Effect.runPromise`** | `runEffect` middleware annotates logs (requestId, method, path), handles `ParseError` -> 400, and forwards unhandled errors to the global `effectErrorHandler`. | `686ad2957` |
-| **Domain coupling uses FK constraints, not service calls** | Driver validation in order assignment uses DB foreign key constraint rather than calling DriverService from OrderService, avoiding bidirectional module coupling. | `806691fd0` |
-| **Config is an injected dependency** | Via `ConfigLive` layer in runtime. Services never read env vars directly. | `4ca7434ff` |
+| Decision                                                      | Reasoning                                                                                                                                                                                           | Commits     |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **Centralized runtime** (not per-controller layers)           | All layer wiring in `apps/api/src/runtime.ts` via `ManagedRuntime`; controllers import `AppRuntime` and pass programs to `runEffect()` middleware. Eliminates per-controller setup duplication.     | `86cb29275` |
+| **Three DDD domains** (`ordering/`, `customer/`, `delivery/`) | Bounded contexts with own api/ dto/ services/ repository/ domain/ subdirs. Cross-domain coupling is explicit (e.g. OrderService imports CustomerService).                                           | `67327880f` |
+| **Event sourcing via `Event` Prisma model**                   | Cross-context events published via `EventPublisher` inside Prisma transactions (same tx as the domain write). Events are stored as JSON payload in a single `Event` table with `streamId` + `type`. | `4876581a3` |
+| **Effect Schema for input validation**                        | DTOs are `Schema.Class` decoded via `decodeBody`/`decodeParams` from `@/middleware/validate`. No global validation middleware.                                                                      | `075db52b0` |
+| **Controllers use `runEffect()` not `Effect.runPromise`**     | `runEffect` middleware annotates logs (requestId, method, path), handles `ParseError` -> 400, and forwards unhandled errors to the global `effectErrorHandler`.                                     | `686ad2957` |
+| **Domain coupling uses FK constraints, not service calls**    | Driver validation in order assignment uses DB foreign key constraint rather than calling DriverService from OrderService, avoiding bidirectional module coupling.                                   | `806691fd0` |
+| **Config is an injected dependency**                          | Via `ConfigLive` layer in runtime. Services never read env vars directly.                                                                                                                           | `4ca7434ff` |
 
 ## Domain module template
 
@@ -110,5 +111,5 @@ Things an agent would confidently do wrong:
 - **Docker**: `docker-compose.yml` at root — PostgreSQL 16.3 + app container (`apps/api/Dockerfile`). Prefer `pnpm dev` for local iteration; Docker is for integration/production.
 - **Prisma schema**: `apps/api/prisma/schema.prisma` — 12 models (Order, Delivery, Driver, Customer, Route, RouteLeg, Package, Location, Payment, Estimate, Carrier, Event)
 - **DB URL**: `postgres://postgres:postgres@localhost:5432/taq-u` (local) / `@db:5432` (Docker)
-- **Env**: root `.env` (gitignored) — DATABASE_URL, POSTGRES_\*, LINEAR_API_KEY
+- **Env**: root `.env` (gitignored) — DATABASE*URL, POSTGRES*\*, LINEAR_API_KEY
 - **pnpm-lock.yaml**: tracked, reproducible installs

@@ -86,80 +86,78 @@ class RollbackSignal extends Error {
 }
 
 describe("Customer persistence (integration)", () => {
-  it.effect(
-    "a customer row written through Prisma can be read back with the same data",
-    () =>
-      Effect.gen(function* () {
-        // Deterministic inputs: no `Date.now()`, no random IDs. The
-        // email is hard-coded and unique; if a previous run left a row
-        // with this email, the unique constraint will fail the test
-        // loudly, which is the right behavior (it means a previous run
-        // did not roll back as expected).
-        const FIXED_EMAIL = "itest-customer@example.com"
+  it.effect("a customer row written through Prisma can be read back with the same data", () =>
+    Effect.gen(function* () {
+      // Deterministic inputs: no `Date.now()`, no random IDs. The
+      // email is hard-coded and unique; if a previous run left a row
+      // with this email, the unique constraint will fail the test
+      // loudly, which is the right behavior (it means a previous run
+      // did not roll back as expected).
+      const FIXED_EMAIL = "itest-customer@example.com"
 
-        const outcome = yield* Effect.tryPromise({
-          try: () =>
-            prisma.$transaction(async (tx) => {
-              // CREATE — observable: a row is written through the real
-              // persistence boundary.
-              const created = await tx.customer.create({
-                data: {
-                  name: "Integration Test Customer",
-                  email: FIXED_EMAIL,
-                  phone: "555-0000",
-                  address: "1 Test Way",
-                },
-              })
+      const outcome = yield* Effect.tryPromise({
+        try: () =>
+          prisma.$transaction(async (tx) => {
+            // CREATE — observable: a row is written through the real
+            // persistence boundary.
+            const created = await tx.customer.create({
+              data: {
+                name: "Integration Test Customer",
+                email: FIXED_EMAIL,
+                phone: "555-0000",
+                address: "1 Test Way",
+              },
+            })
 
-              // READ — observable: the same row is retrievable in the
-              // same transaction, demonstrating the round-trip through
-              // the real DB.
-              const read = await tx.customer.findUnique({ where: { id: created.id } })
+            // READ — observable: the same row is retrievable in the
+            // same transaction, demonstrating the round-trip through
+            // the real DB.
+            const read = await tx.customer.findUnique({ where: { id: created.id } })
 
-              // ASSERT — behavior, not implementation. If any of these
-              // throw, the error propagates out of the transaction,
-              // the rollback happens, and the test fails with that
-              // error. We use plain `Error` so the cause is visible in
-              // the test output rather than a Prisma-wrapped one.
-              if (read === null) {
-                throw new Error("customer was not readable immediately after create")
-              }
-              if (read.id !== created.id) {
-                throw new Error(`id mismatch on round-trip: wrote ${created.id}, read ${read.id}`)
-              }
-              if (read.email !== FIXED_EMAIL) {
-                throw new Error(`email mismatch on round-trip: expected ${FIXED_EMAIL}, got ${read.email}`)
-              }
-              if (read.name !== "Integration Test Customer") {
-                throw new Error(`name mismatch on round-trip: got ${read.name}`)
-              }
-              if (read.phone !== "555-0000") {
-                throw new Error(`phone mismatch on round-trip: got ${read.phone}`)
-              }
-              if (read.address !== "1 Test Way") {
-                throw new Error(`address mismatch on round-trip: got ${read.address}`)
-              }
+            // ASSERT — behavior, not implementation. If any of these
+            // throw, the error propagates out of the transaction,
+            // the rollback happens, and the test fails with that
+            // error. We use plain `Error` so the cause is visible in
+            // the test output rather than a Prisma-wrapped one.
+            if (read === null) {
+              throw new Error("customer was not readable immediately after create")
+            }
+            if (read.id !== created.id) {
+              throw new Error(`id mismatch on round-trip: wrote ${created.id}, read ${read.id}`)
+            }
+            if (read.email !== FIXED_EMAIL) {
+              throw new Error(`email mismatch on round-trip: expected ${FIXED_EMAIL}, got ${read.email}`)
+            }
+            if (read.name !== "Integration Test Customer") {
+              throw new Error(`name mismatch on round-trip: got ${read.name}`)
+            }
+            if (read.phone !== "555-0000") {
+              throw new Error(`phone mismatch on round-trip: got ${read.phone}`)
+            }
+            if (read.address !== "1 Test Way") {
+              throw new Error(`address mismatch on round-trip: got ${read.address}`)
+            }
 
-              // ROLLBACK — force the transaction to abort. The row we
-              // just wrote is never persisted. This is the
-              // "self-cleaning on failure" guarantee from Rule 2.
-              throw new RollbackSignal()
-            }),
-          catch: (e): Error => (e instanceof Error ? e : new Error(String(e))),
-        })
-
-        // The ONLY acceptable outcome is `RollbackSignal` — that means
-        // every assertion above passed and the transaction was rolled
-        // back cleanly. Anything else (a Prisma connection error, an
-        // assertion error that bubbled out) is a real failure; re-throw
-        // so the test reports it. The `as Error` narrows `outcome`
-        // (inferred as `never | Error` because the try callback ends
-        // with an unconditional throw) to the type we know the catch
-        // produced.
-        if (!((outcome as Error) instanceof RollbackSignal)) {
-          throw outcome
-        }
+            // ROLLBACK — force the transaction to abort. The row we
+            // just wrote is never persisted. This is the
+            // "self-cleaning on failure" guarantee from Rule 2.
+            throw new RollbackSignal()
+          }),
+        catch: (e): Error => (e instanceof Error ? e : new Error(String(e))),
       })
+
+      // The ONLY acceptable outcome is `RollbackSignal` — that means
+      // every assertion above passed and the transaction was rolled
+      // back cleanly. Anything else (a Prisma connection error, an
+      // assertion error that bubbled out) is a real failure; re-throw
+      // so the test reports it. The `as Error` narrows `outcome`
+      // (inferred as `never | Error` because the try callback ends
+      // with an unconditional throw) to the type we know the catch
+      // produced.
+      if (!((outcome as Error) instanceof RollbackSignal)) {
+        throw outcome
+      }
+    })
   )
 })
 
