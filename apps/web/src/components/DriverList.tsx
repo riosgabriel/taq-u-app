@@ -1,21 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { api } from "../lib/api"
-import { Driver } from "../types/driver"
+import type { Driver } from "../types/driver"
+import type { OrderResponse } from "../types/order"
 
 interface DriverListProps {
   onEditDriver: (driver: Driver) => void
   onCreateDriver: () => void
 }
 
-type PendingOrder = {
-  id: string
-  pickupAddress: string
-  deliveryAddress: string
-  pickupDate: string
-  driverId: string | null
-  packages: Array<{ trackingNumber: string }>
-}
+type PendingOrder = OrderResponse
 
 const DriverList: React.FC<DriverListProps> = ({ onEditDriver, onCreateDriver }) => {
   const [drivers, setDrivers] = useState<Driver[]>([])
@@ -38,7 +32,7 @@ const DriverList: React.FC<DriverListProps> = ({ onEditDriver, onCreateDriver })
 
   const fetchPendingOrders = async () => {
     try {
-      const allOrders = (await api.getOrders()) as PendingOrder[]
+      const allOrders = await api.getOrders()
       setPendingOrders(allOrders.filter((o) => o.driverId === null || o.driverId === undefined))
     } catch (error) {
       toast.error("Failed to fetch orders")

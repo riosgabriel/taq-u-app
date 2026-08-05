@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { api } from "../lib/api"
-import { OrderResponse, OrderUpdateInput } from "../types/order"
+import type { OrderResponse, OrderUpdateInput } from "../types/order"
 import { toast } from "sonner"
 
 interface OrderEditProps {

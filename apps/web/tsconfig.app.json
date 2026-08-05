@@ -18,7 +18,10 @@
     /* Linting */
     "strict": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
     "noUncheckedSideEffectImports": true,
+    "verbatimModuleSyntax": true,
 
     /* Import paths */
     "paths": {

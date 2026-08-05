@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { api } from "../lib/api"
-import { Driver, DriverCreateInput } from "../types/driver"
+import type { Driver, DriverCreateInput } from "../types/driver"
 
 interface DriverEditProps {
   driverId?: string
