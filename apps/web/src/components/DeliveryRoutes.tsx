@@ -23,8 +23,10 @@ const statusToBucket = (status: DeliveryStatus): RouteBucket => {
     case "FAILED":
     case "CANCELLED":
       return "failed"
-    default:
+    default: {
+      const _exhaustive: never = status
       return "planned"
+    }
   }
 }
 
@@ -40,8 +42,11 @@ const packageStatusToBucket = (
     case "LOST":
       return "lost"
     case "AWAITING_PICKUP":
-    default:
       return "pending"
+    default: {
+      const _exhaustive: never = status
+      return "pending"
+    }
   }
 }
 

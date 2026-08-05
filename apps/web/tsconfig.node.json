@@ -16,6 +16,7 @@
     /* Linting */
     "strict": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
     "noUncheckedSideEffectImports": true
   },
   "include": ["vite.config.ts"]
