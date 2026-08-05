@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Driver } from "../types/driver"
+import type { Driver } from "../types/driver"
 import DriverEdit from "./DriverEdit"
 import DriverList from "./DriverList"
 
