@@ -1,0 +1,5 @@
+# Vendored reference material (read-only, per AGENTS.md)
+repos/
+
+# Agent skill docs
+.opencode/

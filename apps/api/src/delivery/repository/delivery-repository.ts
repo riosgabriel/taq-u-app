@@ -1,6 +1,6 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { DeliveryId, DriverId } from "@/ids"
-import { Delivery, DeliveryStatus } from "@prisma/client"
+import { Delivery, DeliveryStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { ValidatedDeliveryStatus } from "delivery/domain/delivery-status"
 import { CreateDeliveryInput } from "delivery/dto/delivery-dto"
@@ -10,6 +10,16 @@ import { PrismaService } from "prisma-service"
 
 const deliveryNotFound = (id: string) =>
   new RecordNotFoundError({ model: "Delivery", id, message: `Delivery with id ${id} not found` })
+
+const deliveryWithDetailsInclude = {
+  driver: true,
+  route: { include: { pickup: true, dropoff: true } },
+  orders: { include: { packages: true } },
+} satisfies Prisma.DeliveryInclude
+
+export type DeliveryWithDetails = Prisma.DeliveryGetPayload<{
+  include: typeof deliveryWithDetailsInclude
+}>
 
 export type CreateDeliveryResult = {
   readonly delivery: Delivery
@@ -21,6 +31,7 @@ export class DeliveryRepository extends Context.Tag("delivery/DeliveryRepository
   {
     readonly createDelivery: (input: CreateDeliveryInput) => Effect.Effect<CreateDeliveryResult, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Delivery>, PersistenceError>
+    readonly listWithDetails: () => Effect.Effect<Array<DeliveryWithDetails>, PersistenceError>
     readonly getById: (id: DeliveryId) => Effect.Effect<Delivery, PersistenceError>
     readonly updateStatus: (
       id: DeliveryId,
@@ -78,6 +89,12 @@ export const DeliveryRepositoryLive = Layer.effect(
 
       listAll: () => {
         return prismaService.execute(() => prismaService.prisma.delivery.findMany())
+      },
+
+      listWithDetails: () => {
+        return prismaService.execute(() =>
+          prismaService.prisma.delivery.findMany({ include: deliveryWithDetailsInclude })
+        )
       },
 
       getById: (id: DeliveryId) => {
