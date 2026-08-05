@@ -29,8 +29,8 @@ DeliveryController.post("/", async (req: Request, res: Response, next: NextFunct
 DeliveryController.get("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
     const service = yield* DeliveryService
-    const deliveries = yield* service.listDeliveries()
-    return ok(deliveries.map(DeliveryResponse.fromDelivery))
+    const deliveries = yield* service.listDeliveryRoutes()
+    return ok(deliveries)
   })
 
   runEffect(req, res, next, program)

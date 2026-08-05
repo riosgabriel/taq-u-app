@@ -131,6 +131,18 @@ class ApiClient {
     })
   }
 
+  // Deliveries (routes)
+  async getDeliveries() {
+    return this.request("/deliveries")
+  }
+
+  async assignDriverToDelivery(deliveryId: string, driverId: string) {
+    return this.request(`/deliveries/${deliveryId}/assign`, {
+      method: "PATCH",
+      body: JSON.stringify({ driverId }),
+    })
+  }
+
   // Packages (tracking)
   async getPackageByTrackingNumber(trackingNumber: string) {
     return this.request(`/packages/track/${encodeURIComponent(trackingNumber)}`)

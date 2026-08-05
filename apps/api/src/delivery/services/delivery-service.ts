@@ -2,7 +2,12 @@ import { PersistenceError } from "@/persistence-errors"
 import { Context, Data, Effect, Layer } from "effect"
 import Delivery from "delivery/domain/delivery"
 import { isDeliveryReassignable, transitionDelivery } from "delivery/domain/delivery-status"
-import { AssignDeliveryDriverInput, CreateDeliveryInput, UpdateDeliveryStatusInput } from "delivery/dto/delivery-dto"
+import {
+  AssignDeliveryDriverInput,
+  CreateDeliveryInput,
+  DeliveryRouteResponse,
+  UpdateDeliveryStatusInput,
+} from "delivery/dto/delivery-dto"
 import { DeliveryRepository } from "delivery/repository/delivery-repository"
 import { DriverNotFoundError, DriverService } from "delivery/services/driver-service"
 import { EventPublisher } from "events/event-publisher"
@@ -31,6 +36,7 @@ export class DeliveryService extends Context.Tag("delivery/DeliveryService")<
       input: CreateDeliveryInput
     ) => Effect.Effect<Delivery, RouteNotFoundError | DriverNotFoundError | PersistenceError>
     readonly listDeliveries: () => Effect.Effect<Delivery[], PersistenceError>
+    readonly listDeliveryRoutes: () => Effect.Effect<DeliveryRouteResponse[], PersistenceError>
     readonly getDeliveryById: (id: string) => Effect.Effect<Delivery, DeliveryNotFoundError | PersistenceError>
     readonly updateStatus: (
       id: string,
@@ -77,6 +83,12 @@ export const DeliveryServiceLive = Layer.effect(
 
       listDeliveries: () => {
         return deliveryRepository.listAll().pipe(Effect.map((rows) => rows.map(Delivery.fromDelivery)))
+      },
+
+      listDeliveryRoutes: () => {
+        return deliveryRepository
+          .listWithDetails()
+          .pipe(Effect.map((rows) => rows.map(DeliveryRouteResponse.fromDeliveryWithDetails)))
       },
 
       getDeliveryById: (id) => {

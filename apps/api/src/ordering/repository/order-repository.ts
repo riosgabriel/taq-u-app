@@ -1,12 +1,12 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
-import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
-import { TrackingNumberService } from "ordering/services/tracking-number-service"
-import { ValidatedOrderStatus } from "ordering/domain/order-status"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
-import { PrismaService } from "prisma-service"
-import { EventPublisher } from "events/event-publisher"
 import { DomainEvent } from "events/domain-event"
+import { EventPublisher } from "events/event-publisher"
+import { ValidatedOrderStatus } from "ordering/domain/order-status"
+import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
+import { TrackingNumberService } from "ordering/services/tracking-number-service"
+import { PrismaService } from "prisma-service"
 
 const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
@@ -255,13 +255,15 @@ export const OrderRepositoryLive = Layer.effect(
       },
 
       findPackageByTrackingNumber: (trackingNumber: string) => {
-        return prismaService.execute(() =>
-          prismaService.prisma.package
-            .findUnique({
+        return prismaService
+          .execute(() =>
+            prismaService.prisma.package.findUnique({
               where: { trackingNumber },
               include: { order: { include: { customer: true } } },
             })
-            .then((pkg) => {
+          )
+          .pipe(
+            Effect.map((pkg) => {
               if (!pkg) return null
               return {
                 package: {
@@ -278,7 +280,7 @@ export const OrderRepositoryLive = Layer.effect(
                 },
               }
             })
-        )
+          )
       },
 
       updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
