@@ -1,3 +1,4 @@
+import { EstimateId, OrderId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { Estimate } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
@@ -14,8 +15,8 @@ export class EstimateRepository extends Context.Tag("estimate/EstimateRepository
       input: CalculateEstimateInput,
       calculation: { estimatedCost: number; currency: string; estimatedDeliveryTime: Date }
     ) => Effect.Effect<Estimate, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Estimate, PersistenceError>
-    readonly listByOrderId: (orderId: string) => Effect.Effect<Array<Estimate>, PersistenceError>
+    readonly getById: (id: EstimateId) => Effect.Effect<Estimate, PersistenceError>
+    readonly listByOrderId: (orderId: OrderId) => Effect.Effect<Array<Estimate>, PersistenceError>
   }
 >() {}
 
@@ -38,13 +39,13 @@ export const EstimateRepositoryLive = Layer.effect(
         )
       },
 
-      getById: (id: string) => {
+      getById: (id: EstimateId) => {
         return prismaService
           .execute(() => prismaService.prisma.estimate.findUnique({ where: { id } }))
           .pipe(Effect.flatMap((estimate) => (estimate ? Effect.succeed(estimate) : Effect.fail(estimateNotFound(id)))))
       },
 
-      listByOrderId: (orderId: string) => {
+      listByOrderId: (orderId: OrderId) => {
         return prismaService.execute(() => prismaService.prisma.estimate.findMany({ where: { orderId } }))
       },
     })

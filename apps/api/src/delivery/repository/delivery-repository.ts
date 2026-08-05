@@ -1,4 +1,5 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
+import { DeliveryId, DriverId } from "@/ids"
 import { Delivery, DeliveryStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { ValidatedDeliveryStatus } from "delivery/domain/delivery-status"
@@ -31,15 +32,15 @@ export class DeliveryRepository extends Context.Tag("delivery/DeliveryRepository
     readonly createDelivery: (input: CreateDeliveryInput) => Effect.Effect<CreateDeliveryResult, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Delivery>, PersistenceError>
     readonly listWithDetails: () => Effect.Effect<Array<DeliveryWithDetails>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Delivery, PersistenceError>
+    readonly getById: (id: DeliveryId) => Effect.Effect<Delivery, PersistenceError>
     readonly updateStatus: (
-      id: string,
+      id: DeliveryId,
       status: ValidatedDeliveryStatus
     ) => Effect.Effect<{ delivery: Delivery; events: ReadonlyArray<DomainEvent> }, PersistenceError>
     readonly assignDriver: (
-      id: string,
-      newDriverId: string,
-      previousDriverId: string
+      id: DeliveryId,
+      newDriverId: DriverId,
+      previousDriverId: DriverId
     ) => Effect.Effect<{ delivery: Delivery; events: ReadonlyArray<DomainEvent> }, PersistenceError>
   }
 >() {}
@@ -96,13 +97,13 @@ export const DeliveryRepositoryLive = Layer.effect(
         )
       },
 
-      getById: (id: string) => {
+      getById: (id: DeliveryId) => {
         return prismaService
           .execute(() => prismaService.prisma.delivery.findUnique({ where: { id } }))
           .pipe(Effect.flatMap((delivery) => (delivery ? Effect.succeed(delivery) : Effect.fail(deliveryNotFound(id)))))
       },
 
-      updateStatus: (id: string, status: ValidatedDeliveryStatus) => {
+      updateStatus: (id: DeliveryId, status: ValidatedDeliveryStatus) => {
         return Effect.gen(function* () {
           const result = yield* prismaService.$transaction(async (tx) => {
             const updated = await tx.delivery.update({
@@ -124,7 +125,7 @@ export const DeliveryRepositoryLive = Layer.effect(
         })
       },
 
-      assignDriver: (id: string, newDriverId: string, previousDriverId: string) => {
+      assignDriver: (id: DeliveryId, newDriverId: DriverId, previousDriverId: DriverId) => {
         return Effect.gen(function* () {
           const result = yield* prismaService.$transaction(async (tx) => {
             const updated = await tx.delivery.update({

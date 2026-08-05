@@ -1,9 +1,10 @@
 import { RecordNotFoundError } from "@/persistence-errors"
+import { CustomerId } from "@/ids"
 import { describe, expect, it } from "@effect/vitest"
 import { assertLeft } from "@effect/vitest/utils"
 import { CustomerEmailAlreadyExistsError, CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError, CustomerService, CustomerServiceLive } from "customer/services/customer-service"
-import { Effect, Layer } from "effect"
+import { Effect, Layer, Schema } from "effect"
 
 const customer = {
   id: "cust-123",
@@ -11,8 +12,6 @@ const customer = {
   email: "john@example.com",
   phone: "123-456-7890",
   address: "123 Main St",
-  createdAt: new Date("2026-01-01"),
-  updatedAt: new Date("2026-01-01"),
 }
 
 const buildTestLayer = (mockRepo: typeof CustomerRepository.Service) =>
@@ -61,7 +60,7 @@ describe("CustomerService", () => {
     it.effect("returns the customer when found", () =>
       Effect.gen(function* () {
         const service = yield* CustomerService
-        const result = yield* service.getCustomerById("cust-123")
+        const result = yield* service.getCustomerById(Schema.decodeSync(CustomerId)("cust-123"))
         expect(result).toEqual(customer)
       }).pipe(
         Effect.provide(
@@ -80,7 +79,7 @@ describe("CustomerService", () => {
       Effect.gen(function* () {
         const program = Effect.gen(function* () {
           const service = yield* CustomerService
-          return yield* service.getCustomerById("missing-id")
+          return yield* service.getCustomerById(Schema.decodeSync(CustomerId)("missing-id"))
         }).pipe(Effect.either)
 
         const result = yield* program

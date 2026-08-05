@@ -1,5 +1,6 @@
 import { Payment as PrismaPayment } from "@prisma/client"
 import { Schema } from "effect"
+import { OrderId, PaymentId } from "@/ids"
 
 export const PAYMENT_METHODS = ["CREDIT_CARD", "CASH", "BANK_TRANSFER", "MOBILE"] as const
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
@@ -8,7 +9,7 @@ export const PAYMENT_STATUSES = ["PENDING", "PAID", "REFUNDED", "FAILED"] as con
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
 
 export class Payment extends Schema.Class<Payment>("payment/Payment")({
-  id: Schema.NonEmptyString.annotations({
+  id: PaymentId.annotations({
     required: true,
     identifier: "id",
   }),
@@ -35,20 +36,20 @@ export class Payment extends Schema.Class<Payment>("payment/Payment")({
     required: true,
     identifier: "timestamp",
   }),
-  orderId: Schema.NullishOr(Schema.String).annotations({
+  orderId: Schema.NullishOr(OrderId).annotations({
     identifier: "orderId",
   }),
 }) {
   static fromPrisma(payment: PrismaPayment): Payment {
     return {
-      id: payment.id,
+      id: Schema.decodeSync(PaymentId)(payment.id),
       method: payment.method,
       amount: payment.amount,
       currency: payment.currency,
       status: payment.status,
       transactionId: payment.transactionId,
       timestamp: payment.timestamp,
-      orderId: payment.orderId,
+      orderId: payment.orderId ? Schema.decodeSync(OrderId)(payment.orderId) : null,
     }
   }
 }

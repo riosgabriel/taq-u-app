@@ -1,5 +1,6 @@
 import { Schema } from "effect"
 import { Email } from "@/middleware/validate"
+import { CustomerId } from "@/ids"
 import Customer from "customer/domain/customer"
 
 export class CustomerCreateInput extends Schema.Class<CustomerCreateInput>("CustomerCreateInput")({
@@ -22,7 +23,7 @@ export class CustomerCreateInput extends Schema.Class<CustomerCreateInput>("Cust
 }) {}
 
 export class CustomerResponse extends Schema.Class<CustomerResponse>("CustomerResponse")({
-  id: Schema.NonEmptyString,
+  id: CustomerId,
   name: Schema.NonEmptyString,
   email: Schema.NonEmptyString,
   phone: Schema.String,

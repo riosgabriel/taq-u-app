@@ -1,3 +1,4 @@
+import { EstimateId, OrderId } from "@/ids"
 import { PersistenceError } from "@/persistence-errors"
 import { Context, Data, Effect, Layer } from "effect"
 import { calculateEstimate, Estimate } from "estimate/domain/estimate"
@@ -21,8 +22,8 @@ export class EstimateService extends Context.Tag("estimate/EstimateService")<
       never
     >
     readonly create: (input: CalculateEstimateInput) => Effect.Effect<Estimate, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Estimate, EstimateNotFoundError | PersistenceError>
-    readonly listByOrderId: (orderId: string) => Effect.Effect<Array<Estimate>, PersistenceError>
+    readonly getById: (id: EstimateId) => Effect.Effect<Estimate, EstimateNotFoundError | PersistenceError>
+    readonly listByOrderId: (orderId: OrderId) => Effect.Effect<Array<Estimate>, PersistenceError>
   }
 >() {}
 

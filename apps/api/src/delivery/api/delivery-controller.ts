@@ -1,6 +1,7 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { badRequest, notFound, ok } from "@/middleware/http"
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { decodeBody, decodeParams } from "@/middleware/validate"
+import { DeliveryId } from "@/ids"
 import {
   AssignDeliveryDriverInput,
   CreateDeliveryInput,
@@ -8,10 +9,12 @@ import {
   UpdateDeliveryStatusInput,
 } from "delivery/dto/delivery-dto"
 import { DeliveryService } from "delivery/services/delivery-service"
-import { Effect } from "effect"
+import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 
 export const DeliveryController = Router()
+
+const DeliveryIdParams = Schema.Struct({ id: DeliveryId })
 
 DeliveryController.post("/", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
@@ -38,7 +41,7 @@ DeliveryController.get("/", async (req: Request, res: Response, next: NextFuncti
 
 DeliveryController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(DeliveryIdParams, req)
     const service = yield* DeliveryService
     return ok(DeliveryResponse.fromDelivery(yield* service.getDeliveryById(id)))
   }).pipe(Effect.catchTag("delivery/DeliveryNotFoundError", (error) => Effect.succeed(notFound(error.message))))
@@ -48,7 +51,7 @@ DeliveryController.get("/:id", async (req: Request, res: Response, next: NextFun
 
 DeliveryController.patch("/:id/status", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(DeliveryIdParams, req)
     const input = yield* decodeBody(UpdateDeliveryStatusInput, req)
     const service = yield* DeliveryService
     return ok(DeliveryResponse.fromDelivery(yield* service.updateStatus(id, input)))
@@ -62,7 +65,7 @@ DeliveryController.patch("/:id/status", async (req: Request, res: Response, next
 
 DeliveryController.patch("/:id/assign", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(DeliveryIdParams, req)
     const input = yield* decodeBody(AssignDeliveryDriverInput, req)
     const service = yield* DeliveryService
     return ok(DeliveryResponse.fromDelivery(yield* service.assignDriver(id, input)))

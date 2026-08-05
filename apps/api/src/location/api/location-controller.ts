@@ -1,10 +1,13 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { notFound, ok } from "@/middleware/http"
-import { decodeBody, decodeParams, IdParams } from "@/middleware/validate"
+import { decodeBody, decodeParams } from "@/middleware/validate"
+import { LocationId } from "@/ids"
 import { LocationCreateInput, LocationResponse, LocationUpdateInput } from "location/dto/location-dto"
 import { LocationService } from "location/services/location-service"
-import { Effect } from "effect"
+import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
+
+const LocationIdParams = Schema.Struct({ id: LocationId })
 
 export const LocationController = Router()
 
@@ -30,7 +33,7 @@ LocationController.get("/", async (req: Request, res: Response, next: NextFuncti
 
 LocationController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(LocationIdParams, req)
     const locationService = yield* LocationService
     return ok(LocationResponse.fromLocation(yield* locationService.getById(id)))
   }).pipe(Effect.catchTag("location/LocationNotFoundError", (error) => Effect.succeed(notFound(error.message))))
@@ -40,7 +43,7 @@ LocationController.get("/:id", async (req: Request, res: Response, next: NextFun
 
 LocationController.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(LocationIdParams, req)
     const locationInput = yield* decodeBody(LocationUpdateInput, req)
     const locationService = yield* LocationService
     return ok(LocationResponse.fromLocation(yield* locationService.update(id, locationInput)))
@@ -51,7 +54,7 @@ LocationController.patch("/:id", async (req: Request, res: Response, next: NextF
 
 LocationController.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(IdParams, req)
+    const { id } = yield* decodeParams(LocationIdParams, req)
     const locationService = yield* LocationService
     yield* locationService.delete(id)
     return ok({ message: "Location deleted successfully" })

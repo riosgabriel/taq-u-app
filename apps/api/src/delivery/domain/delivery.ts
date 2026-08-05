@@ -1,10 +1,11 @@
 import { Delivery as PrismaDelivery } from "@prisma/client"
 import { Schema } from "effect"
+import { DeliveryId, DriverId, RouteId } from "@/ids"
 
 export class Delivery extends Schema.Class<Delivery>("delivery/Delivery")({
-  id: Schema.NonEmptyString,
-  driverId: Schema.NonEmptyString,
-  routeId: Schema.NonEmptyString,
+  id: DeliveryId,
+  driverId: DriverId,
+  routeId: RouteId,
   estimatedPickupTime: Schema.NullishOr(Schema.Date),
   estimatedDeliveryTime: Schema.NullishOr(Schema.Date),
   actualPickupTime: Schema.NullishOr(Schema.Date),
@@ -15,9 +16,9 @@ export class Delivery extends Schema.Class<Delivery>("delivery/Delivery")({
 }) {
   static fromDelivery(delivery: PrismaDelivery): Delivery {
     return {
-      id: delivery.id,
-      driverId: delivery.driverId,
-      routeId: delivery.routeId,
+      id: Schema.decodeSync(DeliveryId)(delivery.id),
+      driverId: Schema.decodeSync(DriverId)(delivery.driverId),
+      routeId: Schema.decodeSync(RouteId)(delivery.routeId),
       estimatedPickupTime: delivery.estimatedPickupTime ?? null,
       estimatedDeliveryTime: delivery.estimatedDeliveryTime ?? null,
       actualPickupTime: delivery.actualPickupTime ?? null,

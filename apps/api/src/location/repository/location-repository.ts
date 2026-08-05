@@ -1,6 +1,7 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { Location } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
+import { LocationId } from "@/ids"
 import { LocationCreateInput, LocationUpdateInput } from "location/dto/location-dto"
 import { PrismaService } from "prisma-service"
 
@@ -12,9 +13,9 @@ export class LocationRepository extends Context.Tag("location/LocationRepository
   {
     readonly create: (locationInput: LocationCreateInput) => Effect.Effect<Location, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Location>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Location, PersistenceError>
-    readonly update: (id: string, locationUpdateInput: LocationUpdateInput) => Effect.Effect<Location, PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<void, PersistenceError>
+    readonly getById: (id: LocationId) => Effect.Effect<Location, PersistenceError>
+    readonly update: (id: LocationId, locationUpdateInput: LocationUpdateInput) => Effect.Effect<Location, PersistenceError>
+    readonly delete: (id: LocationId) => Effect.Effect<void, PersistenceError>
   }
 >() {}
 
@@ -41,13 +42,13 @@ export const LocationRepositoryLive = Layer.effect(
         return prismaService.execute(() => prismaService.prisma.location.findMany())
       },
 
-      getById: (id: string) => {
+      getById: (id: LocationId) => {
         return prismaService
           .execute(() => prismaService.prisma.location.findUnique({ where: { id } }))
           .pipe(Effect.flatMap((location) => (location ? Effect.succeed(location) : Effect.fail(locationNotFound(id)))))
       },
 
-      update: (id: string, locationUpdateInput: LocationUpdateInput) => {
+      update: (id: LocationId, locationUpdateInput: LocationUpdateInput) => {
         return prismaService.execute(() =>
           prismaService.prisma.location.update({
             where: { id },
@@ -61,8 +62,10 @@ export const LocationRepositoryLive = Layer.effect(
         )
       },
 
-      delete: (id: string) => {
-        return prismaService.execute(() => prismaService.prisma.location.delete({ where: { id } })).pipe(Effect.asVoid)
+delete: (id: LocationId) => {
+        return prismaService
+          .execute(() => prismaService.prisma.location.delete({ where: { id } }))
+          .pipe(Effect.asVoid)
       },
     })
   })

@@ -1,4 +1,5 @@
 import { PersistenceError } from "@/persistence-errors"
+import { LocationId } from "@/ids"
 import { Context, Data, Effect, Layer } from "effect"
 import Location from "location/domain/location"
 import { LocationCreateInput, LocationUpdateInput } from "location/dto/location-dto"
@@ -14,12 +15,12 @@ export class LocationService extends Context.Tag("location/LocationService")<
   {
     readonly create: (locationCreateInput: LocationCreateInput) => Effect.Effect<Location, PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Location>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Location, LocationNotFoundError | PersistenceError>
+    readonly getById: (id: LocationId) => Effect.Effect<Location, LocationNotFoundError | PersistenceError>
     readonly update: (
-      id: string,
+      id: LocationId,
       locationUpdateInput: LocationUpdateInput
     ) => Effect.Effect<Location, LocationNotFoundError | PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<void, LocationNotFoundError | PersistenceError>
+    readonly delete: (id: LocationId) => Effect.Effect<void, LocationNotFoundError | PersistenceError>
   }
 >() {}
 
@@ -43,7 +44,7 @@ export const LocationServiceLive = Layer.effect(
         })
       },
 
-      getById: (id: string) => {
+      getById: (id: LocationId) => {
         return repository.getById(id).pipe(
           Effect.map((location) => Location.fromLocation(location)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -52,7 +53,7 @@ export const LocationServiceLive = Layer.effect(
         )
       },
 
-      update: (id: string, locationUpdateInput: LocationUpdateInput) => {
+      update: (id: LocationId, locationUpdateInput: LocationUpdateInput) => {
         return repository.update(id, locationUpdateInput).pipe(
           Effect.map((location) => Location.fromLocation(location)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -61,14 +62,12 @@ export const LocationServiceLive = Layer.effect(
         )
       },
 
-      delete: (id: string) => {
-        return repository
-          .delete(id)
-          .pipe(
-            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
-              Effect.fail(new LocationNotFoundError({ id, message: error.message }))
-            )
+delete: (id: LocationId) => {
+        return repository.delete(id).pipe(
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+            Effect.fail(new LocationNotFoundError({ id, message: error.message }))
           )
+        )
       },
     })
   })

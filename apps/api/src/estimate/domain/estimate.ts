@@ -1,3 +1,4 @@
+import { EstimateId, OrderId } from "@/ids"
 import { Estimate as PrismaEstimate } from "@prisma/client"
 import { Schema } from "effect"
 
@@ -101,10 +102,7 @@ export const calculateEstimate = (params: CalculateEstimateParams, now: Date): C
 }
 
 export class Estimate extends Schema.Class<Estimate>("estimate/Estimate")({
-  id: Schema.NonEmptyString.annotations({
-    required: true,
-    identifier: "id",
-  }),
+  id: Schema.NullishOr(EstimateId),
   estimatedCost: Schema.Number.annotations({
     required: true,
     identifier: "estimatedCost",
@@ -117,17 +115,17 @@ export class Estimate extends Schema.Class<Estimate>("estimate/Estimate")({
     required: true,
     identifier: "estimatedDeliveryTime",
   }),
-  orderId: Schema.NullishOr(Schema.String).annotations({
+  orderId: Schema.NullishOr(OrderId).annotations({
     identifier: "orderId",
   }),
 }) {
   static fromPrisma(estimate: PrismaEstimate): Estimate {
     return {
-      id: estimate.id,
+      id: estimate.id ? Schema.decodeSync(EstimateId)(estimate.id) : null,
       estimatedCost: estimate.estimatedCost,
       currency: estimate.currency,
       estimatedDeliveryTime: estimate.estimatedDeliveryTime,
-      orderId: estimate.orderId,
+      orderId: estimate.orderId ? Schema.decodeSync(OrderId)(estimate.orderId) : null,
     }
   }
 }
