@@ -57,7 +57,9 @@ const RouteLegFields = Schema.Struct({
   endTime: Schema.optional(Schema.Date),
 })
 
-export class RouteLegCreateInput extends Schema.Class<RouteLegCreateInput>("route/RouteLegCreateInput")(RouteLegFields) {}
+export class RouteLegCreateInput extends Schema.Class<RouteLegCreateInput>("route/RouteLegCreateInput")(
+  RouteLegFields
+) {}
 
 /**
  * Input for POST /api/routes/:id/legs. Distinct class identifier so

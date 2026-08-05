@@ -4,5 +4,5 @@ export default {
   singleQuote: false,
   printWidth: 120,
   tabWidth: 2,
-  "quote-props": "consistent",
+  quoteProps: "as-needed",
 }

@@ -52,7 +52,8 @@ pnpm dev:api          # API only
 pnpm dev:web          # Web only (Vite)
 pnpm build            # Build API then web
 pnpm lint             # ESLint across all packages
-pnpm format           # Prettier --write
+pnpm format           # Prettier --check (non-destructive)
+pnpm format:write     # Prettier --write
 pnpm test             # Run API tests (apps/api)
 pnpm validate         # lint + format --check (no typecheck)
 pnpm oc               # OpenCode AI assistant (loads .env)

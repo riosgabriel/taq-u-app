@@ -1,5 +1,10 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api"
 
+import type { CustomerCreateInput, CustomerResponse } from "../types/customer"
+import type { Driver, DriverCreateInput, DriverUpdateInput } from "../types/driver"
+import type { EstimateResponse } from "../types/estimate"
+import type { OrderCreateInput, OrderResponse, OrderUpdateInput } from "../types/order"
+
 class ApiClient {
   private baseUrl: string
 
@@ -27,11 +32,11 @@ class ApiClient {
   }
 
   // Orders
-  async getOrders() {
+  async getOrders(): Promise<OrderResponse[]> {
     return this.request("/orders")
   }
 
-  async getOrder(id: string) {
+  async getOrder(id: string): Promise<OrderResponse> {
     return this.request(`/orders/${id}`)
   }
 
@@ -40,7 +45,7 @@ class ApiClient {
    * caches the response so retries with the same key return the
    * cached result instead of creating a duplicate.
    */
-  async createOrder(data: any, idempotencyKey?: string) {
+  async createOrder(data: OrderCreateInput, idempotencyKey?: string): Promise<OrderResponse> {
     return this.request("/orders", {
       method: "POST",
       headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
@@ -48,36 +53,36 @@ class ApiClient {
     })
   }
 
-  async updateOrder(id: string, data: any) {
+  async updateOrder(id: string, data: OrderUpdateInput): Promise<OrderResponse> {
     return this.request(`/orders/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     })
   }
 
-  async assignOrderToDriver(orderId: string, driverId: string) {
+  async assignOrderToDriver(orderId: string, driverId: string): Promise<OrderResponse> {
     return this.request(`/orders/${orderId}/assign`, {
       method: "POST",
       body: JSON.stringify({ driverId }),
     })
   }
 
-  async cancelOrder(id: string) {
+  async cancelOrder(id: string): Promise<OrderResponse> {
     return this.request(`/orders/${id}`, {
       method: "DELETE",
     })
   }
 
   // Customers
-  async getCustomers() {
+  async getCustomers(): Promise<CustomerResponse[]> {
     return this.request("/customers")
   }
 
-  async getCustomer(id: string) {
+  async getCustomer(id: string): Promise<CustomerResponse> {
     return this.request(`/customers/${id}`)
   }
 
-  async createCustomer(data: any) {
+  async createCustomer(data: CustomerCreateInput): Promise<CustomerResponse> {
     return this.request("/customers", {
       method: "POST",
       body: JSON.stringify(data),
@@ -85,36 +90,41 @@ class ApiClient {
   }
 
   // Drivers
-  async getDrivers() {
+  async getDrivers(): Promise<Driver[]> {
     return this.request("/drivers")
   }
 
-  async getDriver(id: string) {
+  async getDriver(id: string): Promise<Driver> {
     return this.request(`/drivers/${id}`)
   }
 
-  async createDriver(data: any) {
+  async createDriver(data: DriverCreateInput): Promise<Driver> {
     return this.request("/drivers", {
       method: "POST",
       body: JSON.stringify(data),
     })
   }
 
-  async updateDriver(id: string, data: any) {
+  async updateDriver(id: string, data: DriverUpdateInput): Promise<Driver> {
     return this.request(`/drivers/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     })
   }
 
-  async deleteDriver(id: string) {
+  async deleteDriver(id: string): Promise<Driver> {
     return this.request(`/drivers/${id}`, {
       method: "DELETE",
     })
   }
 
   // Estimates
-  async createEstimate(data: { weightKg: number; serviceLevel: "STANDARD" | "EXPRESS" | "OVERNIGHT"; insured: boolean; orderId?: string }) {
+  async createEstimate(data: {
+    weightKg: number
+    serviceLevel: "STANDARD" | "EXPRESS" | "OVERNIGHT"
+    insured: boolean
+    orderId?: string
+  }): Promise<EstimateResponse> {
     return this.request("/estimates", {
       method: "POST",
       body: JSON.stringify(data),

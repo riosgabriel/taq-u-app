@@ -41,9 +41,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
       orderId: string,
       packageInput: AddPackageInput
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
-    readonly findPackageByTrackingNumber: (
-      trackingNumber: string
-    ) => Effect.Effect<
+    readonly findPackageByTrackingNumber: (trackingNumber: string) => Effect.Effect<
       {
         package: { id: string; trackingNumber: string; status: string }
         order: { id: string; pickupAddress: string; deliveryAddress: string; pickupDate: Date; customerName: string }
