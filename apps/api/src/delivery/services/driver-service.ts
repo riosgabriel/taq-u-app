@@ -69,12 +69,14 @@ export const DriverServiceLive = Layer.effect(
         )
       },
 
-delete: (id: DriverId) => {
-        return repository.delete(id).pipe(
-          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
-            Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+      delete: (id: DriverId) => {
+        return repository
+          .delete(id)
+          .pipe(
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+              Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+            )
           )
-        )
       },
 
       listOrders: (driverId: DriverId) => {

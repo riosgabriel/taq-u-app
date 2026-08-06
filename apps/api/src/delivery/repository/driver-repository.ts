@@ -84,10 +84,8 @@ export const DriverRepositoryLive = Layer.effect(
         )
       },
 
-delete: (id: DriverId) => {
-        return prismaService
-          .execute(() => prismaService.prisma.driver.delete({ where: { id } }))
-          .pipe(Effect.asVoid)
+      delete: (id: DriverId) => {
+        return prismaService.execute(() => prismaService.prisma.driver.delete({ where: { id } })).pipe(Effect.asVoid)
       },
     })
   })

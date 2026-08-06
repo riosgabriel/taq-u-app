@@ -2,12 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
 import type { Driver } from "@/types/driver"
-import type {
-  DeliveryRoute,
-  DeliveryStatus,
-  PackageStatus,
-  RouteBucket,
-} from "@/types/delivery"
+import type { DeliveryRoute, DeliveryStatus, PackageStatus, RouteBucket } from "@/types/delivery"
 
 const statusToBucket = (status: DeliveryStatus): RouteBucket => {
   switch (status) {
@@ -30,9 +25,7 @@ const statusToBucket = (status: DeliveryStatus): RouteBucket => {
   }
 }
 
-const packageStatusToBucket = (
-  status: PackageStatus
-): "pending" | "in_transit" | "delivered" | "lost" => {
+const packageStatusToBucket = (status: PackageStatus): "pending" | "in_transit" | "delivered" | "lost" => {
   switch (status) {
     case "DELIVERED":
       return "delivered"
@@ -114,8 +107,7 @@ const titleCase = (s: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase())
 
-const routeName = (route: DeliveryRoute) =>
-  `${route.route.pickup.name} → ${route.route.dropoff.name}`
+const routeName = (route: DeliveryRoute) => `${route.route.pickup.name} → ${route.route.dropoff.name}`
 
 const getProgress = (route: DeliveryRoute) => {
   const bucket = statusToBucket(route.status)
@@ -124,9 +116,7 @@ const getProgress = (route: DeliveryRoute) => {
 
   const total = route.packages.length
   if (total === 0) return 0
-  const delivered = route.packages.filter(
-    (p) => p.status === "DELIVERED"
-  ).length
+  const delivered = route.packages.filter((p) => p.status === "DELIVERED").length
   return Math.round((delivered / total) * 100)
 }
 
@@ -139,9 +129,7 @@ export function DeliveryRoutes() {
   const [error, setError] = useState<string | null>(null)
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>("all")
-  const [selectedDriverByRoute, setSelectedDriverByRoute] = useState<
-    Record<string, string>
-  >({})
+  const [selectedDriverByRoute, setSelectedDriverByRoute] = useState<Record<string, string>>({})
   const [assigningRouteId, setAssigningRouteId] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
@@ -176,14 +164,8 @@ export function DeliveryRoutes() {
   )
 
   const stats = useMemo(() => {
-    const active = routes.filter(
-      (r) => statusToBucket(r.status) === "in_progress"
-    ).length
-    const deliveredPkgs = routes.reduce(
-      (sum, r) =>
-        sum + r.packages.filter((p) => p.status === "DELIVERED").length,
-      0
-    )
+    const active = routes.filter((r) => statusToBucket(r.status) === "in_progress").length
+    const deliveredPkgs = routes.reduce((sum, r) => sum + r.packages.filter((p) => p.status === "DELIVERED").length, 0)
     const totalPkgs = routes.reduce((sum, r) => sum + r.packages.length, 0)
     return { total: routes.length, active, deliveredPkgs, totalPkgs }
   }, [routes])
@@ -228,9 +210,7 @@ export function DeliveryRoutes() {
       <div className="p-6">
         <div className="text-center py-12">
           <div className="text-4xl mb-4">⚠️</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Could not load deliveries
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Could not load deliveries</h3>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             type="button"
@@ -249,12 +229,8 @@ export function DeliveryRoutes() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Delivery Routes
-          </h2>
-          <p className="text-gray-600">
-            Monitor and manage delivery routes and driver assignments
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Delivery Routes</h2>
+          <p className="text-gray-600">Monitor and manage delivery routes and driver assignments</p>
         </div>
         <button
           type="button"
@@ -294,9 +270,7 @@ export function DeliveryRoutes() {
       {filteredRoutes.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-4">🚛</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No deliveries yet
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No deliveries yet</h3>
           <p className="text-gray-600">
             {filter !== "all"
               ? "No routes match this filter."
@@ -311,22 +285,14 @@ export function DeliveryRoutes() {
             const canAssign = ASSIGNABLE_STATUSES.includes(route.status)
 
             return (
-              <div
-                key={route.id}
-                className="bg-white border border-gray-200 rounded-lg overflow-hidden"
-              >
+              <div key={route.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold">
-                          {routeName(route)}
-                        </h3>
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(bucket)}`}
-                        >
-                          {getStatusIcon(bucket)}{" "}
-                          {bucket.replace("_", " ").toUpperCase()}
+                        <h3 className="text-xl font-semibold">{routeName(route)}</h3>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(bucket)}`}>
+                          {getStatusIcon(bucket)} {bucket.replace("_", " ").toUpperCase()}
                         </span>
                       </div>
 
@@ -336,19 +302,13 @@ export function DeliveryRoutes() {
                           <p className="font-semibold">{route.driver.name}</p>
                           <p className="text-gray-500">
                             {titleCase(route.driver.vehicleType)}
-                            {route.driver.licenseNumber
-                              ? ` · ${route.driver.licenseNumber}`
-                              : ""}
+                            {route.driver.licenseNumber ? ` · ${route.driver.licenseNumber}` : ""}
                           </p>
                         </div>
                         <div>
                           <p className="text-gray-600">Route</p>
-                          <p className="font-semibold">
-                            {route.route.pickup.name}
-                          </p>
-                          <p className="text-gray-500">
-                            → {route.route.dropoff.name}
-                          </p>
+                          <p className="font-semibold">{route.route.pickup.name}</p>
+                          <p className="text-gray-500">→ {route.route.dropoff.name}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Packages</p>
@@ -368,9 +328,7 @@ export function DeliveryRoutes() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900 mb-1">
-                        {progress}%
-                      </div>
+                      <div className="text-2xl font-bold text-gray-900 mb-1">{progress}%</div>
                       <div className="text-sm text-gray-500">Complete</div>
                     </div>
                   </div>
@@ -389,16 +347,10 @@ export function DeliveryRoutes() {
                   <div className="flex flex-wrap items-center gap-2 mb-4">
                     <button
                       type="button"
-                      onClick={() =>
-                        setSelectedRoute(
-                          selectedRoute === route.id ? null : route.id
-                        )
-                      }
+                      onClick={() => setSelectedRoute(selectedRoute === route.id ? null : route.id)}
                       className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-sm font-medium"
                     >
-                      {selectedRoute === route.id
-                        ? "Hide Details"
-                        : "View Details"}
+                      {selectedRoute === route.id ? "Hide Details" : "View Details"}
                     </button>
 
                     {canAssign && (
@@ -423,15 +375,10 @@ export function DeliveryRoutes() {
                         <button
                           type="button"
                           onClick={() => handleAssign(route.id)}
-                          disabled={
-                            !selectedDriverByRoute[route.id] ||
-                            assigningRouteId === route.id
-                          }
+                          disabled={!selectedDriverByRoute[route.id] || assigningRouteId === route.id}
                           className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          {assigningRouteId === route.id
-                            ? "Assigning…"
-                            : "Assign"}
+                          {assigningRouteId === route.id ? "Assigning…" : "Assign"}
                         </button>
                       </div>
                     )}
@@ -443,21 +390,14 @@ export function DeliveryRoutes() {
                       <h4 className="font-semibold mb-3">Package Details</h4>
                       <div className="space-y-2">
                         {route.packages.map((pkg, index) => (
-                          <div
-                            key={pkg.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
-                          >
+                          <div key={pkg.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
                             <div className="flex items-center gap-3">
                               <span className="w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full flex items-center justify-center text-sm font-semibold">
                                 {index + 1}
                               </span>
                               <div>
-                                <p className="font-mono font-semibold">
-                                  {pkg.trackingNumber}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  {pkg.address}
-                                </p>
+                                <p className="font-mono font-semibold">{pkg.trackingNumber}</p>
+                                <p className="text-sm text-gray-600">{pkg.address}</p>
                               </div>
                             </div>
                             <span
@@ -480,27 +420,19 @@ export function DeliveryRoutes() {
       {/* Summary Stats */}
       <div className="mt-8 grid md:grid-cols-4 gap-4">
         <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">
-            {stats.total}
-          </div>
+          <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
           <div className="text-sm text-blue-700">Total Routes</div>
         </div>
         <div className="bg-yellow-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-yellow-600">
-            {stats.active}
-          </div>
+          <div className="text-2xl font-bold text-yellow-600">{stats.active}</div>
           <div className="text-sm text-yellow-700">Active Routes</div>
         </div>
         <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">
-            {stats.deliveredPkgs}
-          </div>
+          <div className="text-2xl font-bold text-green-600">{stats.deliveredPkgs}</div>
           <div className="text-sm text-green-700">Delivered Packages</div>
         </div>
         <div className="bg-purple-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600">
-            {stats.totalPkgs}
-          </div>
+          <div className="text-2xl font-bold text-purple-600">{stats.totalPkgs}</div>
           <div className="text-sm text-purple-700">Total Packages</div>
         </div>
       </div>

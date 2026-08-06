@@ -1,6 +1,6 @@
-import { EstimateId, OrderId } from "@/ids";
-import { Schema } from "effect";
-import { CalculateEstimateParams, Estimate, SERVICE_LEVELS } from "estimate/domain/estimate";
+import { EstimateId, OrderId } from "@/ids"
+import { Schema } from "effect"
+import { CalculateEstimateParams, Estimate, SERVICE_LEVELS } from "estimate/domain/estimate"
 
 export class CalculateEstimateInput extends Schema.Class<CalculateEstimateInput>("estimate/CalculateEstimateInput")({
   weightKg: Schema.Number.pipe(Schema.between(0.01, 1000)).annotations({
@@ -15,9 +15,7 @@ export class CalculateEstimateInput extends Schema.Class<CalculateEstimateInput>
     required: true,
     identifier: "insured",
   }),
-  distanceKm: Schema.optional(
-    Schema.Number.pipe(Schema.between(0, 50_000))
-  ),
+  distanceKm: Schema.optional(Schema.Number.pipe(Schema.between(0, 50_000))),
   orderId: Schema.optional(OrderId),
 }) {}
 

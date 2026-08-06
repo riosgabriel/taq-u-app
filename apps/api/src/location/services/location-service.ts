@@ -62,12 +62,14 @@ export const LocationServiceLive = Layer.effect(
         )
       },
 
-delete: (id: LocationId) => {
-        return repository.delete(id).pipe(
-          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
-            Effect.fail(new LocationNotFoundError({ id, message: error.message }))
+      delete: (id: LocationId) => {
+        return repository
+          .delete(id)
+          .pipe(
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+              Effect.fail(new LocationNotFoundError({ id, message: error.message }))
+            )
           )
-        )
       },
     })
   })
