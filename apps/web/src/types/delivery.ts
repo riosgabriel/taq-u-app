@@ -8,12 +8,7 @@ export type DeliveryStatus =
   | "FAILED"
   | "CANCELLED"
 
-export type PackageStatus =
-  | "AWAITING_PICKUP"
-  | "IN_TRANSIT"
-  | "OUT_FOR_DELIVERY"
-  | "DELIVERED"
-  | "LOST"
+export type PackageStatus = "AWAITING_PICKUP" | "IN_TRANSIT" | "OUT_FOR_DELIVERY" | "DELIVERED" | "LOST"
 
 export type RouteBucket = "planned" | "in_progress" | "completed" | "failed"
 

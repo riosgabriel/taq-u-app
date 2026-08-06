@@ -1,9 +1,9 @@
-import { describe, expect, it } from "@effect/vitest"
-import { DriverService, DriverServiceLive } from "delivery/services/driver-service"
-import { DriverRepository } from "delivery/repository/driver-repository"
-import { OrderRepository, type OrderWithPackages } from "ordering/repository/order-repository"
-import { Effect, Layer, Schema } from "effect"
 import { DriverId } from "@/ids"
+import { describe, expect, it } from "@effect/vitest"
+import { DriverRepository } from "delivery/repository/driver-repository"
+import { DriverService, DriverServiceLive } from "delivery/services/driver-service"
+import { Effect, Layer, Schema } from "effect"
+import { OrderRepository } from "ordering/repository/order-repository"
 
 const driver = {
   id: "driver-123",
@@ -28,6 +28,7 @@ const buildTestLayer = (mockRepo: typeof DriverRepository.Service) => {
     assignDriver: () => Effect.die("unexpected"),
     addPackageToOrder: () => Effect.die("unexpected"),
     updatePackageStatus: () => Effect.die("unexpected"),
+    findPackageByTrackingNumber: () => Effect.die("unexpected"),
   })
 
   return DriverServiceLive.pipe(

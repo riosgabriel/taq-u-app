@@ -6,8 +6,8 @@ import {
   UnexpectedPersistenceError,
   UniqueConstraintViolation,
 } from "@/persistence-errors"
-import { ConfigService } from "config-service"
 import { Prisma, PrismaClient } from "@prisma/client"
+import { ConfigService } from "config-service"
 import { Context, Effect, Layer } from "effect"
 
 const mapKnownPrismaError = (error: Prisma.PrismaClientKnownRequestError): PersistenceError => {
@@ -38,10 +38,10 @@ export const mapPrismaError = (error: unknown): PersistenceError => {
     return mapKnownPrismaError(error)
   }
   if (error instanceof Prisma.PrismaClientInitializationError) {
-    return new DatabaseUnavailable()
+    return new DatabaseUnavailable({ meta: error, message: error.message })
   }
   if (error instanceof Prisma.PrismaClientRustPanicError) {
-    return new DatabaseUnavailable()
+    return new DatabaseUnavailable({ meta: error, message: error.message })
   }
   if (error instanceof Prisma.PrismaClientUnknownRequestError) {
     return new UnexpectedPersistenceError({ cause: error })

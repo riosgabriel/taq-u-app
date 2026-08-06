@@ -66,8 +66,8 @@
  *     own state.
  */
 
-import { Prisma, PrismaClient } from "@prisma/client"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, it } from "@effect/vitest"
+import { PrismaClient } from "@prisma/client"
 import { Effect } from "effect"
 import { afterAll } from "vitest"
 

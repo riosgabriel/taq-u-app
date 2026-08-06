@@ -42,14 +42,12 @@ export const CustomerServiceLive = Layer.effect(
       },
 
       getCustomerById: (id: CustomerId) => {
-        return repository
-          .getCustomerById(id)
-          .pipe(
-            Effect.map(Customer.fromPrisma),
-            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
-              Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
-            )
+        return repository.getCustomerById(id).pipe(
+          Effect.map(Customer.fromPrisma),
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+            Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
           )
+        )
       },
     })
   })
