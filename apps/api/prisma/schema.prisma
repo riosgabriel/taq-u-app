@@ -272,3 +272,15 @@ model Event {
   @@index([type])
   @@index([streamId])
 }
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  eventType String
+  streamId  String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([streamId])
+  @@index([eventType])
+  @@index([createdAt])
+}
