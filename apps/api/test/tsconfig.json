@@ -7,7 +7,8 @@
       "@/*": ["./*"],
       "@ordering/*": ["./ordering/*"],
       "@customer/*": ["./customer/*"],
-      "@delivery/*": ["./delivery/*"]
+      "@delivery/*": ["./delivery/*"],
+      "@audit/*": ["./audit/*"]
     }
   },
   "include": ["./**/*"]

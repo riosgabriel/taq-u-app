@@ -47,27 +47,29 @@ export const AuditLogServiceLive = Layer.effect(
         }).pipe(Effect.asVoid),
 
       list: ({ streamId, eventType, limit = 50, since }: ListAuditLogsOptions) =>
-        prismaService.execute(() =>
-          prismaService.prisma.auditLog.findMany({
-            where: {
-              ...(streamId && { streamId }),
-              ...(eventType && { eventType }),
-              ...(since && { createdAt: { gte: since } }),
-            },
-            orderBy: { createdAt: "desc" },
-            take: limit,
-          })
-        ).pipe(
-          Effect.map((rows) =>
-            rows.map((r) => ({
-              id: r.id,
-              eventType: r.eventType,
-              streamId: r.streamId,
-              payload: r.payload,
-              createdAt: r.createdAt,
-            }))
+        prismaService
+          .execute(() =>
+            prismaService.prisma.auditLog.findMany({
+              where: {
+                ...(streamId && { streamId }),
+                ...(eventType && { eventType }),
+                ...(since && { createdAt: { gte: since } }),
+              },
+              orderBy: { createdAt: "desc" },
+              take: limit,
+            })
           )
-        ),
+          .pipe(
+            Effect.map((rows) =>
+              rows.map((r) => ({
+                id: r.id,
+                eventType: r.eventType,
+                streamId: r.streamId,
+                payload: r.payload,
+                createdAt: r.createdAt,
+              }))
+            )
+          ),
     })
   })
 )

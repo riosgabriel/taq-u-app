@@ -12,24 +12,29 @@ const mockEvent: DomainEvent = {
   payload: { orderId: "123", customerId: "cust-1" },
 }
 
-const mockCreateResult = { id: "audit-1", ...mockEvent, createdAt: new Date() }
-const mockFindManyResult = [
-  { id: "1", eventType: "OrderCreated", streamId: "order:123", payload: {}, createdAt: new Date() },
-]
-
 const buildTestLayer = (mockPrisma: { auditLog: { create: () => Promise<any>; findMany: () => Promise<any[]> } }) =>
-  AuditLogServiceLive.pipe(Layer.provide(Layer.succeed(PrismaService, {
-    prisma: mockPrisma as any,
-    execute: (operation: any) => Effect.tryPromise({ try: operation, catch: (e) => new DatabaseUnavailable({ message: String(e), meta: null }) }),
-    $transaction: (fn: any) => Effect.tryPromise({ try: fn, catch: (e) => new DatabaseUnavailable({ message: String(e), meta: null }) }),
-  })))
+  AuditLogServiceLive.pipe(
+    Layer.provide(
+      Layer.succeed(PrismaService, {
+        prisma: mockPrisma as any,
+        execute: (operation: any) =>
+          Effect.tryPromise({
+            try: operation,
+            catch: (e) => new DatabaseUnavailable({ message: String(e), meta: null }),
+          }),
+        $transaction: (fn: any) =>
+          Effect.tryPromise({ try: fn, catch: (e) => new DatabaseUnavailable({ message: String(e), meta: null }) }),
+      })
+    )
+  )
 
 const mockAuditLog = {
   auditLog: {
     create: () => Promise.resolve({ id: "audit-1", ...mockEvent, createdAt: new Date() }),
-    findMany: () => Promise.resolve([
-      { id: "1", eventType: "OrderCreated", streamId: "order:123", payload: {}, createdAt: new Date() },
-    ]),
+    findMany: () =>
+      Promise.resolve([
+        { id: "1", eventType: "OrderCreated", streamId: "order:123", payload: {}, createdAt: new Date() },
+      ]),
   },
 }
 
@@ -46,11 +51,7 @@ describe("AuditLogService", () => {
       Effect.gen(function* () {
         const service = yield* AuditLogService
         yield* service.record(mockEvent)
-      }).pipe(
-        Effect.provide(
-          buildTestLayer(mockAuditLog)
-        )
-      )
+      }).pipe(Effect.provide(buildTestLayer(mockAuditLog)))
     )
 
     it.effect("fails with PersistenceError on DB error", () =>
@@ -62,11 +63,7 @@ describe("AuditLogService", () => {
 
         const result = yield* program
         expect(result._tag).toBe("Left")
-      }).pipe(
-        Effect.provide(
-          buildTestLayer(mockAuditLogError)
-        )
-      )
+      }).pipe(Effect.provide(buildTestLayer(mockAuditLogError)))
     )
   })
 
@@ -77,11 +74,7 @@ describe("AuditLogService", () => {
         const entries = yield* service.list({ streamId: "order:123", limit: 10 })
         expect(entries).toHaveLength(1)
         expect(entries[0].streamId).toBe("order:123")
-      }).pipe(
-        Effect.provide(
-          buildTestLayer(mockAuditLog)
-        )
-      )
+      }).pipe(Effect.provide(buildTestLayer(mockAuditLog)))
     )
   })
 })
