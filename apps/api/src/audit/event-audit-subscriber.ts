@@ -1,5 +1,5 @@
 import { AuditLogService } from "audit/audit-log-service"
-import { Context, Effect, Layer, PubSub } from "effect"
+import { Context, Effect, Layer, PubSub, Queue } from "effect"
 import { DomainEvent } from "events/domain-event"
 import { EventBus } from "events/event-bus"
 
@@ -25,7 +25,7 @@ export const EventAuditSubscriberLive = Layer.scoped(
     const run = Effect.gen(function* () {
       yield* Effect.logInfo("EventAuditSubscriber started")
       while (true) {
-        const event = yield* PubSub.take(subscription)
+        const event = yield* Queue.take(subscription)
         yield* handleEvent(event)
       }
     }).pipe(
