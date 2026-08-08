@@ -1,5 +1,6 @@
 import { Latitude, Location, Longitude } from "location/domain/location"
 import { Schema } from "effect"
+import { LocationId } from "@/ids"
 
 // The latitude / longitude fields import the same schemas the domain
 // model uses, so a future change to the valid range moves both layers
@@ -46,7 +47,7 @@ export class LocationUpdateInput extends Schema.Class<LocationUpdateInput>("loca
 }) {}
 
 export class LocationResponse extends Schema.Class<LocationResponse>("location/LocationResponse")({
-  id: Schema.NonEmptyString,
+  id: LocationId,
   name: Schema.NonEmptyString,
   address: Schema.NonEmptyString,
   // The response intentionally uses plain Number. A response is data

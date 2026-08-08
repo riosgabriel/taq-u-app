@@ -1,17 +1,19 @@
 import { DeliveryStatus } from "@prisma/client"
 import { Schema } from "effect"
 import Delivery from "delivery/domain/delivery"
+import { DeliveryId, DriverId, OrderId, RouteId } from "@/ids"
+import type { DeliveryWithDetails } from "delivery/repository/delivery-repository"
 
 export class CreateDeliveryInput extends Schema.Class<CreateDeliveryInput>("delivery/CreateDeliveryInput")({
-  driverId: Schema.NonEmptyString.annotations({
+  driverId: DriverId.annotations({
     required: true,
     identifier: "driverId",
   }),
-  routeId: Schema.NonEmptyString.annotations({
+  routeId: RouteId.annotations({
     required: true,
     identifier: "routeId",
   }),
-  orderIds: Schema.optional(Schema.Array(Schema.NonEmptyString)).annotations({
+  orderIds: Schema.optional(Schema.Array(OrderId)).annotations({
     required: false,
     identifier: "orderIds",
   }),
@@ -45,16 +47,16 @@ export class UpdateDeliveryStatusInput extends Schema.Class<UpdateDeliveryStatus
 export class AssignDeliveryDriverInput extends Schema.Class<AssignDeliveryDriverInput>(
   "delivery/AssignDeliveryDriverInput"
 )({
-  driverId: Schema.NonEmptyString.annotations({
+  driverId: DriverId.annotations({
     required: true,
     identifier: "driverId",
   }),
 }) {}
 
 export class DeliveryResponse extends Schema.Class<DeliveryResponse>("delivery/DeliveryResponse")({
-  id: Schema.NonEmptyString,
-  driverId: Schema.NonEmptyString,
-  routeId: Schema.NonEmptyString,
+  id: DeliveryId,
+  driverId: DriverId,
+  routeId: RouteId,
   estimatedPickupTime: Schema.NullishOr(Schema.Date),
   estimatedDeliveryTime: Schema.NullishOr(Schema.Date),
   actualPickupTime: Schema.NullishOr(Schema.Date),
@@ -76,5 +78,112 @@ export class DeliveryResponse extends Schema.Class<DeliveryResponse>("delivery/D
       createdAt: delivery.createdAt,
       updatedAt: delivery.updatedAt,
     }
+  }
+}
+
+class DeliveryDriverView extends Schema.Class<DeliveryDriverView>("delivery/DeliveryDriverView")({
+  id: Schema.NonEmptyString,
+  name: Schema.String,
+  vehicleType: Schema.String,
+  licenseNumber: Schema.NullishOr(Schema.String),
+}) {
+  static fromDriver(driver: {
+    id: string
+    name: string
+    vehicleType: string
+    licenseNumber: string | null
+  }): DeliveryDriverView {
+    return new DeliveryDriverView({
+      id: driver.id,
+      name: driver.name,
+      vehicleType: driver.vehicleType,
+      licenseNumber: driver.licenseNumber ?? null,
+    })
+  }
+}
+
+class DeliveryLocationView extends Schema.Class<DeliveryLocationView>("delivery/DeliveryLocationView")({
+  id: Schema.NonEmptyString,
+  name: Schema.String,
+}) {
+  static fromLocation(location: { id: string; name: string }): DeliveryLocationView {
+    return new DeliveryLocationView({ id: location.id, name: location.name })
+  }
+}
+
+class DeliveryRouteView extends Schema.Class<DeliveryRouteView>("delivery/DeliveryRouteView")({
+  id: Schema.NonEmptyString,
+  pickup: DeliveryLocationView,
+  dropoff: DeliveryLocationView,
+}) {
+  static fromRoute(route: {
+    id: string
+    pickup: { id: string; name: string }
+    dropoff: { id: string; name: string }
+  }): DeliveryRouteView {
+    return new DeliveryRouteView({
+      id: route.id,
+      pickup: DeliveryLocationView.fromLocation(route.pickup),
+      dropoff: DeliveryLocationView.fromLocation(route.dropoff),
+    })
+  }
+}
+
+class DeliveryPackageView extends Schema.Class<DeliveryPackageView>("delivery/DeliveryPackageView")({
+  id: Schema.NonEmptyString,
+  orderId: Schema.NonEmptyString,
+  trackingNumber: Schema.NonEmptyString,
+  description: Schema.String,
+  status: Schema.String,
+  address: Schema.String,
+}) {
+  static fromPackage(
+    pkg: { id: string; orderId: string; trackingNumber: string; description: string; status: string },
+    address: string
+  ): DeliveryPackageView {
+    return new DeliveryPackageView({
+      id: pkg.id,
+      orderId: pkg.orderId,
+      trackingNumber: pkg.trackingNumber,
+      description: pkg.description,
+      status: pkg.status,
+      address,
+    })
+  }
+}
+
+export class DeliveryRouteResponse extends Schema.Class<DeliveryRouteResponse>("delivery/DeliveryRouteResponse")({
+  id: Schema.NonEmptyString,
+  status: Schema.String,
+  driverId: Schema.NonEmptyString,
+  driver: DeliveryDriverView,
+  routeId: Schema.NonEmptyString,
+  route: DeliveryRouteView,
+  estimatedPickupTime: Schema.NullishOr(Schema.Date),
+  estimatedDeliveryTime: Schema.NullishOr(Schema.Date),
+  actualPickupTime: Schema.NullishOr(Schema.Date),
+  actualDeliveryTime: Schema.NullishOr(Schema.Date),
+  createdAt: Schema.Date,
+  updatedAt: Schema.Date,
+  packages: Schema.Array(DeliveryPackageView),
+}) {
+  static fromDeliveryWithDetails(delivery: DeliveryWithDetails): DeliveryRouteResponse {
+    return new DeliveryRouteResponse({
+      id: delivery.id,
+      status: delivery.status,
+      driverId: delivery.driverId,
+      driver: DeliveryDriverView.fromDriver(delivery.driver),
+      routeId: delivery.routeId,
+      route: DeliveryRouteView.fromRoute(delivery.route),
+      estimatedPickupTime: delivery.estimatedPickupTime ?? null,
+      estimatedDeliveryTime: delivery.estimatedDeliveryTime ?? null,
+      actualPickupTime: delivery.actualPickupTime ?? null,
+      actualDeliveryTime: delivery.actualDeliveryTime ?? null,
+      createdAt: delivery.createdAt,
+      updatedAt: delivery.updatedAt,
+      packages: delivery.orders.flatMap((order) =>
+        order.packages.map((pkg) => DeliveryPackageView.fromPackage(pkg, order.deliveryAddress))
+      ),
+    })
   }
 }

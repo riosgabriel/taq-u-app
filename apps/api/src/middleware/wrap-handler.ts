@@ -17,12 +17,12 @@ export interface WrapHandlerConfig<P, B, A, E, R> {
    * Optional Effect Schema for the request params. When provided, the
    * utility decodes `req.params` against it before invoking the handler.
    */
-  readonly params?: Schema.Schema<P>
+  readonly params?: Schema.Schema<P, any, any>
   /**
    * Optional Effect Schema for the request body. When provided, the
    * utility decodes `req.body` against it before invoking the handler.
    */
-  readonly body?: Schema.Schema<B>
+  readonly body?: Schema.Schema<B, any, any>
   /**
    * The business logic. Receives the decoded params and body (each may
    * be `{}` if the corresponding schema was not provided) and returns

@@ -1,4 +1,5 @@
 import { PersistenceError } from "@/persistence-errors"
+import { DriverId } from "@/ids"
 import Driver from "delivery/domain/driver"
 import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverEmailAlreadyExistsError, DriverRepository } from "delivery/repository/driver-repository"
@@ -17,14 +18,14 @@ export class DriverService extends Context.Tag("delivery/DriverService")<
       driverCreateInput: DriverCreateInput
     ) => Effect.Effect<Driver, DriverEmailAlreadyExistsError | PersistenceError>
     readonly listAll: () => Effect.Effect<Array<Driver>, PersistenceError>
-    readonly getById: (id: string) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
+    readonly getById: (id: DriverId) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
     readonly update: (
-      id: string,
+      id: DriverId,
       driverUpdateInput: DriverUpdateInput
     ) => Effect.Effect<Driver, DriverNotFoundError | PersistenceError>
-    readonly delete: (id: string) => Effect.Effect<void, DriverNotFoundError | PersistenceError>
+    readonly delete: (id: DriverId) => Effect.Effect<void, DriverNotFoundError | PersistenceError>
     readonly listOrders: (
-      driverId: string
+      driverId: DriverId
     ) => Effect.Effect<OrderWithPackages[], DriverNotFoundError | PersistenceError>
   }
 >() {}
@@ -50,7 +51,7 @@ export const DriverServiceLive = Layer.effect(
         })
       },
 
-      getById: (id: string) => {
+      getById: (id: DriverId) => {
         return repository.getById(id).pipe(
           Effect.map((driver) => Driver.fromDriver(driver)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -59,7 +60,7 @@ export const DriverServiceLive = Layer.effect(
         )
       },
 
-      update: (id: string, driverUpdateInput: DriverUpdateInput) => {
+      update: (id: DriverId, driverUpdateInput: DriverUpdateInput) => {
         return repository.update(id, driverUpdateInput).pipe(
           Effect.map((driver) => Driver.fromDriver(driver)),
           Effect.catchTag("persistence/RecordNotFoundError", (error) =>
@@ -68,15 +69,17 @@ export const DriverServiceLive = Layer.effect(
         )
       },
 
-      delete: (id: string) => {
-        return repository.delete(id).pipe(
-          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
-            Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+      delete: (id: DriverId) => {
+        return repository
+          .delete(id)
+          .pipe(
+            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+              Effect.fail(new DriverNotFoundError({ id, message: error.message }))
+            )
           )
-        )
       },
 
-      listOrders: (driverId: string) => {
+      listOrders: (driverId: DriverId) => {
         return Effect.gen(function* () {
           yield* repository.getById(driverId)
           return yield* orderRepository.findByDriverId(driverId)

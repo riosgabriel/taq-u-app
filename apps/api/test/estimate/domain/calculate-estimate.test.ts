@@ -82,28 +82,19 @@ describe("calculateEstimate", () => {
   describe("distance factor", () => {
     it("omitting distance preserves the weight-only cost", () => {
       // (5 + 10 * 2) * 1.0 = 25.00 — same as the weight-only test
-      const result = calculateEstimate(
-        { weightKg: 10, serviceLevel: "STANDARD", insured: false },
-        NOW
-      )
+      const result = calculateEstimate({ weightKg: 10, serviceLevel: "STANDARD", insured: false }, NOW)
       expect(result.estimatedCost).toBe(25.0)
     })
 
     it("distance adds a per-km surcharge to the base cost", () => {
       // (5 + 1 * 2 + 100 * 0.5) * 1.0 = 57.00
-      const result = calculateEstimate(
-        { weightKg: 1, serviceLevel: "STANDARD", insured: false, distanceKm: 100 },
-        NOW
-      )
+      const result = calculateEstimate({ weightKg: 1, serviceLevel: "STANDARD", insured: false, distanceKm: 100 }, NOW)
       expect(result.estimatedCost).toBe(57.0)
     })
 
     it("distance compounds with the service multiplier", () => {
       // (5 + 1 * 2 + 100 * 0.5) * 1.5 = 85.50
-      const result = calculateEstimate(
-        { weightKg: 1, serviceLevel: "EXPRESS", insured: false, distanceKm: 100 },
-        NOW
-      )
+      const result = calculateEstimate({ weightKg: 1, serviceLevel: "EXPRESS", insured: false, distanceKm: 100 }, NOW)
       expect(result.estimatedCost).toBe(85.5)
     })
 
@@ -111,39 +102,27 @@ describe("calculateEstimate", () => {
       // subtotal = (5 + 1 * 2 + 100 * 0.5) * 1.0 = 57.00
       // surcharge = 57.00 * 0.01 = 0.57
       // total = 57.57
-      const result = calculateEstimate(
-        { weightKg: 1, serviceLevel: "STANDARD", insured: true, distanceKm: 100 },
-        NOW
-      )
+      const result = calculateEstimate({ weightKg: 1, serviceLevel: "STANDARD", insured: true, distanceKm: 100 }, NOW)
       expect(result.estimatedCost).toBe(57.57)
     })
 
     it("delivery time adds ceil(distanceKm / 500) days to the base", () => {
       // STANDARD base = 5 days. 1000 km -> ceil(1000/500) = 2 days -> 7 days.
-      const result = calculateEstimate(
-        { weightKg: 1, serviceLevel: "STANDARD", insured: false, distanceKm: 1000 },
-        NOW
-      )
+      const result = calculateEstimate({ weightKg: 1, serviceLevel: "STANDARD", insured: false, distanceKm: 1000 }, NOW)
       const expected = new Date("2026-09-08T12:00:00Z")
       expect(result.estimatedDeliveryTime.toISOString()).toBe(expected.toISOString())
     })
 
     it("distance and service level combine for delivery time", () => {
       // EXPRESS base = 2 days. 2500 km -> ceil(2500/500) = 5 days -> 7 days.
-      const result = calculateEstimate(
-        { weightKg: 1, serviceLevel: "EXPRESS", insured: false, distanceKm: 2500 },
-        NOW
-      )
+      const result = calculateEstimate({ weightKg: 1, serviceLevel: "EXPRESS", insured: false, distanceKm: 2500 }, NOW)
       const expected = new Date("2026-09-08T12:00:00Z")
       expect(result.estimatedDeliveryTime.toISOString()).toBe(expected.toISOString())
     })
 
     it("distance of 0 adds no extra days", () => {
       // STANDARD base = 5 days, distance 0 -> 5 days (unchanged from the no-distance case).
-      const result = calculateEstimate(
-        { weightKg: 1, serviceLevel: "STANDARD", insured: false, distanceKm: 0 },
-        NOW
-      )
+      const result = calculateEstimate({ weightKg: 1, serviceLevel: "STANDARD", insured: false, distanceKm: 0 }, NOW)
       const expected = new Date("2026-09-06T12:00:00Z")
       expect(result.estimatedDeliveryTime.toISOString()).toBe(expected.toISOString())
     })

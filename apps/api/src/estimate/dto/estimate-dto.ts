@@ -1,5 +1,6 @@
-import { Schema } from "effect";
-import { CalculateEstimateParams, Estimate, SERVICE_LEVELS } from "estimate/domain/estimate";
+import { EstimateId, OrderId } from "@/ids"
+import { Schema } from "effect"
+import { CalculateEstimateParams, Estimate, SERVICE_LEVELS } from "estimate/domain/estimate"
 
 export class CalculateEstimateInput extends Schema.Class<CalculateEstimateInput>("estimate/CalculateEstimateInput")({
   weightKg: Schema.Number.pipe(Schema.between(0.01, 1000)).annotations({
@@ -14,18 +15,16 @@ export class CalculateEstimateInput extends Schema.Class<CalculateEstimateInput>
     required: true,
     identifier: "insured",
   }),
-  distanceKm: Schema.optional(
-    Schema.Number.pipe(Schema.between(0, 50_000))
-  ),
-  orderId: Schema.optional(Schema.NonEmptyString),
+  distanceKm: Schema.optional(Schema.Number.pipe(Schema.between(0, 50_000))),
+  orderId: Schema.optional(OrderId),
 }) {}
 
 export class EstimateResponse extends Schema.Class<EstimateResponse>("estimate/EstimateResponse")({
-  id: Schema.NullishOr(Schema.NonEmptyString),
+  id: Schema.NullishOr(EstimateId),
   estimatedCost: Schema.Number,
   currency: Schema.NonEmptyString,
   estimatedDeliveryTime: Schema.Date,
-  orderId: Schema.NullishOr(Schema.NonEmptyString),
+  orderId: Schema.NullishOr(OrderId),
 }) {
   static fromEstimate(estimate: Estimate): EstimateResponse {
     return {
@@ -44,7 +43,7 @@ export class EstimateResponse extends Schema.Class<EstimateResponse>("estimate/E
    */
   static fromCalculation(
     calculation: { estimatedCost: number; currency: string; estimatedDeliveryTime: Date },
-    orderId: string | null
+    orderId: OrderId | null
   ): EstimateResponse {
     return {
       id: null,

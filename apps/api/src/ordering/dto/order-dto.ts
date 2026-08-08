@@ -1,6 +1,7 @@
 import { OrderWithPackages } from "ordering/repository/order-repository"
 import { OrderPriority, Package as PrismaPackage, PackageStatus } from "@prisma/client"
 import { Schema } from "effect"
+import { CustomerId, DriverId, OrderId, PackageId } from "@/ids"
 
 export class AddPackageInput extends Schema.Class<AddPackageInput>("order/AddPackageInput")({
   weightKg: Schema.Number.annotations({
@@ -76,7 +77,7 @@ export class PackageCreateInput extends Schema.Class<PackageCreateInput>("Packag
 }) {}
 
 export class OrderCreateInput extends Schema.Class<OrderCreateInput>("OrderCreateInput")({
-  customerId: Schema.NonEmptyString.annotations({
+  customerId: CustomerId.annotations({
     required: true,
     identifier: "customerId",
   }),
@@ -117,7 +118,7 @@ export class OrderCreateInput extends Schema.Class<OrderCreateInput>("OrderCreat
 }) {}
 
 export class PackageResponse extends Schema.Class<PackageResponse>("order/PackageResponse")({
-  id: Schema.NonEmptyString,
+  id: PackageId,
   weightKg: Schema.Number,
   dimensions: Schema.NonEmptyString,
   description: Schema.NonEmptyString,
@@ -129,7 +130,7 @@ export class PackageResponse extends Schema.Class<PackageResponse>("order/Packag
 }) {
   static fromPackage(pkg: PrismaPackage): PackageResponse {
     return {
-      id: pkg.id,
+      id: Schema.decodeSync(PackageId)(pkg.id),
       weightKg: pkg.weightKg,
       dimensions: pkg.dimensions,
       description: pkg.description,
@@ -143,14 +144,14 @@ export class PackageResponse extends Schema.Class<PackageResponse>("order/Packag
 }
 
 export class AssignDriverInput extends Schema.Class<AssignDriverInput>("order/AssignDriverInput")({
-  driverId: Schema.NonEmptyString.annotations({
+  driverId: DriverId.annotations({
     required: true,
     identifier: "driverId",
   }),
 }) {}
 
 export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")({
-  id: Schema.NonEmptyString,
+  id: OrderId,
   pickupAddress: Schema.NonEmptyString,
   deliveryAddress: Schema.NonEmptyString,
   pickupDate: Schema.Date,
@@ -158,13 +159,13 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
   specialInstructions: Schema.optional(Schema.String),
   priority: Schema.String,
   status: Schema.String,
-  driverId: Schema.optional(Schema.String),
+  driverId: Schema.optional(DriverId),
   assignedAt: Schema.optional(Schema.Date),
   packages: Schema.Array(PackageResponse),
 }) {
   static fromOrderWithPackages(order: OrderWithPackages): OrderResponse {
     return {
-      id: order.id,
+      id: Schema.decodeSync(OrderId)(order.id),
       pickupAddress: order.pickupAddress,
       deliveryAddress: order.deliveryAddress,
       pickupDate: order.pickupDate,
@@ -172,7 +173,7 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
       specialInstructions: order.specialInstructions || undefined,
       priority: order.priority,
       status: order.status,
-      driverId: order.driverId ?? undefined,
+      driverId: order.driverId ? Schema.decodeSync(DriverId)(order.driverId) : undefined,
       assignedAt: order.assignedAt ?? undefined,
       packages: order.packages.map((pkg) => PackageResponse.fromPackage(pkg)),
     }

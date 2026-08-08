@@ -1,3 +1,4 @@
+import { EstimateId, OrderId } from "@/ids"
 import { Estimate as PrismaEstimate } from "@prisma/client"
 import { Schema } from "effect"
 
@@ -80,8 +81,7 @@ export interface CalculatedEstimate {
  * Delivery time = baseDays + Math.ceil((distanceKm ?? 0) / AVERAGE_KM_PER_DAY).
  */
 export const calculateEstimate = (params: CalculateEstimateParams, now: Date): CalculatedEstimate => {
-  const baseCost =
-    BASE_FEE + params.weightKg * BASE_RATE_PER_KG + (params.distanceKm ?? 0) * DISTANCE_RATE_PER_KM
+  const baseCost = BASE_FEE + params.weightKg * BASE_RATE_PER_KG + (params.distanceKm ?? 0) * DISTANCE_RATE_PER_KM
   const multiplier = SERVICE_MULTIPLIERS[params.serviceLevel]
   const subtotal = baseCost * multiplier
   const insuranceSurcharge = params.insured ? subtotal * INSURANCE_RATE : 0
@@ -102,10 +102,7 @@ export const calculateEstimate = (params: CalculateEstimateParams, now: Date): C
 }
 
 export class Estimate extends Schema.Class<Estimate>("estimate/Estimate")({
-  id: Schema.NonEmptyString.annotations({
-    required: true,
-    identifier: "id",
-  }),
+  id: Schema.NullishOr(EstimateId),
   estimatedCost: Schema.Number.annotations({
     required: true,
     identifier: "estimatedCost",
@@ -118,17 +115,17 @@ export class Estimate extends Schema.Class<Estimate>("estimate/Estimate")({
     required: true,
     identifier: "estimatedDeliveryTime",
   }),
-  orderId: Schema.NullishOr(Schema.String).annotations({
+  orderId: Schema.NullishOr(OrderId).annotations({
     identifier: "orderId",
   }),
 }) {
   static fromPrisma(estimate: PrismaEstimate): Estimate {
     return {
-      id: estimate.id,
+      id: estimate.id ? Schema.decodeSync(EstimateId)(estimate.id) : null,
       estimatedCost: estimate.estimatedCost,
       currency: estimate.currency,
       estimatedDeliveryTime: estimate.estimatedDeliveryTime,
-      orderId: estimate.orderId,
+      orderId: estimate.orderId ? Schema.decodeSync(OrderId)(estimate.orderId) : null,
     }
   }
 }

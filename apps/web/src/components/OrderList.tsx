@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { api } from "../lib/api"
-import { OrderResponse } from "../types/order"
+import type { OrderResponse } from "../types/order"
 import { OrderEdit } from "./OrderEdit"
 import { toast } from "sonner"
 

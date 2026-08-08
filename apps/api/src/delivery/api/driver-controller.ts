@@ -1,12 +1,15 @@
 import { wrapHandler } from "@/middleware/wrap-handler"
 import { conflict, notFound, ok } from "@/middleware/http"
-import { IdParams } from "@/middleware/validate"
+import { DriverId } from "@/ids"
 import { DriverCreateInput, DriverOrderResponse, DriverResponse, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverService } from "delivery/services/driver-service"
 import { Effect, Schema } from "effect"
 import { Router } from "express"
 
 export const DriverController = Router()
+
+const DriverIdPathParams = Schema.Struct({ id: DriverId })
+const DriverIdParams = Schema.Struct({ driverId: DriverId })
 
 DriverController.post(
   "/",
@@ -39,7 +42,7 @@ DriverController.get(
 DriverController.get(
   "/:id",
   wrapHandler({
-    params: IdParams,
+    params: DriverIdPathParams,
     handler: ({ params }) =>
       Effect.gen(function* () {
         const driverService = yield* DriverService
@@ -55,7 +58,7 @@ DriverController.get(
 DriverController.get(
   "/:driverId/orders",
   wrapHandler({
-    params: Schema.Struct({ driverId: Schema.String }),
+    params: DriverIdParams,
     handler: ({ params }) =>
       Effect.gen(function* () {
         const driverService = yield* DriverService
@@ -71,7 +74,7 @@ DriverController.get(
 DriverController.patch(
   "/:id",
   wrapHandler({
-    params: IdParams,
+    params: DriverIdPathParams,
     body: DriverUpdateInput,
     handler: ({ params, body }) =>
       Effect.gen(function* () {
@@ -88,7 +91,7 @@ DriverController.patch(
 DriverController.delete(
   "/:id",
   wrapHandler({
-    params: IdParams,
+    params: DriverIdPathParams,
     handler: ({ params }) =>
       Effect.gen(function* () {
         const driverService = yield* DriverService

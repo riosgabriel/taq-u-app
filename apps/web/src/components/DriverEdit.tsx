@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { api } from "../lib/api"
-import { Driver, DriverCreateInput } from "../types/driver"
+import type { Driver, DriverCreateInput } from "../types/driver"
 
 interface DriverEditProps {
   driverId?: string
@@ -27,6 +27,7 @@ const DriverEdit: React.FC<DriverEditProps> = ({ driverId, onCancel, onSave }) =
     if (driverId) {
       fetchDriver()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driverId])
 
   const fetchDriver = async () => {
@@ -70,8 +71,9 @@ const DriverEdit: React.FC<DriverEditProps> = ({ driverId, onCancel, onSave }) =
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">{isEditing ? "Edit Driver" : "Create New Driver"}</h2>
           <button
+            type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+            className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
           >
             Cancel
           </button>
@@ -151,16 +153,17 @@ const DriverEdit: React.FC<DriverEditProps> = ({ driverId, onCancel, onSave }) =
               <select
                 id="vehicleType"
                 required
-                value={driver.vehicleType.toLowerCase()}
+                value={driver.vehicleType}
                 onChange={(e) => handleInputChange("vehicleType", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
               >
                 <option value="">Select vehicle type</option>
-                <option value="car">Car</option>
-                <option value="van">Van</option>
-                <option value="truck">Truck</option>
-                <option value="motorcycle">Motorcycle</option>
-                <option value="bicycle">Bicycle</option>
+                <option value="CAR">Car</option>
+                <option value="VAN">Van</option>
+                <option value="TRUCK">Truck</option>
+                <option value="MOTORCYCLE">Motorcycle</option>
+                <option value="BICYCLE">Bicycle</option>
+                <option value="ON_FOOT">On Foot</option>
               </select>
             </div>
 

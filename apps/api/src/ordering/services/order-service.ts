@@ -4,6 +4,7 @@ import { CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError } from "customer/services/customer-service"
 import { DriverNotFoundError, DriverService } from "delivery/services/driver-service"
 import { Context, Data, Effect, Layer } from "effect"
+import { DriverId, OrderId, PackageId } from "@/ids"
 import { EventPublisher } from "events/event-publisher"
 import { transition as statusTransition } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
@@ -31,38 +32,45 @@ export class OrderService extends Context.Tag("order/OrderService")<
     readonly createOrder: (
       orderInput: OrderCreateInput
     ) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | PersistenceError>
-    readonly getOrderById: (orderId: string) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
+    readonly getOrderById: (orderId: OrderId) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
-      orderId: string,
+      orderId: OrderId,
       updateInput: OrderUpdateInput
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly cancelOrder: (
-      orderId: string
+      orderId: OrderId
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
     readonly confirmOrder: (
-      orderId: string
+      orderId: OrderId
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
     readonly assignDriver: (
-      orderId: string,
-      driverId: string
+      orderId: OrderId,
+      driverId: DriverId
     ) => Effect.Effect<
       OrderWithPackages,
       OrderNotFoundError | DriverNotFoundError | OrderStatusError | PersistenceError
     >
     readonly pickupOrder: (
-      orderId: string
+      orderId: OrderId
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
     readonly deliverOrder: (
-      orderId: string
+      orderId: OrderId
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
     readonly addPackageToOrder: (
-      orderId: string,
+      orderId: OrderId,
       packageInput: AddPackageInput
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
+    readonly findPackageByTrackingNumber: (trackingNumber: string) => Effect.Effect<
+      {
+        package: { id: PackageId; trackingNumber: string; status: string }
+        order: { id: OrderId; pickupAddress: string; deliveryAddress: string; pickupDate: Date; customerName: string }
+      },
+      PackageNotFoundError | PersistenceError
+    >
     readonly updatePackageStatus: (
-      orderId: string,
-      packageId: string,
+      orderId: OrderId,
+      packageId: PackageId,
       status: PackageStatus
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PackageNotFoundError | PersistenceError>
   }
@@ -100,7 +108,7 @@ export const OrderServiceLive = Layer.effect(
         )
       },
 
-      getOrderById: (orderId: string) => {
+      getOrderById: (orderId: OrderId) => {
         return orderRepository
           .getOrderById(orderId)
           .pipe(
@@ -112,7 +120,7 @@ export const OrderServiceLive = Layer.effect(
 
       listOrders: () => orderRepository.listOrders(),
 
-      updateOrder: (orderId: string, updateInput: OrderUpdateInput) => {
+      updateOrder: (orderId: OrderId, updateInput: OrderUpdateInput) => {
         return orderRepository
           .updateOrder(orderId, updateInput)
           .pipe(
@@ -122,7 +130,7 @@ export const OrderServiceLive = Layer.effect(
           )
       },
 
-      cancelOrder: (orderId: string) => {
+      cancelOrder: (orderId: OrderId) => {
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
@@ -145,7 +153,7 @@ export const OrderServiceLive = Layer.effect(
         )
       },
 
-      confirmOrder: (orderId: string) => {
+      confirmOrder: (orderId: OrderId) => {
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
@@ -168,7 +176,7 @@ export const OrderServiceLive = Layer.effect(
         )
       },
 
-      assignDriver: (orderId: string, driverId: string) => {
+      assignDriver: (orderId: OrderId, driverId: DriverId) => {
         return Effect.gen(function* () {
           yield* driverService.getById(driverId)
 
@@ -200,7 +208,7 @@ export const OrderServiceLive = Layer.effect(
         )
       },
 
-      pickupOrder: (orderId: string) => {
+      pickupOrder: (orderId: OrderId) => {
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
@@ -223,7 +231,7 @@ export const OrderServiceLive = Layer.effect(
         )
       },
 
-      deliverOrder: (orderId: string) => {
+      deliverOrder: (orderId: OrderId) => {
         return Effect.gen(function* () {
           const existingOrder = yield* orderRepository.getOrderById(orderId)
 
@@ -246,7 +254,7 @@ export const OrderServiceLive = Layer.effect(
         )
       },
 
-      addPackageToOrder: (orderId: string, packageInput: AddPackageInput) => {
+      addPackageToOrder: (orderId: OrderId, packageInput: AddPackageInput) => {
         return orderRepository
           .addPackageToOrder(orderId, packageInput)
           .pipe(
@@ -256,7 +264,22 @@ export const OrderServiceLive = Layer.effect(
           )
       },
 
-      updatePackageStatus: (orderId: string, packageId: string, status: PackageStatus) => {
+      findPackageByTrackingNumber: (trackingNumber: string) => {
+        return Effect.gen(function* () {
+          const result = yield* orderRepository.findPackageByTrackingNumber(trackingNumber)
+          if (!result) {
+            return yield* Effect.fail(
+              new PackageNotFoundError({
+                packageId: trackingNumber,
+                message: `Package with tracking number ${trackingNumber} not found`,
+              })
+            )
+          }
+          return result
+        })
+      },
+
+      updatePackageStatus: (orderId: OrderId, packageId: PackageId, status: PackageStatus) => {
         return orderRepository
           .updatePackageStatus(orderId, packageId, status)
           .pipe(

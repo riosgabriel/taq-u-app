@@ -11,7 +11,10 @@ export class UniqueConstraintViolation extends Data.TaggedError("persistence/Uni
   readonly field: string
 }> {}
 
-export class DatabaseUnavailable extends Data.TaggedError("persistence/DatabaseUnavailable")<{}> {}
+export class DatabaseUnavailable extends Data.TaggedError("persistence/DatabaseUnavailable")<{
+  readonly message: string
+  readonly meta: unknown
+}> {}
 
 export class ForeignKeyViolation extends Data.TaggedError("persistence/ForeignKeyViolation")<{
   readonly field: string

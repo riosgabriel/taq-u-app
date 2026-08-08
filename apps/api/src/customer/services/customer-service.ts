@@ -1,4 +1,5 @@
 import { PersistenceError } from "@/persistence-errors"
+import { CustomerId } from "@/ids"
 import { Context, Data, Effect, Layer } from "effect"
 import Customer from "customer/domain/customer"
 import { CustomerCreateInput } from "customer/dto/customer-dto"
@@ -16,7 +17,7 @@ export class CustomerService extends Context.Tag("order/CustomerService")<
       customerCreateInput: CustomerCreateInput
     ) => Effect.Effect<Customer, CustomerEmailAlreadyExistsError | PersistenceError>
     readonly getCustomers: () => Effect.Effect<Customer[], PersistenceError>
-    readonly getCustomerById: (id: string) => Effect.Effect<Customer, CustomerNotFoundError | PersistenceError>
+    readonly getCustomerById: (id: CustomerId) => Effect.Effect<Customer, CustomerNotFoundError | PersistenceError>
   }
 >() {}
 
@@ -28,24 +29,25 @@ export const CustomerServiceLive = Layer.effect(
     return CustomerService.of({
       createCustomer: (customerCreateInput: CustomerCreateInput) => {
         return Effect.gen(function* () {
-          return yield* repository.createCustomer(customerCreateInput)
+          const customer = yield* repository.createCustomer(customerCreateInput)
+          return Customer.fromPrisma(customer)
         })
       },
 
       getCustomers: () => {
         return Effect.gen(function* () {
-          return yield* repository.getCustomers()
+          const customers = yield* repository.getCustomers()
+          return customers.map(Customer.fromPrisma)
         })
       },
 
-      getCustomerById: (id: string) => {
-        return repository
-          .getCustomerById(id)
-          .pipe(
-            Effect.catchTag("persistence/RecordNotFoundError", (error) =>
-              Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
-            )
+      getCustomerById: (id: CustomerId) => {
+        return repository.getCustomerById(id).pipe(
+          Effect.map(Customer.fromPrisma),
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+            Effect.fail(new CustomerNotFoundError({ customerId: id, message: error.message }))
           )
+        )
       },
     })
   })

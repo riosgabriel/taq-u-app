@@ -1,4 +1,5 @@
 import { Schema } from "effect"
+import { OrderId, PaymentId } from "@/ids"
 import { PAYMENT_METHODS, PAYMENT_STATUSES, Payment } from "payment/domain/payment"
 
 export class PaymentCreateInput extends Schema.Class<PaymentCreateInput>("payment/PaymentCreateInput")({
@@ -16,7 +17,7 @@ export class PaymentCreateInput extends Schema.Class<PaymentCreateInput>("paymen
   }),
   status: Schema.optional(Schema.Literal(...PAYMENT_STATUSES)),
   transactionId: Schema.optional(Schema.NonEmptyString),
-  orderId: Schema.optional(Schema.NonEmptyString),
+  orderId: Schema.optional(OrderId),
 }) {}
 
 export class PaymentUpdateStatusInput extends Schema.Class<PaymentUpdateStatusInput>(
@@ -29,14 +30,14 @@ export class PaymentUpdateStatusInput extends Schema.Class<PaymentUpdateStatusIn
 }) {}
 
 export class PaymentResponse extends Schema.Class<PaymentResponse>("payment/PaymentResponse")({
-  id: Schema.NonEmptyString,
+  id: PaymentId,
   method: Schema.String,
   amount: Schema.Number,
   currency: Schema.NonEmptyString,
   status: Schema.String,
   transactionId: Schema.String,
   timestamp: Schema.Date,
-  orderId: Schema.String,
+  orderId: Schema.NullishOr(OrderId),
 }) {
   static fromPayment(payment: Payment): PaymentResponse {
     return {
@@ -47,7 +48,7 @@ export class PaymentResponse extends Schema.Class<PaymentResponse>("payment/Paym
       status: payment.status,
       transactionId: payment.transactionId ?? "",
       timestamp: payment.timestamp,
-      orderId: payment.orderId ?? "",
+      orderId: payment.orderId,
     }
   }
 }

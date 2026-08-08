@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:open": "vite --open",
     "build": "vite build",
-    "lint": "tsc -p . -noEmit --pretty false"
+    "lint": "tsc -b -noEmit --pretty false"
   },
   "dependencies": {
     "clsx": "^2.1.1",
