@@ -1,79 +1,105 @@
-import { runEffect } from "@/middleware/effect-runner"
+import { wrapHandler } from "@/middleware/wrap-handler"
 import { conflict, notFound, ok } from "@/middleware/http"
-import { decodeBody, decodeParams } from "@/middleware/validate"
 import { DriverId } from "@/ids"
 import { DriverCreateInput, DriverOrderResponse, DriverResponse, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverService } from "delivery/services/driver-service"
 import { Effect, Schema } from "effect"
-import { NextFunction, Request, Response, Router } from "express"
+import { Router } from "express"
 
 export const DriverController = Router()
 
 const DriverIdPathParams = Schema.Struct({ id: DriverId })
+const DriverIdParams = Schema.Struct({ driverId: DriverId })
 
-DriverController.post("/", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const driverInput = yield* decodeBody(DriverCreateInput, req)
-    const driverService = yield* DriverService
-    return ok(DriverResponse.fromDriver(yield* driverService.create(driverInput)))
-  }).pipe(Effect.catchTag("order/DriverEmailAlreadyExistsError", (error) => Effect.succeed(conflict(error.message))))
-
-  runEffect(req, res, next, program)
-})
-
-DriverController.get("/", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const driverService = yield* DriverService
-    const drivers = yield* driverService.listAll()
-    return ok(drivers.map(DriverResponse.fromDriver))
+DriverController.post(
+  "/",
+  wrapHandler({
+    body: DriverCreateInput,
+    handler: ({ body }) =>
+      Effect.gen(function* () {
+        const driverService = yield* DriverService
+        return yield* driverService.create(body)
+      }),
+    responseMapper: (driver) => ok(DriverResponse.fromDriver(driver)),
+    errorMappers: {
+      "order/DriverEmailAlreadyExistsError": (e) => conflict(e.message),
+    },
   })
+)
 
-  runEffect(req, res, next, program)
-})
+DriverController.get(
+  "/",
+  wrapHandler({
+    handler: () =>
+      Effect.gen(function* () {
+        const driverService = yield* DriverService
+        return yield* driverService.listAll()
+      }),
+    responseMapper: (drivers) => ok(drivers.map(DriverResponse.fromDriver)),
+  })
+)
 
-DriverController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(DriverIdPathParams, req)
-    const driverService = yield* DriverService
-    return ok(DriverResponse.fromDriver(yield* driverService.getById(id)))
-  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
+DriverController.get(
+  "/:id",
+  wrapHandler({
+    params: DriverIdPathParams,
+    handler: ({ params }) =>
+      Effect.gen(function* () {
+        const driverService = yield* DriverService
+        return yield* driverService.getById(params.id)
+      }),
+    responseMapper: (driver) => ok(DriverResponse.fromDriver(driver)),
+    errorMappers: {
+      "delivery/DriverNotFoundError": (e) => notFound(e.message),
+    },
+  })
+)
 
-  runEffect(req, res, next, program)
-})
+DriverController.get(
+  "/:driverId/orders",
+  wrapHandler({
+    params: DriverIdParams,
+    handler: ({ params }) =>
+      Effect.gen(function* () {
+        const driverService = yield* DriverService
+        return yield* driverService.listOrders(params.driverId)
+      }),
+    responseMapper: (orders) => ok(orders.map(DriverOrderResponse.fromOrderWithPackages)),
+    errorMappers: {
+      "delivery/DriverNotFoundError": (e) => notFound(e.message),
+    },
+  })
+)
 
-DriverController.get("/:driverId/orders", async (req: Request, res: Response, next: NextFunction) => {
-  class DriverIdParams extends Schema.Class<DriverIdParams>("DriverIdParams")({
-    driverId: DriverId,
-  }) {}
+DriverController.patch(
+  "/:id",
+  wrapHandler({
+    params: DriverIdPathParams,
+    body: DriverUpdateInput,
+    handler: ({ params, body }) =>
+      Effect.gen(function* () {
+        const driverService = yield* DriverService
+        return yield* driverService.update(params.id, body)
+      }),
+    responseMapper: (driver) => ok(DriverResponse.fromDriver(driver)),
+    errorMappers: {
+      "delivery/DriverNotFoundError": (e) => notFound(e.message),
+    },
+  })
+)
 
-  const program = Effect.gen(function* (_) {
-    const { driverId } = yield* decodeParams(DriverIdParams, req)
-    const driverService = yield* DriverService
-    const orders = yield* driverService.listOrders(driverId)
-    return ok(orders.map(DriverOrderResponse.fromOrderWithPackages))
-  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
-
-  runEffect(req, res, next, program)
-})
-
-DriverController.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(DriverIdPathParams, req)
-    const driverInput = yield* decodeBody(DriverUpdateInput, req)
-    const driverService = yield* DriverService
-    return ok(DriverResponse.fromDriver(yield* driverService.update(id, driverInput)))
-  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
-
-  runEffect(req, res, next, program)
-})
-
-DriverController.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const { id } = yield* decodeParams(DriverIdPathParams, req)
-    const driverService = yield* DriverService
-    yield* driverService.delete(id)
-    return ok({ message: "Driver deleted successfully" })
-  }).pipe(Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))))
-
-  runEffect(req, res, next, program)
-})
+DriverController.delete(
+  "/:id",
+  wrapHandler({
+    params: DriverIdPathParams,
+    handler: ({ params }) =>
+      Effect.gen(function* () {
+        const driverService = yield* DriverService
+        yield* driverService.delete(params.id)
+      }),
+    responseMapper: () => ok({ message: "Driver deleted successfully" }),
+    errorMappers: {
+      "delivery/DriverNotFoundError": (e) => notFound(e.message),
+    },
+  })
+)
