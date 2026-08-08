@@ -18,6 +18,7 @@
     "db:migrate:create": "pnpm --filter @taq-u-app/api db:migrate:create",
     "db:reset": "pnpm --filter @taq-u-app/api db:reset",
     "db:studio": "pnpm --filter @taq-u-app/api db:studio",
+    "db:seed": "pnpm --filter @taq-u-app/api db:seed",
     "docker:up": "docker-compose up --build -d",
     "docker:down": "docker-compose down",
     "validate": "pnpm lint && pnpm format --check",
