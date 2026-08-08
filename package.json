@@ -7,6 +7,7 @@
     "dev": "pnpm --filter @taq-u-app/api dev & pnpm --filter @taq-u-app/web dev",
     "dev:api": "pnpm --filter @taq-u-app/api dev",
     "dev:web": "pnpm --filter @taq-u-app/web dev",
+    "setup:dev": "docker-compose up -d db && pnpm db:migrate && pnpm db:seed && pnpm dev",
     "build": "pnpm --filter @taq-u-app/api build && pnpm --filter @taq-u-app/web build",
     "build:api": "pnpm --filter @taq-u-app/api build",
     "build:web": "pnpm --filter @taq-u-app/web build",

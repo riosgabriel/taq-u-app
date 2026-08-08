@@ -16,19 +16,24 @@ const prisma = new PrismaClient()
 async function main() {
   console.log("🌱 Starting database seed...")
 
-  // Clean existing data (in reverse order of dependencies)
-  await prisma.event.deleteMany()
-  await prisma.payment.deleteMany()
-  await prisma.estimate.deleteMany()
-  await prisma.delivery.deleteMany()
-  await prisma.package.deleteMany()
-  await prisma.routeLeg.deleteMany()
-  await prisma.route.deleteMany()
-  await prisma.order.deleteMany()
-  await prisma.driver.deleteMany()
-  await prisma.customer.deleteMany()
-  await prisma.location.deleteMany()
-  await prisma.carrier.deleteMany()
+  // Clean existing data using TRUNCATE CASCADE for schema-independent wipe
+  // This handles all FK constraints in a single operation
+  await prisma.$executeRawUnsafe(`
+    TRUNCATE TABLE
+      "Event",
+      "Payment",
+      "Estimate",
+      "Delivery",
+      "Package",
+      "RouteLeg",
+      "Route",
+      "Order",
+      "Driver",
+      "Customer",
+      "Location",
+      "Carrier"
+    RESTART IDENTITY CASCADE;
+  `)
 
   console.log("🧹 Cleaned existing data")
 
@@ -158,7 +163,7 @@ async function main() {
 
   console.log(`👥 Created ${customers.length} customers`)
 
-  // Create Drivers
+  // Create Drivers - all available for happy-path testing
   const drivers = await Promise.all([
     prisma.driver.create({
       data: {
@@ -197,7 +202,7 @@ async function main() {
         phone: "555-2004",
         licenseNumber: "DL-IN-901234",
         vehicleType: VehicleType.VAN,
-        isAvailable: false,
+        isAvailable: true, // Changed to true for happy-path testing
       },
     }),
     prisma.driver.create({
@@ -255,7 +260,7 @@ async function main() {
 
   console.log(`🛣️ Created ${routes.length} routes`)
 
-  // Create Route Legs
+  // Create Route Legs - transportMode matches carrier type
   const routeLegs = await Promise.all([
     prisma.routeLeg.create({
       data: {
@@ -304,7 +309,7 @@ async function main() {
     prisma.routeLeg.create({
       data: {
         routeId: routes[4].id,
-        transportMode: TransportMode.AIRPLANE,
+        transportMode: TransportMode.BIKE, // Changed from AIRPLANE to match DRONE carrier
         pickupLocationId: locations[0].id,
         dropoffLocationId: locations[4].id,
         carrierId: carriers[3].id,
@@ -482,7 +487,7 @@ async function main() {
 
   console.log(`📦 Created ${packages.length} packages`)
 
-  // Create Deliveries
+  // Create Deliveries - connect to orders via many-to-many
   const deliveries = await Promise.all([
     prisma.delivery.create({
       data: {
@@ -493,6 +498,7 @@ async function main() {
         actualPickupTime: new Date("2026-08-10T08:15:00Z"),
         actualDeliveryTime: new Date("2026-08-10T11:45:00Z"),
         status: DeliveryStatus.DELIVERED,
+        orders: { connect: [{ id: orders[0].id }] },
       },
     }),
     prisma.delivery.create({
@@ -503,6 +509,7 @@ async function main() {
         estimatedDeliveryTime: new Date("2026-08-10T17:00:00Z"),
         actualPickupTime: new Date("2026-08-10T13:10:00Z"),
         status: DeliveryStatus.IN_TRANSIT,
+        orders: { connect: [{ id: orders[1].id }] },
       },
     }),
     prisma.delivery.create({
@@ -512,6 +519,7 @@ async function main() {
         estimatedPickupTime: new Date("2026-08-11T08:00:00Z"),
         estimatedDeliveryTime: new Date("2026-08-11T11:00:00Z"),
         status: DeliveryStatus.ASSIGNED,
+        orders: { connect: [{ id: orders[2].id }] },
       },
     }),
     prisma.delivery.create({
@@ -521,6 +529,7 @@ async function main() {
         estimatedPickupTime: new Date("2026-08-11T12:00:00Z"),
         estimatedDeliveryTime: new Date("2026-08-11T15:00:00Z"),
         status: DeliveryStatus.ASSIGNED,
+        orders: { connect: [{ id: orders[3].id }] },
       },
     }),
     prisma.delivery.create({
@@ -532,6 +541,7 @@ async function main() {
         actualPickupTime: new Date("2026-08-10T10:05:00Z"),
         actualDeliveryTime: new Date("2026-08-10T11:20:00Z"),
         status: DeliveryStatus.DELIVERED,
+        orders: { connect: [{ id: orders[4].id }] },
       },
     }),
   ])
