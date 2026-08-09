@@ -1,13 +1,13 @@
+import { DriverId, OrderId, PackageId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer, Schema } from "effect"
-import { DriverId, OrderId, PackageId } from "@/ids"
-import { PrismaService } from "prisma-service"
-import { EventPublisher } from "events/event-publisher"
 import { DomainEvent } from "events/domain-event"
+import { EventPublisher } from "events/event-publisher"
 import { ValidatedOrderStatus } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
+import { PrismaService } from "prisma-service"
 
 const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
@@ -21,27 +21,35 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
   OrderRepository,
   {
     readonly createOrder: (deliveryOrderInput: OrderCreateInput) => Effect.Effect<CreateOrderResult, PersistenceError>
+
     readonly getOrderById: (orderId: OrderId) => Effect.Effect<OrderWithPackages, PersistenceError>
+
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
+
     readonly findByDriverId: (driverId: DriverId) => Effect.Effect<OrderWithPackages[], PersistenceError>
+
     readonly updateOrder: (
       orderId: OrderId,
       updateInput: OrderUpdateInput
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
+
     readonly updateOrderStatus: (
       orderId: OrderId,
       status: ValidatedOrderStatus
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
+
     readonly assignDriver: (
       orderId: OrderId,
       driverId: DriverId,
       assignedAt: Date,
       status: ValidatedOrderStatus
     ) => Effect.Effect<CreateOrderResult, PersistenceError>
+
     readonly addPackageToOrder: (
       orderId: OrderId,
       packageInput: AddPackageInput
     ) => Effect.Effect<OrderWithPackages, PersistenceError>
+
     readonly findPackageByTrackingNumber: (trackingNumber: string) => Effect.Effect<
       {
         package: { id: PackageId; trackingNumber: string; status: string }

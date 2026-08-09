@@ -5,12 +5,14 @@ import { DeliveryRepositoryLive } from "delivery/repository/delivery-repository"
 import { DriverRepositoryLive } from "delivery/repository/driver-repository"
 import { DeliveryServiceLive } from "delivery/services/delivery-service"
 import { DriverServiceLive } from "delivery/services/driver-service"
+import { DriverAssignmentServiceLive } from "delivery/services/driver-assignment-service"
 import { Layer, ManagedRuntime } from "effect"
 import { EstimateRepositoryLive } from "estimate/repository/estimate-repository"
 import { EstimateServiceLive } from "estimate/services/estimate-service"
 import { EventBusLive } from "events/event-bus"
 import { EventPublisherLive } from "events/event-publisher"
 import { EventStoreLive } from "events/event-store"
+import { EventSubscriberLive } from "events/event-subscriber"
 import { LocationRepositoryLive } from "location/repository/location-repository"
 import { LocationServiceLive } from "location/services/location-service"
 import { OrderRepositoryLive } from "ordering/repository/order-repository"
@@ -81,6 +83,27 @@ const PaymentInfra = PaymentRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
 
 const PaymentModuleLive = PaymentServiceLive.pipe(Layer.provide(PaymentInfra))
 
+// EventSubscriber module with all dependencies fully provided
+const DriverRepositoryWithPrisma = DriverRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
+
+const OrderRepositoryWithDeps = OrderRepositoryLive.pipe(
+  Layer.provide(TrackingNumberServiceLive),
+  Layer.provide(EventsInfra),
+  Layer.provide(PrismaWithConfig)
+)
+
+const DriverAssignmentWithDeps = DriverAssignmentServiceLive.pipe(
+  Layer.provide(DriverRepositoryWithPrisma),
+  Layer.provide(OrderRepositoryWithDeps),
+  Layer.provide(EventsInfra)
+)
+
+const EventSubscriberModuleLive = EventSubscriberLive.pipe(
+  Layer.provide(EventsInfra),
+  Layer.provide(EventBusLive),
+  Layer.provide(DriverAssignmentWithDeps)
+)
+
 const AppLive = Layer.mergeAll(
   OrderModuleLive,
   DriverModuleLive,
@@ -89,7 +112,8 @@ const AppLive = Layer.mergeAll(
   EstimateModuleLive,
   LocationModuleLive,
   RouteModuleLive,
-  PaymentModuleLive
+  PaymentModuleLive,
+  EventSubscriberModuleLive
 )
 
 export const AppRuntime = ManagedRuntime.make(
