@@ -1,12 +1,11 @@
-import { Context, Effect, Layer, Fiber, PubSub } from "effect"
+import { Context, Effect, Layer, Fiber, PubSub, Cause } from "effect"
 import { EventBus } from "events/event-bus"
 import { DriverAssignmentService } from "delivery/services/driver-assignment-service"
-import { EventPublisher } from "events/event-publisher"
-import { DomainEvent } from "events/domain-event"
+import { DomainEvent, OrderCreatedPayload } from "events/domain-event"
 import { OrderId } from "@/ids"
+import { Schema } from "effect"
 
 type DriverAssignmentServiceShape = Context.Tag.Service<DriverAssignmentService>
-type EventPublisherShape = Context.Tag.Service<EventPublisher>
 
 export class EventSubscriber extends Context.Tag("events/EventSubscriber")<
   EventSubscriber,
@@ -18,16 +17,17 @@ export const EventSubscriberLive = Layer.scoped(
   Effect.gen(function* () {
     const bus = yield* EventBus
     const assignmentService = yield* DriverAssignmentService
-    const eventPublisher = yield* EventPublisher
 
     const subscription = yield* PubSub.subscribe(bus)
 
-    const fiber = yield* Effect.fork(
+    const fiber = yield* Effect.forkScoped(
       Effect.forever(
         Effect.gen(function* () {
           const event = yield* subscription
-          yield* handleEvent(event, assignmentService, eventPublisher)
-        }).pipe(Effect.catchAll((error) => Effect.logError("EventSubscriber error", error)))
+          yield* handleEvent(event, assignmentService)
+        }).pipe(
+          Effect.catchAllCause((cause) => Effect.logError("EventSubscriber error", { cause: Cause.pretty(cause) }))
+        )
       )
     )
 
@@ -35,43 +35,40 @@ export const EventSubscriberLive = Layer.scoped(
   })
 )
 
-function handleEvent(
-  event: DomainEvent,
-  assignmentService: DriverAssignmentServiceShape,
-  eventPublisher: EventPublisherShape
-): Effect.Effect<void, never> {
+function handleEvent(event: DomainEvent, assignmentService: DriverAssignmentServiceShape): Effect.Effect<void, never> {
   if (event.type !== "OrderCreated") {
     return Effect.void
   }
 
   return Effect.gen(function* () {
-    const payload = event.payload as { orderId?: string; customerId?: string }
-    const orderId = payload.orderId
-    if (!orderId) {
-      yield* Effect.logWarning("OrderCreated event missing orderId", { event })
+    // Validate payload with Schema - defines errors out of existence
+    const payload = yield* Schema.decodeUnknown(OrderCreatedPayload)(event.payload).pipe(
+      Effect.catchAll((error) =>
+        Effect.logError("Invalid OrderCreated payload", { event, error: String(error) }).pipe(Effect.as(null))
+      )
+    )
+
+    if (!payload) {
       return
     }
 
-    const driver = yield* assignmentService
-      .findAvailableDriver()
-      .pipe(
-        Effect.catchAll((error) =>
-          Effect.logError("Failed to find available driver", { orderId, error }).pipe(Effect.as(null))
-        )
+    const orderId = payload.orderId
+
+    const driver = yield* assignmentService.findAvailableDriver().pipe(
+      Effect.timeout("10 seconds"),
+      Effect.catchAll((error) =>
+        Effect.logError("Failed to find available driver", { orderId, error }).pipe(Effect.as(null))
       )
+    )
     if (!driver) {
       yield* Effect.logWarning("No available driver for order", { orderId })
       return
     }
 
     yield* Effect.logInfo("Assigning driver to order", { orderId, driverId: driver.id })
-    yield* assignmentService
-      .assignDriverToOrder(orderId as OrderId, driver.id)
-      .pipe(
-        Effect.catchAll((error) => Effect.logError("Failed to assign driver", { orderId, driverId: driver.id, error }))
-      )
-
-    // Notify subscribers of the assignment (DriverAssigned event published by repository)
-    yield* eventPublisher.notify([])
+    yield* assignmentService.assignDriverToOrder(orderId as OrderId, driver.id).pipe(
+      Effect.timeout("10 seconds"),
+      Effect.catchAll((error) => Effect.logError("Failed to assign driver", { orderId, driverId: driver.id, error }))
+    )
   })
 }

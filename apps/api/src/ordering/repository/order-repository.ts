@@ -196,30 +196,77 @@ export const OrderRepositoryLive = Layer.effect(
       },
 
       updateOrderStatus: (orderId: OrderId, status: ValidatedOrderStatus) => {
-        return prismaService.execute(() =>
-          prismaService.prisma.order.update({
-            where: { id: orderId },
-            data: { status },
-            include: {
-              packages: true,
-            },
+        return Effect.gen(function* () {
+          return yield* prismaService.$transaction(async (tx) => {
+            const order = await tx.order.update({
+              where: { id: orderId },
+              data: { status },
+              include: {
+                packages: true,
+              },
+            })
+
+            // Release driver when order reaches COMPLETED or CANCELLED
+            if ((status === OrderStatus.COMPLETED || status === OrderStatus.CANCELLED) && order.driverId) {
+              await tx.driver.update({
+                where: { id: order.driverId },
+                data: { isAvailable: true },
+              })
+            }
+
+            return order
           })
-        )
+        })
       },
 
       assignDriver: (orderId: OrderId, driverId: DriverId, assignedAt: Date, status: ValidatedOrderStatus) => {
         return Effect.gen(function* () {
           const { order, events } = yield* prismaService.$transaction(async (tx) => {
-            const order = await tx.order.update({
-              where: { id: orderId },
+            // Atomic claim: only assign if order is still PENDING and driver is available
+            const orderUpdate = await tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: OrderStatus.PENDING,
+              },
               data: {
                 driverId,
                 assignedAt,
                 status,
               },
-              include: {
-                packages: true,
+            })
+
+            if (orderUpdate.count === 0) {
+              // Order not in PENDING state - could be already assigned, cancelled, etc.
+              const existingOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                include: { packages: true },
+              })
+              if (!existingOrder) {
+                throw new Error(`Order ${orderId} not found`)
+              }
+              throw new Error(`Order ${orderId} is not in PENDING status (current: ${existingOrder.status})`)
+            }
+
+            // Also atomically claim the driver (set isAvailable = false)
+            const driverUpdate = await tx.driver.updateMany({
+              where: {
+                id: driverId,
+                isAvailable: true,
               },
+              data: {
+                isAvailable: false,
+              },
+            })
+
+            if (driverUpdate.count === 0) {
+              // Driver not available - rollback order assignment by throwing
+              throw new Error(`Driver ${driverId} is not available`)
+            }
+
+            // Fetch the updated order with packages
+            const order = await tx.order.findUniqueOrThrow({
+              where: { id: orderId },
+              include: { packages: true },
             })
 
             const event: DomainEvent = {
