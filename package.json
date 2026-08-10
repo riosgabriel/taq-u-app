@@ -23,7 +23,8 @@
     "docker:up": "docker-compose up --build -d",
     "docker:down": "docker-compose down",
     "validate": "pnpm lint && pnpm format --check",
-    "oc": "node scripts/opencode.mjs"
+    "oc": "node scripts/opencode.mjs --port 4096",
+    "oc:no-port": "node scripts/opencode.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.7.0",
