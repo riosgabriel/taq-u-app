@@ -3,6 +3,7 @@ import { Effect, Layer } from "effect"
 import { DriverAssignmentService, DriverAssignmentServiceLive } from "delivery/services/driver-assignment-service"
 import { DriverRepository } from "delivery/repository/driver-repository"
 import { OrderRepository } from "ordering/repository/order-repository"
+import { EventPublisher } from "events/event-publisher"
 import { DriverId, OrderId } from "@/ids"
 import { OrderStatus } from "@prisma/client"
 
@@ -33,6 +34,11 @@ describe("DriverAssignmentService", () => {
     assignedAt: new Date(),
   }
 
+  const mockEventPublisher = EventPublisher.of({
+    writeInTransaction: async (_tx: any, events: any) => events,
+    notify: () => Effect.void,
+  })
+
   const mockDriverRepo = DriverRepository.of({
     findAvailable: () => Effect.succeed(mockDriver),
     create: () => Effect.die("unexpected"),
@@ -58,7 +64,8 @@ describe("DriverAssignmentService", () => {
 
   const testLayer = DriverAssignmentServiceLive.pipe(
     Layer.provide(Layer.succeed(DriverRepository, mockDriverRepo)),
-    Layer.provide(Layer.succeed(OrderRepository, mockOrderRepo))
+    Layer.provide(Layer.succeed(OrderRepository, mockOrderRepo)),
+    Layer.provide(Layer.succeed(EventPublisher, mockEventPublisher))
   )
 
   const noDriverRepo = DriverRepository.of({
@@ -72,7 +79,8 @@ describe("DriverAssignmentService", () => {
 
   const noDriverLayer = DriverAssignmentServiceLive.pipe(
     Layer.provide(Layer.succeed(DriverRepository, noDriverRepo)),
-    Layer.provide(Layer.succeed(OrderRepository, mockOrderRepo))
+    Layer.provide(Layer.succeed(OrderRepository, mockOrderRepo)),
+    Layer.provide(Layer.succeed(EventPublisher, mockEventPublisher))
   )
 
   describe("findAvailableDriver", () => {

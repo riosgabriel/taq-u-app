@@ -1,14 +1,14 @@
 import { DriverId, OrderId, PackageId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
-import { Context, Data, Effect, Layer, Schema } from "effect"
+import { DriverNotAvailableError } from "delivery/services/driver-service"
+import { Context, Effect, Layer, Schema } from "effect"
 import { DomainEvent } from "events/domain-event"
 import { EventPublisher } from "events/event-publisher"
 import { InvalidOrderStatusTransitionError, ValidatedOrderStatus } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
 import { PrismaService } from "prisma-service"
-import { DriverNotAvailableError } from "delivery/services/driver-service"
 
 const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
@@ -44,7 +44,10 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
       driverId: DriverId,
       assignedAt: Date,
       status: ValidatedOrderStatus
-    ) => Effect.Effect<CreateOrderResult, PersistenceError | InvalidOrderStatusTransitionError | DriverNotAvailableError>
+    ) => Effect.Effect<
+      CreateOrderResult,
+      PersistenceError | InvalidOrderStatusTransitionError | DriverNotAvailableError
+    >
 
     readonly addPackageToOrder: (
       orderId: OrderId,
