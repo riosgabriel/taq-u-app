@@ -1,10 +1,11 @@
-import { Context, Effect, Layer } from "effect"
-import { DriverRepository } from "delivery/repository/driver-repository"
-import { OrderRepository } from "ordering/repository/order-repository"
 import { DriverId, OrderId } from "@/ids"
 import { PersistenceError } from "@/persistence-errors"
 import { OrderStatus } from "@prisma/client"
-import { transition, InvalidOrderStatusTransitionError } from "ordering/domain/order-status"
+import { DriverRepository } from "delivery/repository/driver-repository"
+import { Context, Effect, Layer } from "effect"
+import { InvalidOrderStatusTransitionError, transition } from "ordering/domain/order-status"
+import { OrderRepository } from "ordering/repository/order-repository"
+import { DriverNotAvailableError } from "delivery/services/driver-service"
 
 export class DriverAssignmentService extends Context.Tag("delivery/DriverAssignmentService")<
   DriverAssignmentService,
@@ -18,7 +19,7 @@ export class DriverAssignmentService extends Context.Tag("delivery/DriverAssignm
       driverId: DriverId
     ) => Effect.Effect<
       { id: OrderId; driverId: DriverId; status: string },
-      PersistenceError | InvalidOrderStatusTransitionError
+      PersistenceError | InvalidOrderStatusTransitionError | DriverNotAvailableError
     >
   }
 >() {}

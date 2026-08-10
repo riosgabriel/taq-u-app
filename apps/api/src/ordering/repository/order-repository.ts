@@ -1,13 +1,14 @@
 import { DriverId, OrderId, PackageId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
-import { Context, Effect, Layer, Schema } from "effect"
+import { Context, Data, Effect, Layer, Schema } from "effect"
 import { DomainEvent } from "events/domain-event"
 import { EventPublisher } from "events/event-publisher"
-import { ValidatedOrderStatus } from "ordering/domain/order-status"
+import { InvalidOrderStatusTransitionError, ValidatedOrderStatus } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
 import { PrismaService } from "prisma-service"
+import { DriverNotAvailableError } from "delivery/services/driver-service"
 
 const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
@@ -43,7 +44,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
       driverId: DriverId,
       assignedAt: Date,
       status: ValidatedOrderStatus
-    ) => Effect.Effect<CreateOrderResult, PersistenceError>
+    ) => Effect.Effect<CreateOrderResult, PersistenceError | InvalidOrderStatusTransitionError | DriverNotAvailableError>
 
     readonly addPackageToOrder: (
       orderId: OrderId,
@@ -242,9 +243,13 @@ export const OrderRepositoryLive = Layer.effect(
                 include: { packages: true },
               })
               if (!existingOrder) {
-                throw new Error(`Order ${orderId} not found`)
+                throw new RecordNotFoundError({ model: "Order", id: orderId, message: `Order ${orderId} not found` })
               }
-              throw new Error(`Order ${orderId} is not in PENDING status (current: ${existingOrder.status})`)
+              throw new InvalidOrderStatusTransitionError({
+                currentStatus: existingOrder.status,
+                targetStatus: OrderStatus.ASSIGNED,
+                message: `Order ${orderId} is not in PENDING status (current: ${existingOrder.status})`,
+              })
             }
 
             // Also atomically claim the driver (set isAvailable = false)
@@ -260,7 +265,10 @@ export const OrderRepositoryLive = Layer.effect(
 
             if (driverUpdate.count === 0) {
               // Driver not available - rollback order assignment by throwing
-              throw new Error(`Driver ${driverId} is not available`)
+              throw new DriverNotAvailableError({
+                id: driverId,
+                message: `Driver ${driverId} is not available`,
+              })
             }
 
             // Fetch the updated order with packages

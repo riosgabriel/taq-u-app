@@ -137,7 +137,6 @@ OrderController.post("/:orderId/assign", async (req: Request, res: Response, nex
     return ok(OrderResponse.fromOrderWithPackages(assigned))
   }).pipe(
     Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))),
-    Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))),
     Effect.catchTag("order/OrderStatusError", (error) => Effect.succeed(badRequest(error.message)))
   )
 

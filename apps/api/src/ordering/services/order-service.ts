@@ -2,13 +2,13 @@ import { PersistenceError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus } from "@prisma/client"
 import { CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError } from "customer/services/customer-service"
-import { DriverNotFoundError, DriverService } from "delivery/services/driver-service"
 import { Context, Data, Effect, Layer } from "effect"
 import { DriverId, OrderId, PackageId } from "@/ids"
 import { EventPublisher } from "events/event-publisher"
 import { transition as statusTransition } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
+import { DriverNotAvailableError } from "delivery/services/driver-service"
 
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
   readonly orderId: string
@@ -49,7 +49,7 @@ export class OrderService extends Context.Tag("order/OrderService")<
       driverId: DriverId
     ) => Effect.Effect<
       OrderWithPackages,
-      OrderNotFoundError | DriverNotFoundError | OrderStatusError | PersistenceError
+      OrderNotFoundError | OrderStatusError | DriverNotAvailableError | PersistenceError
     >
     readonly pickupOrder: (
       orderId: OrderId
@@ -84,7 +84,6 @@ export const OrderServiceLive = Layer.effect(
     const orderRepository = yield* OrderRepository
     const customerRepository = yield* CustomerRepository
     const eventPublisher = yield* EventPublisher
-    const driverService = yield* DriverService
 
     return OrderService.of({
       createOrder: (orderInput: OrderCreateInput) => {
@@ -178,8 +177,6 @@ export const OrderServiceLive = Layer.effect(
 
       assignDriver: (orderId: OrderId, driverId: DriverId) => {
         return Effect.gen(function* () {
-          yield* driverService.getById(driverId)
-
           const existingOrder = yield* orderRepository
             .getOrderById(orderId)
             .pipe(

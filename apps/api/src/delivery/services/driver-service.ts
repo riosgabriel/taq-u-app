@@ -11,6 +11,11 @@ export class DriverNotFoundError extends Data.TaggedError("delivery/DriverNotFou
   readonly message: string
 }> {}
 
+export class DriverNotAvailableError extends Data.TaggedError("delivery/DriverNotAvailableError")<{
+  readonly id: string
+  readonly message: string
+}> {}
+
 export class DriverService extends Context.Tag("delivery/DriverService")<
   DriverService,
   {
