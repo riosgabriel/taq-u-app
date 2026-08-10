@@ -8,7 +8,7 @@ import { EventPublisher } from "events/event-publisher"
 import { transition as statusTransition } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
-import { DriverNotAvailableError } from "delivery/services/driver-service"
+import { DriverNotFoundError, DriverNotAvailableError } from "delivery/services/driver-service"
 
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
   readonly orderId: string
@@ -49,7 +49,7 @@ export class OrderService extends Context.Tag("order/OrderService")<
       driverId: DriverId
     ) => Effect.Effect<
       OrderWithPackages,
-      OrderNotFoundError | OrderStatusError | DriverNotAvailableError | PersistenceError
+      OrderNotFoundError | OrderStatusError | DriverNotFoundError | DriverNotAvailableError | PersistenceError
     >
     readonly pickupOrder: (
       orderId: OrderId

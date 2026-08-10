@@ -1,7 +1,7 @@
 import { DriverId, OrderId, PackageId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
-import { DriverNotAvailableError } from "delivery/services/driver-service"
+import { DriverNotAvailableError, DriverNotFoundError } from "delivery/services/driver-service"
 import { Context, Effect, Layer, Schema } from "effect"
 import { DomainEvent } from "events/domain-event"
 import { EventPublisher } from "events/event-publisher"
@@ -46,7 +46,7 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
       status: ValidatedOrderStatus
     ) => Effect.Effect<
       CreateOrderResult,
-      PersistenceError | InvalidOrderStatusTransitionError | DriverNotAvailableError
+      PersistenceError | InvalidOrderStatusTransitionError | DriverNotAvailableError | DriverNotFoundError
     >
 
     readonly addPackageToOrder: (
@@ -267,7 +267,16 @@ export const OrderRepositoryLive = Layer.effect(
             })
 
             if (driverUpdate.count === 0) {
-              // Driver not available - rollback order assignment by throwing
+              // Either the driver doesn't exist or it's unavailable — disambiguate
+              const existingDriver = await tx.driver.findUnique({
+                where: { id: driverId },
+              })
+              if (!existingDriver) {
+                throw new DriverNotFoundError({
+                  id: driverId,
+                  message: `Driver ${driverId} not found`,
+                })
+              }
               throw new DriverNotAvailableError({
                 id: driverId,
                 message: `Driver ${driverId} is not available`,
