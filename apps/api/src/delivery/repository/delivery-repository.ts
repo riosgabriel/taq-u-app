@@ -1,9 +1,10 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
-import { DeliveryId, DriverId } from "@/ids"
+import { DeliveryId, DriverId, OrderId } from "@/ids"
 import { Delivery, DeliveryStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Layer } from "effect"
 import { ValidatedDeliveryStatus } from "delivery/domain/delivery-status"
 import { CreateDeliveryInput } from "delivery/dto/delivery-dto"
+import { DriverNotAvailableError, DriverNotFoundError, OrderNotAssignableError } from "delivery/domain/driver-errors"
 import { DomainEvent } from "events/domain-event"
 import { EventPublisher } from "events/event-publisher"
 import { PrismaService } from "prisma-service"
@@ -30,6 +31,14 @@ export class DeliveryRepository extends Context.Tag("delivery/DeliveryRepository
   DeliveryRepository,
   {
     readonly createDelivery: (input: CreateDeliveryInput) => Effect.Effect<CreateDeliveryResult, PersistenceError>
+    readonly createAssignment: (
+      orderId: OrderId,
+      driverId: DriverId,
+      assignedAt: Date
+    ) => Effect.Effect<
+      CreateDeliveryResult,
+      DriverNotFoundError | DriverNotAvailableError | OrderNotAssignableError | PersistenceError
+    >
     readonly listAll: () => Effect.Effect<Array<Delivery>, PersistenceError>
     readonly listWithDetails: () => Effect.Effect<Array<DeliveryWithDetails>, PersistenceError>
     readonly getById: (id: DeliveryId) => Effect.Effect<Delivery, PersistenceError>
@@ -84,6 +93,60 @@ export const DeliveryRepositoryLive = Layer.effect(
           })
 
           return { delivery, events }
+        })
+      },
+
+      createAssignment: (orderId: OrderId, driverId: DriverId, assignedAt: Date) => {
+        return Effect.gen(function* () {
+          const result = yield* prismaService.$transaction(async (tx) => {
+            const order = await tx.order.findUnique({
+              where: { id: orderId },
+              select: { status: true },
+            })
+
+            if (!order) {
+              throw new RecordNotFoundError({ model: "Order", id: orderId, message: `Order ${orderId} not found` })
+            }
+            if (order.status !== "PENDING") {
+              throw new OrderNotAssignableError({
+                orderId,
+                currentStatus: order.status,
+                message: `Order ${orderId} is not assignable (current status: ${order.status})`,
+              })
+            }
+
+            const claim = await tx.driver.updateMany({
+              where: { id: driverId, isAvailable: true },
+              data: { isAvailable: false },
+            })
+
+            if (claim.count === 0) {
+              const driver = await tx.driver.findUnique({ where: { id: driverId } })
+              if (!driver) {
+                throw new DriverNotFoundError({ id: driverId, message: `Driver ${driverId} not found` })
+              }
+              throw new DriverNotAvailableError({ id: driverId, message: `Driver ${driverId} is not available` })
+            }
+
+            const created = await tx.delivery.create({
+              data: {
+                driver: { connect: { id: driverId } },
+                orders: { connect: [{ id: orderId }] },
+                status: DeliveryStatus.ASSIGNED,
+              },
+            })
+
+            const event: DomainEvent = {
+              type: "DriverAssigned",
+              streamId: `order:${orderId}`,
+              payload: { orderId, driverId, assignedAt },
+            }
+            const written = await eventPublisher.writeInTransaction(tx, [event])
+
+            return { delivery: created, events: written }
+          })
+
+          return result
         })
       },
 

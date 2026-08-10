@@ -133,4 +133,14 @@ describe("DeliveryRouteResponse", () => {
     })
     expect(response.driver.licenseNumber).toBeNull()
   })
+
+  it("maps null routeId and route to null", () => {
+    const response = DeliveryRouteResponse.fromDeliveryWithDetails({
+      ...delivery,
+      routeId: null,
+      route: null,
+    })
+    expect(response.routeId).toBeNull()
+    expect(response.route).toBeNull()
+  })
 })

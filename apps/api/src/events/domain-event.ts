@@ -13,3 +13,11 @@ export const OrderCreatedPayload = Schema.Struct({
 })
 
 export type OrderCreatedPayload = Schema.Schema.Type<typeof OrderCreatedPayload>
+
+export const DriverAssignedPayload = Schema.Struct({
+  orderId: Schema.String,
+  driverId: Schema.String,
+  assignedAt: Schema.Date,
+})
+
+export type DriverAssignedPayload = Schema.Schema.Type<typeof DriverAssignedPayload>

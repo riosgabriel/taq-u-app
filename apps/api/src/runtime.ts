@@ -86,22 +86,19 @@ const PaymentModuleLive = PaymentServiceLive.pipe(Layer.provide(PaymentInfra))
 // EventSubscriber module with all dependencies fully provided
 const DriverRepositoryWithPrisma = DriverRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
 
-const OrderRepositoryWithDeps = OrderRepositoryLive.pipe(
-  Layer.provide(TrackingNumberServiceLive),
-  Layer.provide(EventsInfra),
-  Layer.provide(PrismaWithConfig)
-)
+const DeliveryRepositoryWithPrisma = DeliveryRepositoryLive.pipe(Layer.provide(PrismaWithConfig))
 
 const DriverAssignmentWithDeps = DriverAssignmentServiceLive.pipe(
   Layer.provide(DriverRepositoryWithPrisma),
-  Layer.provide(OrderRepositoryWithDeps),
+  Layer.provide(DeliveryRepositoryWithPrisma),
   Layer.provide(EventsInfra)
 )
 
 const EventSubscriberModuleLive = EventSubscriberLive.pipe(
   Layer.provide(EventsInfra),
   Layer.provide(EventBusLive),
-  Layer.provide(DriverAssignmentWithDeps)
+  Layer.provide(DriverAssignmentWithDeps),
+  Layer.provide(OrderModuleLive)
 )
 
 const AppLive = Layer.mergeAll(
@@ -113,6 +110,7 @@ const AppLive = Layer.mergeAll(
   LocationModuleLive,
   RouteModuleLive,
   PaymentModuleLive,
+  DriverAssignmentWithDeps,
   EventSubscriberModuleLive
 )
 
