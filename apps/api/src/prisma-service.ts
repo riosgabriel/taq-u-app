@@ -34,6 +34,15 @@ const mapKnownPrismaError = (error: Prisma.PrismaClientKnownRequestError): Persi
 }
 
 export const mapPrismaError = (error: unknown): PersistenceError => {
+  if (
+    error instanceof UniqueConstraintViolation ||
+    error instanceof RecordNotFoundError ||
+    error instanceof DatabaseUnavailable ||
+    error instanceof ForeignKeyViolation ||
+    error instanceof UnexpectedPersistenceError
+  ) {
+    return error
+  }
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     return mapKnownPrismaError(error)
   }

@@ -1,7 +1,7 @@
 import { DriverId, OrderId, PackageId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
-import { Context, Effect, Layer, Schema } from "effect"
+import { Context, Effect, Either, Layer, Schema } from "effect"
 import { DomainEvent } from "events/domain-event"
 import { EventPublisher } from "events/event-publisher"
 import { InvalidOrderStatusTransitionError, ValidatedOrderStatus } from "ordering/domain/order-status"
@@ -79,19 +79,26 @@ export const OrderRepositoryLive = Layer.effect(
     const trackingNumberService = yield* TrackingNumberService
     const eventPublisher = yield* EventPublisher
 
-    const generateTrackingNumbersInTx = async (tx: Prisma.TransactionClient, count: number): Promise<string[]> => {
+    const generateTrackingNumbersInTx = async (
+      tx: Prisma.TransactionClient,
+      count: number
+    ): Promise<Either.Either<string[], PersistenceError>> => {
       const numbers: string[] = []
       for (let i = 0; i < count; i++) {
-        numbers.push(await trackingNumberService.generateInTx(tx))
+        const generated = await trackingNumberService.generateInTx(tx)
+        if (Either.isLeft(generated)) return Either.left(generated.left)
+        numbers.push(generated.right)
       }
-      return numbers
+      return Either.right(numbers)
     }
 
     return OrderRepository.of({
-      createOrder: (orderInput: OrderCreateInput) => {
-        return Effect.gen(function* () {
-          const { order, events } = yield* prismaService.$transaction(async (tx) => {
-            const trackingNumbers = await generateTrackingNumbersInTx(tx, orderInput.packages.length)
+      createOrder: (orderInput: OrderCreateInput) =>
+        prismaService
+          .$transaction(async (tx): Promise<Either.Either<CreateOrderResult, PersistenceError>> => {
+            const trackingNumbersResult = await generateTrackingNumbersInTx(tx, orderInput.packages.length)
+            if (Either.isLeft(trackingNumbersResult)) return Either.left(trackingNumbersResult.left)
+            const trackingNumbers = trackingNumbersResult.right
 
             const order = await tx.order.create({
               data: {
@@ -134,12 +141,9 @@ export const OrderRepositoryLive = Layer.effect(
             }
             const written = await eventPublisher.writeInTransaction(tx, [orderEvent])
 
-            return { order, events: written }
+            return Either.right({ order, events: written })
           })
-
-          return { order, events }
-        })
-      },
+          .pipe(Effect.flatten),
 
       getOrderById: (orderId: OrderId) => {
         return prismaService
@@ -218,52 +222,62 @@ export const OrderRepositoryLive = Layer.effect(
         })
       },
 
-      markAssigned: (orderId: OrderId, driverId: DriverId, assignedAt: Date) => {
-        return Effect.gen(function* () {
-          return yield* prismaService.$transaction(async (tx) => {
-            const updated = await tx.order.updateMany({
-              where: {
-                id: orderId,
-                status: OrderStatus.PENDING,
-              },
-              data: {
-                driverId,
-                assignedAt,
-                status: OrderStatus.ASSIGNED,
-              },
-            })
+      markAssigned: (orderId: OrderId, driverId: DriverId, assignedAt: Date) =>
+        prismaService
+          .$transaction(
+            async (
+              tx
+            ): Promise<Either.Either<OrderWithPackages, RecordNotFoundError | InvalidOrderStatusTransitionError>> => {
+              const updated = await tx.order.updateMany({
+                where: {
+                  id: orderId,
+                  status: OrderStatus.PENDING,
+                },
+                data: {
+                  driverId,
+                  assignedAt,
+                  status: OrderStatus.ASSIGNED,
+                },
+              })
 
-            if (updated.count === 0) {
-              const existingOrder = await tx.order.findUnique({
-                where: { id: orderId },
-                include: { packages: true },
-              })
-              if (!existingOrder) {
-                throw new RecordNotFoundError({ model: "Order", id: orderId, message: `Order ${orderId} not found` })
+              if (updated.count === 0) {
+                const existingOrder = await tx.order.findUnique({
+                  where: { id: orderId },
+                  include: { packages: true },
+                })
+                if (!existingOrder) {
+                  return Either.left(
+                    new RecordNotFoundError({ model: "Order", id: orderId, message: `Order ${orderId} not found` })
+                  )
+                }
+                // Idempotent: already assigned to the same driver — treat as success
+                if (existingOrder.status === OrderStatus.ASSIGNED && existingOrder.driverId === driverId) {
+                  return Either.right(existingOrder)
+                }
+                return Either.left(
+                  new InvalidOrderStatusTransitionError({
+                    currentStatus: existingOrder.status,
+                    targetStatus: OrderStatus.ASSIGNED,
+                    message: `Order ${orderId} is not in PENDING status (current: ${existingOrder.status})`,
+                  })
+                )
               }
-              // Idempotent: already assigned to the same driver — treat as success
-              if (existingOrder.status === OrderStatus.ASSIGNED && existingOrder.driverId === driverId) {
-                return existingOrder
-              }
-              throw new InvalidOrderStatusTransitionError({
-                currentStatus: existingOrder.status,
-                targetStatus: OrderStatus.ASSIGNED,
-                message: `Order ${orderId} is not in PENDING status (current: ${existingOrder.status})`,
-              })
+
+              return Either.right(
+                await tx.order.findUniqueOrThrow({
+                  where: { id: orderId },
+                  include: { packages: true },
+                })
+              )
             }
+          )
+          .pipe(Effect.flatten),
 
-            return await tx.order.findUniqueOrThrow({
-              where: { id: orderId },
-              include: { packages: true },
-            })
-          })
-        })
-      },
-
-      addPackageToOrder: (orderId: OrderId, packageInput: AddPackageInput) => {
-        return Effect.gen(function* () {
-          return yield* prismaService.$transaction(async (tx) => {
-            const trackingNumber = await trackingNumberService.generateInTx(tx)
+      addPackageToOrder: (orderId: OrderId, packageInput: AddPackageInput) =>
+        prismaService
+          .$transaction(async (tx): Promise<Either.Either<OrderWithPackages, PersistenceError>> => {
+            const trackingNumberResult = await trackingNumberService.generateInTx(tx)
+            if (Either.isLeft(trackingNumberResult)) return Either.left(trackingNumberResult.left)
 
             await tx.package.create({
               data: {
@@ -274,18 +288,19 @@ export const OrderRepositoryLive = Layer.effect(
                 fragile: packageInput.fragile,
                 perishable: packageInput.perishable,
                 insured: packageInput.insured,
-                trackingNumber,
+                trackingNumber: trackingNumberResult.right,
                 status: PackageStatus.AWAITING_PICKUP,
               },
             })
 
-            return tx.order.findUniqueOrThrow({
-              where: { id: orderId },
-              include: { packages: true },
-            })
+            return Either.right(
+              await tx.order.findUniqueOrThrow({
+                where: { id: orderId },
+                include: { packages: true },
+              })
+            )
           })
-        })
-      },
+          .pipe(Effect.flatten),
 
       findPackageByTrackingNumber: (trackingNumber: string) => {
         return prismaService
