@@ -5,15 +5,11 @@ import { EventPublisher } from "events/event-publisher"
 import { DriverId, OrderId } from "@/ids"
 import { DeliveryStatus, Prisma } from "@prisma/client"
 import { UnexpectedPersistenceError } from "@/persistence-errors"
-import { mapPrismaError, PrismaService } from "prisma-service"
+import { PrismaService } from "prisma-service"
+import { mockPrismaServiceWith } from "../../helpers/mock-prisma-service"
 
 describe("DeliveryRepository.createAssignment", () => {
-  const prismaWith = (tx: unknown) =>
-    PrismaService.of({
-      prisma: {} as never,
-      execute: (operation) => Effect.tryPromise({ try: operation, catch: mapPrismaError }),
-      $transaction: (fn) => Effect.tryPromise({ try: () => fn(tx as any), catch: mapPrismaError }),
-    })
+  const prismaWith = mockPrismaServiceWith
 
   const mockEventPublisher = EventPublisher.of({
     writeInTransaction: async (_tx: any, events: any) => events,

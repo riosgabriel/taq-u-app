@@ -8,7 +8,7 @@ import {
 } from "@/persistence-errors"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { ConfigService } from "config-service"
-import { Context, Effect, Layer } from "effect"
+import { Context, Effect, Either, Layer } from "effect"
 
 const mapKnownPrismaError = (error: Prisma.PrismaClientKnownRequestError): PersistenceError => {
   switch (error.code) {
@@ -58,12 +58,21 @@ export const mapPrismaError = (error: unknown): PersistenceError => {
   throw error
 }
 
+export class TransactionAborted<E> extends Error {
+  constructor(readonly error: E) {
+    super("Transaction aborted")
+    this.name = "TransactionAborted"
+  }
+}
+
 export class PrismaService extends Context.Tag("PrismaService")<
   PrismaService,
   {
     readonly prisma: PrismaClient
     readonly execute: <A>(operation: () => Prisma.PrismaPromise<A>) => Effect.Effect<A, PersistenceError>
-    readonly $transaction: <A>(fn: (tx: Prisma.TransactionClient) => Promise<A>) => Effect.Effect<A, PersistenceError>
+    readonly $transaction: <A, E = never>(
+      fn: (tx: Prisma.TransactionClient) => Promise<Either.Either<A, E>>
+    ) => Effect.Effect<A, PersistenceError | E>
   }
 >() {}
 
@@ -82,10 +91,18 @@ export const PrismaLive = Layer.scoped(
           try: operation,
           catch: mapPrismaError,
         }),
-      $transaction: (fn) =>
+      $transaction: <A, E = never>(fn: (tx: Prisma.TransactionClient) => Promise<Either.Either<A, E>>) =>
         Effect.tryPromise({
-          try: () => client.$transaction(fn),
-          catch: mapPrismaError,
+          try: () =>
+            client.$transaction(async (tx) => {
+              const result = await fn(tx)
+              if (Either.isLeft(result)) throw new TransactionAborted(result.left)
+              return result.right
+            }),
+          catch: (error) => {
+            if (error instanceof TransactionAborted) return error.error as PersistenceError | E
+            return mapPrismaError(error)
+          },
         }),
     })
   }).pipe(Effect.acquireRelease(({ prisma }) => Effect.sync(() => prisma.$disconnect())))

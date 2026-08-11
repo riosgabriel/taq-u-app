@@ -7,15 +7,11 @@ import { CustomerId, DriverId, OrderId } from "@/ids"
 import { OrderStatus } from "@prisma/client"
 import { UnexpectedPersistenceError } from "@/persistence-errors"
 import { OrderCreateInput } from "ordering/dto/order-dto"
-import { mapPrismaError, PrismaService } from "prisma-service"
+import { PrismaService } from "prisma-service"
+import { mockPrismaServiceWith } from "../../helpers/mock-prisma-service"
 
 describe("OrderRepository.markAssigned", () => {
-  const prismaWith = (tx: unknown) =>
-    PrismaService.of({
-      prisma: {} as never,
-      execute: (operation) => Effect.tryPromise({ try: operation, catch: mapPrismaError }),
-      $transaction: (fn) => Effect.tryPromise({ try: () => fn(tx as any), catch: mapPrismaError }),
-    })
+  const prismaWith = mockPrismaServiceWith
 
   const mockEventPublisher = EventPublisher.of({
     writeInTransaction: async (_tx: any, events: any) => events,
@@ -138,12 +134,7 @@ describe("OrderRepository.markAssigned", () => {
 })
 
 describe("OrderRepository.addPackageToOrder", () => {
-  const prismaWith = (tx: unknown) =>
-    PrismaService.of({
-      prisma: {} as never,
-      execute: (operation) => Effect.tryPromise({ try: operation, catch: mapPrismaError }),
-      $transaction: (fn) => Effect.tryPromise({ try: () => fn(tx as any), catch: mapPrismaError }),
-    })
+  const prismaWith = mockPrismaServiceWith
 
   const mockEventPublisher = EventPublisher.of({
     writeInTransaction: async (_tx: any, events: any) => events,
@@ -220,12 +211,7 @@ describe("OrderRepository.addPackageToOrder", () => {
 })
 
 describe("OrderRepository.createOrder", () => {
-  const prismaWith = (tx: unknown) =>
-    PrismaService.of({
-      prisma: {} as never,
-      execute: (operation) => Effect.tryPromise({ try: operation, catch: mapPrismaError }),
-      $transaction: (fn) => Effect.tryPromise({ try: () => fn(tx as any), catch: mapPrismaError }),
-    })
+  const prismaWith = mockPrismaServiceWith
 
   const mockEventPublisher = EventPublisher.of({
     writeInTransaction: async (_tx: any, events: any) => events,

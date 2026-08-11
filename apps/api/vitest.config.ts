@@ -7,11 +7,11 @@ export default defineConfig({
     globals: true,
     // Pattern-based exclusion: files matching `*.integration.test.ts`
     // are integration tests that need a running Postgres and are
-    // excluded from the default `pnpm test` run. The `test:integration`
-    // script in package.json runs only the integration directory, so
-    // the path-based dispatch there still picks them up. Pattern-based
-    // (not directory-based) so a new integration test can live
-    // outside `test/integration/` and still be excluded correctly.
+    // excluded from the default `pnpm test` run. They are run via the
+    // `test:integration` script, which uses vitest.integration.config.ts
+    // and includes only those files. Pattern-based (not directory-based)
+    // so a new integration test can live outside `test/integration/` and
+    // still be excluded correctly.
     exclude: ["**/node_modules/**", "**/dist/**", "**/*.integration.test.ts"],
   },
 })

@@ -1,6 +1,6 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { RouteId } from "@/ids"
-import { Context, Effect, Layer } from "effect"
+import { Context, Effect, Either, Layer } from "effect"
 import { AddRouteLegInput, RouteCreateInput, RouteUpdateInput } from "route/dto/route-dto"
 import { RouteWithLegs } from "route/domain/route"
 import { PrismaService } from "prisma-service"
@@ -28,28 +28,30 @@ export const RouteRepositoryLive = Layer.effect(
     return RouteRepository.of({
       create: (input: RouteCreateInput) => {
         return prismaService.$transaction(async (tx) => {
-          return tx.route.create({
-            data: {
-              pickup: { connect: { id: input.pickupId } },
-              dropoff: { connect: { id: input.dropoffId } },
-              carrier: input.carrierId ? { connect: { id: input.carrierId } } : undefined,
-              legs: input.legs
-                ? {
-                    createMany: {
-                      data: input.legs.map((leg) => ({
-                        transportMode: leg.transportMode,
-                        pickupLocationId: leg.pickupLocationId,
-                        dropoffLocationId: leg.dropoffLocationId,
-                        carrierId: leg.carrierId,
-                        startTime: leg.startTime,
-                        endTime: leg.endTime,
-                      })),
-                    },
-                  }
-                : undefined,
-            },
-            include: { legs: true },
-          })
+          return Either.right(
+            await tx.route.create({
+              data: {
+                pickup: { connect: { id: input.pickupId } },
+                dropoff: { connect: { id: input.dropoffId } },
+                carrier: input.carrierId ? { connect: { id: input.carrierId } } : undefined,
+                legs: input.legs
+                  ? {
+                      createMany: {
+                        data: input.legs.map((leg) => ({
+                          transportMode: leg.transportMode,
+                          pickupLocationId: leg.pickupLocationId,
+                          dropoffLocationId: leg.dropoffLocationId,
+                          carrierId: leg.carrierId,
+                          startTime: leg.startTime,
+                          endTime: leg.endTime,
+                        })),
+                      },
+                    }
+                  : undefined,
+              },
+              include: { legs: true },
+            })
+          )
         })
       },
 
@@ -109,10 +111,12 @@ export const RouteRepositoryLive = Layer.effect(
             },
           })
 
-          return tx.route.findUniqueOrThrow({
-            where: { id: routeId },
-            include: { legs: true },
-          })
+          return Either.right(
+            await tx.route.findUniqueOrThrow({
+              where: { id: routeId },
+              include: { legs: true },
+            })
+          )
         })
       },
     })
