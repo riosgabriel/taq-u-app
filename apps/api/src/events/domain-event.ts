@@ -9,7 +9,7 @@ export interface DomainEvent {
 
 // Date instances (in-memory PubSub) and ISO strings (Prisma JSON column round-trip)
 // are both valid wire shapes for event payloads; both decode to Date.
-const EventPayloadDate = Schema.Union(Schema.DateFromSelf, Schema.Date)
+const EventPayloadDate = Schema.Union(Schema.ValidDateFromSelf, Schema.Date)
 
 export const OrderCreatedPayload = Schema.Struct({
   orderId: Schema.String,

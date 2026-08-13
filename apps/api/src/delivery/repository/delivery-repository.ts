@@ -1,6 +1,6 @@
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { DeliveryId, DriverId, OrderId } from "@/ids"
-import { Delivery, DeliveryStatus, Prisma } from "@prisma/client"
+import { Delivery, DeliveryStatus, OrderStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Either, Layer } from "effect"
 import { ValidatedDeliveryStatus } from "delivery/domain/delivery-status"
 import { CreateDeliveryInput } from "delivery/dto/delivery-dto"
@@ -118,6 +118,25 @@ export const DeliveryRepositoryLive = Layer.effect(
                   orderId,
                   currentStatus: order.status,
                   message: `Order ${orderId} is not assignable (current status: ${order.status})`,
+                })
+              )
+            }
+
+            const claimed = await tx.order.updateMany({
+              where: { id: orderId, status: OrderStatus.PENDING },
+              data: { driverId, assignedAt, status: OrderStatus.ASSIGNED },
+            })
+
+            if (claimed.count === 0) {
+              const current = await tx.order.findUnique({
+                where: { id: orderId },
+                select: { status: true },
+              })
+              return Either.left(
+                new OrderNotAssignableError({
+                  orderId,
+                  currentStatus: current?.status ?? "unknown",
+                  message: `Order ${orderId} is not assignable (current status: ${current?.status ?? "unknown"})`,
                 })
               )
             }

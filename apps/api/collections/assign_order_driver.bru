@@ -1,0 +1,26 @@
+meta {
+  name: Assign Order Driver
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{host}}/api/orders/order-uuid-here/assign
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "driverId": "driver-uuid-here"
+  }
+}
+
+docs {
+  Claims the driver for the order and creates a delivery.
+
+  200 — order returned with status ASSIGNED (driverId + assignedAt set).
+  404 — order not found, or driver not found.
+  409 — driver exists but is not available.
+  400 — order cannot be assigned from its current status.
+}

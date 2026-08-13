@@ -36,7 +36,7 @@ describe("DeliveryRepository.createAssignment", () => {
     driver?: Record<string, any>
     delivery?: Record<string, any>
   }) => ({
-    order: { findUnique: async () => null, ...overrides.order },
+    order: { findUnique: async () => null, updateMany: async () => ({ count: 1 }), ...overrides.order },
     driver: { updateMany: async () => ({ count: 0 }), findUnique: async () => null, ...overrides.driver },
     delivery: { create: async () => mockDeliveryRow, ...overrides.delivery },
   })
@@ -143,6 +143,31 @@ describe("DeliveryRepository.createAssignment", () => {
       )
     )
   )
+
+  it.effect("fails with OrderNotAssignableError when a concurrent assignment claims the order", () => {
+    let reads = 0
+    return Effect.gen(function* () {
+      const repo = yield* DeliveryRepository
+      const failure = yield* repo
+        .createAssignment("order-1" as OrderId, "driver-1" as DriverId, fixedAssignedAt)
+        .pipe(Effect.flip)
+      expect(failure._tag).toBe("delivery/OrderNotAssignableError")
+    }).pipe(
+      Effect.provide(
+        layerWith(
+          makeTx({
+            order: {
+              findUnique: async () => {
+                reads += 1
+                return reads === 1 ? { status: "PENDING" } : { status: "ASSIGNED" }
+              },
+              updateMany: async () => ({ count: 0 }),
+            },
+          })
+        )
+      )
+    )
+  })
 
   it.effect("maps a real Prisma error from delivery.create to ForeignKeyViolation", () =>
     Effect.gen(function* () {

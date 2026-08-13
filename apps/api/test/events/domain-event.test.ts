@@ -60,6 +60,19 @@ describe("DriverAssignedPayload", () => {
     expect(result._tag).toBe("Left")
   })
 
+  it("rejects an invalid Date instance for assignedAt", () => {
+    const result = Effect.runSync(
+      Effect.either(
+        Schema.decodeUnknown(DriverAssignedPayload)({
+          orderId: "order-1",
+          driverId: "driver-1",
+          assignedAt: new Date("invalid"),
+        })
+      )
+    )
+    expect(result._tag).toBe("Left")
+  })
+
   it("rejects a payload missing assignedAt", () => {
     const result = Effect.runSync(
       Effect.either(

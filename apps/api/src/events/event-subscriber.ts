@@ -9,6 +9,8 @@ import { Schema } from "effect"
 type DriverAssignmentServiceShape = Context.Tag.Service<DriverAssignmentService>
 type OrderServiceShape = Context.Tag.Service<OrderService>
 
+const FIND_AVAILABLE_DRIVER_TIMEOUT = "10 seconds"
+
 export class EventSubscriber extends Context.Tag("events/EventSubscriber")<
   EventSubscriber,
   { readonly fiber: Fiber.RuntimeFiber<void, never> }
@@ -72,7 +74,7 @@ function handleOrderCreated(
     const orderId = payload.orderId
 
     const driver = yield* assignmentService.findAvailableDriver().pipe(
-      Effect.timeout("10 seconds"),
+      Effect.timeout(FIND_AVAILABLE_DRIVER_TIMEOUT),
       Effect.catchAll((error) =>
         Effect.logError("Failed to find available driver", { orderId, error }).pipe(Effect.as(null))
       )
@@ -83,10 +85,11 @@ function handleOrderCreated(
     }
 
     yield* Effect.logInfo("Assigning driver to order", { orderId, driverId: driver.id })
-    yield* assignmentService.assignDriverToOrder(orderId as OrderId, driver.id, new Date()).pipe(
-      Effect.timeout("10 seconds"),
-      Effect.catchAll((error) => Effect.logError("Failed to assign driver", { orderId, driverId: driver.id, error }))
-    )
+    yield* assignmentService
+      .assignDriverToOrder(orderId as OrderId, driver.id, new Date())
+      .pipe(
+        Effect.catchAll((error) => Effect.logError("Failed to assign driver", { orderId, driverId: driver.id, error }))
+      )
   })
 }
 
@@ -106,7 +109,6 @@ function handleDriverAssigned(event: DomainEvent, orderService: OrderServiceShap
     yield* orderService
       .markOrderAssigned(payload.orderId as OrderId, payload.driverId as DriverId, payload.assignedAt)
       .pipe(
-        Effect.timeout("10 seconds"),
         Effect.catchAll((error) =>
           Effect.logError("Failed to mark order assigned", {
             orderId: payload.orderId,
