@@ -244,7 +244,11 @@ export const OrderRepositoryLive = Layer.effect(
                   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order ${orderId} not found` })
                 )
               }
-              // Idempotent: already assigned to the same driver — treat as success
+              // Load-bearing, not dead code: createAssignment owns the ASSIGNED transition —
+              // it flips the order atomically in the same transaction that publishes
+              // DriverAssigned — so every live caller (the HTTP assign path and the
+              // subscriber reaction) reaches this with count === 0. Removing this branch
+              // would fail every assignment with InvalidOrderStatusTransitionError.
               if (existingOrder.status === OrderStatus.ASSIGNED && existingOrder.driverId === driverId) {
                 return Either.right(existingOrder)
               }
