@@ -10,8 +10,11 @@ import {
   PaymentMethod,
   PaymentStatus,
 } from "@prisma/client"
+import { hashPassword } from "../src/auth/domain/password"
 
 const prisma = new PrismaClient()
+
+const DEV_PASSWORD = "password123"
 
 async function main() {
   console.log("🌱 Starting database seed...")
@@ -118,50 +121,52 @@ async function main() {
   console.log(`🚚 Created ${carriers.length} carriers`)
 
   // Create Customers
-  const customers = await Promise.all([
-    prisma.customer.create({
-      data: {
-        name: "Alice Johnson",
-        email: "alice.johnson@email.com",
-        phone: "555-1001",
-        address: "100 Maple St, Springfield, IL 62704",
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        name: "Bob Smith",
-        email: "bob.smith@email.com",
-        phone: "555-1002",
-        address: "200 Elm Ave, Chicago, IL 60610",
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        name: "Carol Williams",
-        email: "carol.williams@email.com",
-        phone: "555-1003",
-        address: "300 Cedar Blvd, St. Louis, MO 63105",
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        name: "David Brown",
-        email: "david.brown@email.com",
-        phone: "555-1004",
-        address: "400 Pine Dr, Indianapolis, IN 46220",
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        name: "Eva Martinez",
-        email: "eva.martinez@email.com",
-        phone: "555-1005",
-        address: "500 Oak Ln, Detroit, MI 48205",
-      },
-    }),
-  ])
+  const customerData = [
+    {
+      name: "Alice Johnson",
+      email: "alice.johnson@email.com",
+      phone: "555-1001",
+      address: "100 Maple St, Springfield, IL 62704",
+    },
+    {
+      name: "Bob Smith",
+      email: "bob.smith@email.com",
+      phone: "555-1002",
+      address: "200 Elm Ave, Chicago, IL 60610",
+    },
+    {
+      name: "Carol Williams",
+      email: "carol.williams@email.com",
+      phone: "555-1003",
+      address: "300 Cedar Blvd, St. Louis, MO 63105",
+    },
+    {
+      name: "David Brown",
+      email: "david.brown@email.com",
+      phone: "555-1004",
+      address: "400 Pine Dr, Indianapolis, IN 46220",
+    },
+    {
+      name: "Eva Martinez",
+      email: "eva.martinez@email.com",
+      phone: "555-1005",
+      address: "500 Oak Ln, Detroit, MI 48205",
+    },
+  ]
+
+  const passwordHash = await hashPassword(DEV_PASSWORD)
+
+  const customers = await Promise.all(
+    customerData.map((customer) =>
+      prisma.customer.create({
+        data: { ...customer, passwordHash },
+      })
+    )
+  )
 
   console.log(`👥 Created ${customers.length} customers`)
+  console.log(`🔑 Seed credentials: all customers use password "${DEV_PASSWORD}"`)
+  customerData.forEach((customer) => console.log(`   ${customer.email} / ${DEV_PASSWORD}`))
 
   // Create Drivers - all available for happy-path testing
   const drivers = await Promise.all([

@@ -43,6 +43,7 @@ model Order {
   estimates         Estimate[]
 
   @@index([driverId])
+  @@index([customerId])
 }
 
 enum OrderPriority {
@@ -129,12 +130,25 @@ enum VehicleType {
 }
 
 model Customer {
-  id      String          @id @default(cuid())
-  name    String
-  email   String          @unique
-  phone   String?
-  address String
-  orders  Order[]
+  id           String            @id @default(cuid())
+  name         String
+  email        String            @unique
+  phone        String?
+  passwordHash String
+  address      String?
+  orders       Order[]
+  addresses    CustomerAddress[]
+}
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+  label      String
+  address    String
+  isDefault  Boolean  @default(false)
+
+  @@index([customerId])
 }
 
 model Route {

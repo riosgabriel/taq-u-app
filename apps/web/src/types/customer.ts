@@ -6,9 +6,9 @@ export interface CustomerResponse {
   address: string
 }
 
-export interface CustomerCreateInput {
-  name: string
-  email: string
-  phone: string
+export interface CustomerAddressResponse {
+  id: string
+  label: string
   address: string
+  isDefault: boolean
 }

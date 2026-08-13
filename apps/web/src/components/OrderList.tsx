@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react"
-import { api } from "../lib/api"
-import type { OrderResponse } from "../types/order"
+import { useCallback, useEffect, useState } from "react"
+import { api, ApiError } from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
+import type { OrderResponse } from "@/types/order"
 import { OrderEdit } from "./OrderEdit"
 import { toast } from "sonner"
 
@@ -21,26 +22,31 @@ const statusIcons: Record<string, string> = {
 }
 
 export function OrderList() {
+  const { customer } = useAuth()
   const [orders, setOrders] = useState<OrderResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all")
   const [editingOrder, setEditingOrder] = useState<OrderResponse | null>(null)
 
-  useEffect(() => {
-    loadOrders()
-  }, [])
-
-  async function loadOrders() {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await api.getOrders()
+      const data = customer ? await api.getMyOrders() : await api.getOrders()
       setOrders(data)
-    } catch (error: any) {
-      toast.error(error.message || "Failed to load orders")
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        toast.error("Session expired. Please sign in again.")
+      } else {
+        toast.error(error instanceof Error ? error.message : "Failed to load orders")
+      }
     } finally {
       setLoading(false)
     }
-  }
+  }, [customer])
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
 
   async function handleCancel(order: OrderResponse) {
     if (!confirm("Are you sure you want to cancel order " + order.id + "?")) return
@@ -49,8 +55,8 @@ export function OrderList() {
       await api.cancelOrder(order.id)
       toast.success("Order cancelled successfully")
       loadOrders()
-    } catch (error: any) {
-      toast.error(error.message || "Failed to cancel order")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to cancel order")
     }
   }
 
@@ -92,6 +98,7 @@ export function OrderList() {
           { key: "CANCELLED", label: "Cancelled", count: statusCounts.CANCELLED },
         ].map((tab) => (
           <button
+            type="button"
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={
@@ -163,6 +170,7 @@ export function OrderList() {
               <div className="flex gap-2">
                 {order.status !== "DELIVERED" && order.status !== "CANCELLED" && (
                   <button
+                    type="button"
                     onClick={() => setEditingOrder(order)}
                     className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-sm font-medium"
                   >
@@ -171,13 +179,17 @@ export function OrderList() {
                 )}
                 {order.status === "PENDING" && (
                   <button
+                    type="button"
                     onClick={() => handleCancel(order)}
                     className="px-4 py-2 border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors text-sm font-medium"
                   >
                     Cancel Order
                   </button>
                 )}
-                <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium">
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
+                >
                   View Details
                 </button>
               </div>

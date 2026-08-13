@@ -3,7 +3,7 @@ import { OrderStatus, PackageStatus } from "@prisma/client"
 import { CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError } from "customer/services/customer-service"
 import { Context, Data, Effect, Layer } from "effect"
-import { DriverId, OrderId, PackageId } from "@/ids"
+import { CustomerId, DriverId, OrderId, PackageId } from "@/ids"
 import { EventPublisher } from "events/event-publisher"
 import { transition as statusTransition } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
@@ -35,6 +35,7 @@ export class OrderService extends Context.Tag("order/OrderService")<
     ) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | PersistenceError>
     readonly getOrderById: (orderId: OrderId) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
+    readonly getOrdersByCustomer: (customerId: CustomerId) => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
       orderId: OrderId,
       updateInput: OrderUpdateInput
@@ -125,6 +126,8 @@ export const OrderServiceLive = Layer.effect(
       },
 
       listOrders: () => orderRepository.listOrders(),
+
+      getOrdersByCustomer: (customerId: CustomerId) => orderRepository.findByCustomerId(customerId),
 
       updateOrder: (orderId: OrderId, updateInput: OrderUpdateInput) => {
         return orderRepository

@@ -23,6 +23,7 @@ const buildTestLayer = (mockRepo: typeof DriverRepository.Service) => {
     getOrderById: () => Effect.die("unexpected"),
     listOrders: () => Effect.die("unexpected"),
     findByDriverId: () => Effect.die("unexpected"),
+    findByCustomerId: () => Effect.die("unexpected"),
     updateOrder: () => Effect.die("unexpected"),
     updateOrderStatus: () => Effect.die("unexpected"),
     markAssigned: () => Effect.die("unexpected"),

@@ -1,5 +1,6 @@
+import { requireAuth } from "@/middleware/auth"
 import { runEffect } from "@/middleware/effect-runner"
-import { badRequest, conflict, notFound, ok } from "@/middleware/http"
+import { badRequest, conflict, notFound, ok, unauthorized } from "@/middleware/http"
 import { decodeBody, decodeParams } from "@/middleware/validate"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
@@ -35,6 +36,17 @@ OrderController.get("/", async (req: Request, res: Response, next: NextFunction)
     const orders = yield* orderService.listOrders()
     return ok(orders.map(OrderResponse.fromOrderWithPackages))
   })
+
+  runEffect(req, res, next, program)
+})
+
+OrderController.get("/mine", async (req: Request, res: Response, next: NextFunction) => {
+  const program = Effect.gen(function* (_) {
+    const customerId = yield* requireAuth(req)
+    const orderService = yield* OrderService
+    const orders = yield* orderService.getOrdersByCustomer(customerId)
+    return ok(orders.map(OrderResponse.fromOrderWithPackages))
+  }).pipe(Effect.catchTag("auth/InvalidTokenError", (error) => Effect.succeed(unauthorized(error.message))))
 
   runEffect(req, res, next, program)
 })
