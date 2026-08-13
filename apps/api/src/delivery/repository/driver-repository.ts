@@ -23,6 +23,10 @@ export class DriverRepository extends Context.Tag("order/DriverRepository")<
     readonly getById: (id: DriverId) => Effect.Effect<Driver, PersistenceError>
     readonly update: (id: DriverId, driverUpdateInput: DriverUpdateInput) => Effect.Effect<Driver, PersistenceError>
     readonly delete: (id: DriverId) => Effect.Effect<void, PersistenceError>
+    readonly findAvailable: () => Effect.Effect<
+      { id: DriverId; name: string; email: string; phone: string; isAvailable: boolean; vehicleType: string } | null,
+      PersistenceError
+    >
   }
 >() {}
 
@@ -86,6 +90,29 @@ export const DriverRepositoryLive = Layer.effect(
 
       delete: (id: DriverId) => {
         return prismaService.execute(() => prismaService.prisma.driver.delete({ where: { id } })).pipe(Effect.asVoid)
+      },
+
+      findAvailable: () => {
+        return prismaService
+          .execute(() =>
+            prismaService.prisma.driver.findFirst({
+              where: { isAvailable: true },
+            })
+          )
+          .pipe(
+            Effect.map((driver) =>
+              driver
+                ? {
+                    id: driver.id as DriverId,
+                    name: driver.name,
+                    email: driver.email,
+                    phone: driver.phone,
+                    isAvailable: driver.isAvailable,
+                    vehicleType: driver.vehicleType,
+                  }
+                : null
+            )
+          )
       },
     })
   })

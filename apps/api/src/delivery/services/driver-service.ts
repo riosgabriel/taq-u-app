@@ -3,13 +3,11 @@ import { DriverId } from "@/ids"
 import Driver from "delivery/domain/driver"
 import { DriverCreateInput, DriverUpdateInput } from "delivery/dto/driver-dto"
 import { DriverEmailAlreadyExistsError, DriverRepository } from "delivery/repository/driver-repository"
-import { Context, Data, Effect, Layer } from "effect"
+import { Context, Effect, Layer } from "effect"
 import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
+import { DriverNotFoundError, DriverNotAvailableError } from "delivery/domain/driver-errors"
 
-export class DriverNotFoundError extends Data.TaggedError("delivery/DriverNotFoundError")<{
-  readonly id: string
-  readonly message: string
-}> {}
+export { DriverNotFoundError, DriverNotAvailableError }
 
 export class DriverService extends Context.Tag("delivery/DriverService")<
   DriverService,

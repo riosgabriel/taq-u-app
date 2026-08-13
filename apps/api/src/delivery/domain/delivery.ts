@@ -5,7 +5,7 @@ import { DeliveryId, DriverId, RouteId } from "@/ids"
 export class Delivery extends Schema.Class<Delivery>("delivery/Delivery")({
   id: DeliveryId,
   driverId: DriverId,
-  routeId: RouteId,
+  routeId: Schema.NullishOr(RouteId),
   estimatedPickupTime: Schema.NullishOr(Schema.Date),
   estimatedDeliveryTime: Schema.NullishOr(Schema.Date),
   actualPickupTime: Schema.NullishOr(Schema.Date),
@@ -18,7 +18,7 @@ export class Delivery extends Schema.Class<Delivery>("delivery/Delivery")({
     return {
       id: Schema.decodeSync(DeliveryId)(delivery.id),
       driverId: Schema.decodeSync(DriverId)(delivery.driverId),
-      routeId: Schema.decodeSync(RouteId)(delivery.routeId),
+      routeId: delivery.routeId ? Schema.decodeSync(RouteId)(delivery.routeId) : null,
       estimatedPickupTime: delivery.estimatedPickupTime ?? null,
       estimatedDeliveryTime: delivery.estimatedDeliveryTime ?? null,
       actualPickupTime: delivery.actualPickupTime ?? null,

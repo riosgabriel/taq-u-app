@@ -11,7 +11,7 @@
     "lint": "eslint . --ext .ts",
     "test": "vitest run --exclude='**/test/integration/**'",
     "test:watch": "vitest --exclude='**/test/integration/**'",
-    "test:integration": "vitest run test/integration",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "format": "prettier --write .",
     "db:deploy": "npx prisma migrate deploy && npx prisma generate",
     "db:migrate": "npx prisma migrate dev",

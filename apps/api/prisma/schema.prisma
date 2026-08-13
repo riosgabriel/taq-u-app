@@ -73,8 +73,8 @@ model Delivery {
   driverId    String
   
   // Route and timing
-  route       Route         @relation(fields: [routeId], references: [id])
-  routeId     String
+  route       Route?        @relation(fields: [routeId], references: [id])
+  routeId     String?
   
   // Delivery execution
   estimatedPickupTime    DateTime?

@@ -1,5 +1,5 @@
 import { runEffect } from "@/middleware/effect-runner"
-import { badRequest, notFound, ok } from "@/middleware/http"
+import { badRequest, conflict, notFound, ok } from "@/middleware/http"
 import { decodeBody, decodeParams } from "@/middleware/validate"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
@@ -137,8 +137,9 @@ OrderController.post("/:orderId/assign", async (req: Request, res: Response, nex
     return ok(OrderResponse.fromOrderWithPackages(assigned))
   }).pipe(
     Effect.catchTag("order/OrderNotFoundError", (error) => Effect.succeed(notFound(error.message))),
+    Effect.catchTag("order/OrderStatusError", (error) => Effect.succeed(badRequest(error.message))),
     Effect.catchTag("delivery/DriverNotFoundError", (error) => Effect.succeed(notFound(error.message))),
-    Effect.catchTag("order/OrderStatusError", (error) => Effect.succeed(badRequest(error.message)))
+    Effect.catchTag("delivery/DriverNotAvailableError", (error) => Effect.succeed(conflict(error.message)))
   )
 
   runEffect(req, res, next, program)

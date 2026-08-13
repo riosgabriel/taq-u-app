@@ -25,7 +25,7 @@ const buildTestLayer = (mockRepo: typeof DriverRepository.Service) => {
     findByDriverId: () => Effect.die("unexpected"),
     updateOrder: () => Effect.die("unexpected"),
     updateOrderStatus: () => Effect.die("unexpected"),
-    assignDriver: () => Effect.die("unexpected"),
+    markAssigned: () => Effect.die("unexpected"),
     addPackageToOrder: () => Effect.die("unexpected"),
     updatePackageStatus: () => Effect.die("unexpected"),
     findPackageByTrackingNumber: () => Effect.die("unexpected"),
@@ -54,6 +54,7 @@ describe("DriverService", () => {
               getById: () => Effect.die("unexpected"),
               update: () => Effect.die("unexpected"),
               delete: () => Effect.die("unexpected"),
+              findAvailable: () => Effect.die("unexpected"),
             })
           )
         )
@@ -77,6 +78,7 @@ describe("DriverService", () => {
               getById: () => Effect.succeed(driver),
               update: () => Effect.die("unexpected"),
               delete: () => Effect.die("unexpected"),
+              findAvailable: () => Effect.die("unexpected"),
             })
           )
         )

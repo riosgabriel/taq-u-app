@@ -6,7 +6,8 @@ import { dirname, resolve } from "path"
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 config({ path: resolve(root, ".env") })
 
-const child = spawn("opencode", process.argv.slice(2), {
+const args = process.argv.slice(2).filter((arg) => arg !== "--")
+const child = spawn("opencode", args, {
   stdio: "inherit",
   env: { ...process.env },
 })

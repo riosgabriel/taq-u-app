@@ -1,6 +1,6 @@
 import { PersistenceError, UnexpectedPersistenceError } from "@/persistence-errors"
-import { Prisma } from "@prisma/client"
-import { Context, Effect, Layer } from "effect"
+import { Package, Prisma } from "@prisma/client"
+import { Context, Effect, Either, Layer } from "effect"
 import { mapPrismaError, PrismaService } from "prisma-service"
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -19,7 +19,7 @@ export class TrackingNumberService extends Context.Tag("order/TrackingNumberServ
   TrackingNumberService,
   {
     readonly generate: () => Effect.Effect<string, PersistenceError>
-    readonly generateInTx: (tx: Prisma.TransactionClient) => Promise<string>
+    readonly generateInTx: (tx: Prisma.TransactionClient) => Promise<Either.Either<string, PersistenceError>>
   }
 >() {}
 
@@ -44,17 +44,22 @@ export const TrackingNumberServiceLive = Layer.effect(
         )
       })
 
-    const generateInTx = async (tx: Prisma.TransactionClient): Promise<string> => {
+    const generateInTx = async (tx: Prisma.TransactionClient): Promise<Either.Either<string, PersistenceError>> => {
       for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
         const candidate = generateCandidate()
-        const existing = await tx.package.findUnique({ where: { trackingNumber: candidate } }).catch((e) => {
-          throw mapPrismaError(e)
-        })
-        if (!existing) return candidate
+        let existing: Package | null
+        try {
+          existing = await tx.package.findUnique({ where: { trackingNumber: candidate } })
+        } catch (e) {
+          return Either.left(mapPrismaError(e))
+        }
+        if (!existing) return Either.right(candidate)
       }
-      throw new UnexpectedPersistenceError({
-        cause: `Could not generate a unique tracking number after ${MAX_GENERATION_ATTEMPTS} attempts`,
-      })
+      return Either.left(
+        new UnexpectedPersistenceError({
+          cause: `Could not generate a unique tracking number after ${MAX_GENERATION_ATTEMPTS} attempts`,
+        })
+      )
     }
 
     return TrackingNumberService.of({ generate, generateInTx })
