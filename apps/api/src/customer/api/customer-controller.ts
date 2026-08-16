@@ -1,7 +1,7 @@
-import { requireAuth } from "@/middleware/auth"
 import { decodeBody, decodeParams } from "@/middleware/validate"
 import { runEffect } from "@/middleware/effect-runner"
-import { notFound, ok, unauthorized } from "@/middleware/http"
+import { notFound, ok } from "@/middleware/http"
+import { protectedRouter } from "@/middleware/protected-router"
 import { CustomerAddressId, CustomerId } from "@/ids"
 import {
   CustomerAddressResponse,
@@ -30,57 +30,41 @@ CustomerController.get("/", async (req: Request, res: Response, next: NextFuncti
   runEffect(req, res, next, program)
 })
 
-CustomerController.get("/me/addresses", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const customerId = yield* requireAuth(req)
+export const CustomerAddressPortal = protectedRouter()
+
+CustomerAddressPortal.get("/me/addresses", (customerId, _req) =>
+  Effect.gen(function* (_) {
     const addressService = yield* CustomerAddressService
     const addresses = yield* addressService.listByCustomer(customerId)
     return ok(addresses.map(CustomerAddressResponse.fromEntity))
-  }).pipe(Effect.catchTag("auth/InvalidTokenError", (error) => Effect.succeed(unauthorized(error.message))))
+  })
+)
 
-  runEffect(req, res, next, program)
-})
-
-CustomerController.post("/me/addresses", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const customerId = yield* requireAuth(req)
+CustomerAddressPortal.post("/me/addresses", (customerId, req) =>
+  Effect.gen(function* (_) {
     const input = yield* decodeBody(CreateAddressInput, req)
     const addressService = yield* CustomerAddressService
     return ok(CustomerAddressResponse.fromEntity(yield* addressService.create(customerId, input)))
-  }).pipe(Effect.catchTag("auth/InvalidTokenError", (error) => Effect.succeed(unauthorized(error.message))))
+  })
+)
 
-  runEffect(req, res, next, program)
-})
-
-CustomerController.put("/me/addresses/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const customerId = yield* requireAuth(req)
+CustomerAddressPortal.put("/me/addresses/:id", (customerId, req) =>
+  Effect.gen(function* (_) {
     const { id: addressId } = yield* decodeParams(CustomerAddressIdParams, req)
     const input = yield* decodeBody(UpdateAddressInputSchema, req)
     const addressService = yield* CustomerAddressService
     return ok(CustomerAddressResponse.fromEntity(yield* addressService.update(customerId, addressId, input)))
-  }).pipe(
-    Effect.catchTag("auth/InvalidTokenError", (error) => Effect.succeed(unauthorized(error.message))),
-    Effect.catchTag("customer/CustomerAddressNotFoundError", (error) => Effect.succeed(notFound(error.message)))
-  )
+  }).pipe(Effect.catchTag("customer/CustomerAddressNotFoundError", (error) => Effect.succeed(notFound(error.message))))
+)
 
-  runEffect(req, res, next, program)
-})
-
-CustomerController.delete("/me/addresses/:id", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const customerId = yield* requireAuth(req)
+CustomerAddressPortal.delete("/me/addresses/:id", (customerId, req) =>
+  Effect.gen(function* (_) {
     const { id: addressId } = yield* decodeParams(CustomerAddressIdParams, req)
     const addressService = yield* CustomerAddressService
     yield* addressService.delete(customerId, addressId)
     return ok({ message: "Customer address deleted successfully" })
-  }).pipe(
-    Effect.catchTag("auth/InvalidTokenError", (error) => Effect.succeed(unauthorized(error.message))),
-    Effect.catchTag("customer/CustomerAddressNotFoundError", (error) => Effect.succeed(notFound(error.message)))
-  )
-
-  runEffect(req, res, next, program)
-})
+  }).pipe(Effect.catchTag("customer/CustomerAddressNotFoundError", (error) => Effect.succeed(notFound(error.message))))
+)
 
 CustomerController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {

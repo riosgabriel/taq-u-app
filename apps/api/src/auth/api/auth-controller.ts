@@ -1,6 +1,6 @@
-import { requireAuth } from "@/middleware/auth"
 import { runEffect } from "@/middleware/effect-runner"
 import { conflict, ok, unauthorized } from "@/middleware/http"
+import { protectedRouter } from "@/middleware/protected-router"
 import { decodeBody } from "@/middleware/validate"
 import { AuthResponse, LoginInput, RegisterInput } from "auth/dto/auth-dto"
 import { AuthService } from "auth/services/auth-service"
@@ -30,12 +30,11 @@ AuthController.post("/login", async (req: Request, res: Response, next: NextFunc
   runEffect(req, res, next, program)
 })
 
-AuthController.get("/me", async (req: Request, res: Response, next: NextFunction) => {
-  const program = Effect.gen(function* (_) {
-    const customerId = yield* requireAuth(req)
+export const AuthPortal = protectedRouter()
+
+AuthPortal.get("/me", (customerId, _req) =>
+  Effect.gen(function* (_) {
     const authService = yield* AuthService
     return ok(CustomerResponse.fromCustomer(yield* authService.getMe(customerId)))
-  }).pipe(Effect.catchTag("auth/InvalidTokenError", (error) => Effect.succeed(unauthorized(error.message))))
-
-  runEffect(req, res, next, program)
-})
+  })
+)
