@@ -1,0 +1,35 @@
+meta {
+  name: Update My Address
+  type: http
+  seq: 44
+}
+
+put {
+  url: {{host}}/api/customers/me/addresses/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "Home - updated",
+    "isDefault": true
+  }
+}
+
+params:path {
+  id: address-id-here
+}
+
+docs {
+  Updates a field of one of the authenticated customer's addresses.
+
+  200 — CustomerAddressResponse.
+  401 — invalid or missing token.
+  404 — address not found or not owned by the customer.
+  400 — invalid body or no fields provided.
+}

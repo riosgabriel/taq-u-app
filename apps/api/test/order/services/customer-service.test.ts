@@ -2,11 +2,20 @@ import { RecordNotFoundError } from "@/persistence-errors"
 import { CustomerId } from "@/ids"
 import { describe, expect, it } from "@effect/vitest"
 import { assertLeft } from "@effect/vitest/utils"
-import { CustomerEmailAlreadyExistsError, CustomerRepository } from "customer/repository/customer-repository"
+import { CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError, CustomerService, CustomerServiceLive } from "customer/services/customer-service"
 import { Effect, Layer, Schema } from "effect"
 
 const customer = {
+  id: "cust-123",
+  name: "John Doe",
+  email: "john@example.com",
+  phone: "123-456-7890",
+  address: "123 Main St",
+  passwordHash: "scrypt$test-hash",
+}
+
+const customerEntity = {
   id: "cust-123",
   name: "John Doe",
   email: "john@example.com",
@@ -23,12 +32,11 @@ describe("CustomerService", () => {
       Effect.gen(function* () {
         const service = yield* CustomerService
         const result = yield* service.getCustomers()
-        expect(result).toEqual([customer])
+        expect(result).toEqual([customerEntity])
       }).pipe(
         Effect.provide(
           buildTestLayer(
             CustomerRepository.of({
-              createCustomer: () => Effect.die("unexpected"),
               getCustomers: () => Effect.succeed([customer]),
               getCustomerById: () => Effect.die("unexpected"),
             })
@@ -46,7 +54,6 @@ describe("CustomerService", () => {
         Effect.provide(
           buildTestLayer(
             CustomerRepository.of({
-              createCustomer: () => Effect.die("unexpected"),
               getCustomers: () => Effect.succeed([]),
               getCustomerById: () => Effect.die("unexpected"),
             })
@@ -61,12 +68,11 @@ describe("CustomerService", () => {
       Effect.gen(function* () {
         const service = yield* CustomerService
         const result = yield* service.getCustomerById(Schema.decodeSync(CustomerId)("cust-123"))
-        expect(result).toEqual(customer)
+        expect(result).toEqual(customerEntity)
       }).pipe(
         Effect.provide(
           buildTestLayer(
             CustomerRepository.of({
-              createCustomer: () => Effect.die("unexpected"),
               getCustomers: () => Effect.die("unexpected"),
               getCustomerById: () => Effect.succeed(customer),
             })
@@ -88,77 +94,9 @@ describe("CustomerService", () => {
         Effect.provide(
           buildTestLayer(
             CustomerRepository.of({
-              createCustomer: () => Effect.die("unexpected"),
               getCustomers: () => Effect.die("unexpected"),
               getCustomerById: (_id) =>
                 Effect.fail(new RecordNotFoundError({ model: "Customer", id: _id, message: "Not found" })),
-            })
-          )
-        )
-      )
-    )
-  })
-
-  describe("createCustomer", () => {
-    const input = {
-      name: "New Customer",
-      email: "new@example.com",
-      phone: "999-999-9999",
-      address: "456 Oak Ave",
-    }
-
-    it.effect("creates and returns the customer", () =>
-      Effect.gen(function* () {
-        const service = yield* CustomerService
-        const result = yield* service.createCustomer(input)
-        expect(result).toMatchObject(input)
-      }).pipe(
-        Effect.provide(
-          buildTestLayer(
-            CustomerRepository.of({
-              createCustomer: (data) =>
-                Effect.succeed({
-                  id: "cust-new",
-                  ...data,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                }),
-              getCustomers: () => Effect.die("unexpected"),
-              getCustomerById: () => Effect.die("unexpected"),
-            })
-          )
-        )
-      )
-    )
-
-    it.effect("fails with CustomerEmailAlreadyExistsError when email is taken", () =>
-      Effect.gen(function* () {
-        const program = Effect.gen(function* () {
-          const service = yield* CustomerService
-          return yield* service.createCustomer(input)
-        }).pipe(Effect.either)
-
-        const result = yield* program
-        assertLeft(
-          result,
-          new CustomerEmailAlreadyExistsError({
-            message: "Customer with email new@example.com already exists",
-            email: input.email,
-          })
-        )
-      }).pipe(
-        Effect.provide(
-          buildTestLayer(
-            CustomerRepository.of({
-              createCustomer: () =>
-                Effect.fail(
-                  new CustomerEmailAlreadyExistsError({
-                    message: "Customer with email new@example.com already exists",
-                    email: input.email,
-                  })
-                ),
-              getCustomers: () => Effect.die("unexpected"),
-              getCustomerById: () => Effect.die("unexpected"),
             })
           )
         )

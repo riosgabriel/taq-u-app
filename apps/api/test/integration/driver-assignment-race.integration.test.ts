@@ -37,6 +37,7 @@ const configLayer = Layer.succeed(
     dbPoolSize: 5,
     dbConnectTimeout: 10,
     logLevel: "info",
+    jwtSecret: "test-secret",
   })
 )
 
@@ -77,6 +78,7 @@ describe("DeliveryRepository.createAssignment race (integration)", () => {
             email: FIXED_EMAIL,
             phone: "555-0100",
             address: "1 Race Way",
+            passwordHash: "scrypt$integration-test-hash",
           },
         })
       )

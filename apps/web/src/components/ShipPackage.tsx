@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
 
 /**
  * ShipPackage — connected to the real backend.
@@ -8,8 +9,8 @@ import { api } from "@/lib/api"
  * Flow:
  *   1. User fills the form. Cost is recalculated by POSTing to
  *      /api/estimates whenever the relevant fields change (debounced).
- *   2. On submit, the sender is created as a Customer via
- *      POST /api/customers (the order model requires a customerId).
+ *   2. When signed in, the existing customer is reused as the sender.
+ *      When signed out, a sign-in prompt is shown instead of the form.
  *   3. The order is created via POST /api/orders, which embeds the
  *      package and returns the generated tracking number.
  *   4. The Idempotency-Key header is set on the order create so a
@@ -33,12 +34,18 @@ const serviceLevelToEstimate: Record<string, "STANDARD" | "EXPRESS" | "OVERNIGHT
   overnight: "OVERNIGHT",
 }
 
-export function ShipPackage() {
+interface ShipPackageProps {
+  onSignInClick?: () => void
+}
+
+export function ShipPackage({ onSignInClick }: ShipPackageProps) {
+  const { customer } = useAuth()
+
   const [formData, setFormData] = useState({
-    senderName: "",
-    senderEmail: "",
-    senderPhone: "",
-    senderAddress: "",
+    senderName: customer?.name ?? "",
+    senderEmail: customer?.email ?? "",
+    senderPhone: customer?.phone ?? "",
+    senderAddress: customer?.address ?? "",
     recipientName: "",
     recipientPhone: "",
     recipientAddress: "",
@@ -53,6 +60,18 @@ export function ShipPackage() {
   const [isEstimating, setIsEstimating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (customer) {
+      setFormData((prev) => ({
+        ...prev,
+        senderName: customer.name,
+        senderEmail: customer.email,
+        senderPhone: customer.phone,
+        senderAddress: customer.address,
+      }))
+    }
+  }, [customer])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -93,26 +112,18 @@ export function ShipPackage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!customer) {
+      toast.error("Sign in to create a shipment")
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      // Step 1: create the sender as a Customer. The backend's Order
-      // model requires a customerId, so this is a precondition for
-      // order creation.
-      const customer = await api.createCustomer({
-        name: formData.senderName,
-        email: formData.senderEmail,
-        phone: formData.senderPhone,
-        address: formData.senderAddress,
-      })
-
-      // Step 2: build the package payload. Dimensions are stored as
-      // a single string in the backend.
       const weightKg = parseFloat(formData.weight)
       const dimensions = `${formData.length}x${formData.width}x${formData.height} cm`
 
-      // Step 3: create the order with the package embedded. An
-      // Idempotency-Key header makes the call safely retryable.
       const idempotencyKey = crypto.randomUUID()
       const order = await api.createOrder(
         {
@@ -140,12 +151,8 @@ export function ShipPackage() {
 
       toast.success(`Order created! Tracking number${order.packages.length > 1 ? "s" : ""}: ${trackingNumbers}`)
 
-      // Reset form
-      setFormData({
-        senderName: "",
-        senderEmail: "",
-        senderPhone: "",
-        senderAddress: "",
+      setFormData((prev) => ({
+        ...prev,
         recipientName: "",
         recipientPhone: "",
         recipientAddress: "",
@@ -154,7 +161,7 @@ export function ShipPackage() {
         width: "",
         height: "",
         serviceType: "standard",
-      })
+      }))
       setEstimatedCost(null)
     } catch (err) {
       toast.error("Could not create shipment", {
@@ -163,6 +170,32 @@ export function ShipPackage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (!customer) {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Ship a Package</h2>
+          <p className="text-gray-600">Sign in to create a new shipment</p>
+        </div>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+          <div className="text-4xl mb-4">📮</div>
+          <h3 className="text-lg font-semibold text-yellow-900 mb-2">Sign in to ship</h3>
+          <p className="text-yellow-800 mb-6 max-w-md mx-auto">
+            Creating a shipment requires an account so we can link your orders and provide tracking history.
+          </p>
+          <button
+            type="button"
+            onClick={onSignInClick}
+            className="px-6 py-2 bg-yellow-600 text-white font-semibold rounded-md hover:bg-yellow-700 transition-colors"
+          >
+            Sign in or create account
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -178,8 +211,11 @@ export function ShipPackage() {
           <h3 className="text-lg font-semibold mb-4">📤 Sender Information</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <label htmlFor="sender-name" className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
+              </label>
               <input
+                id="sender-name"
                 type="text"
                 required
                 value={formData.senderName}
@@ -188,8 +224,11 @@ export function ShipPackage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label htmlFor="sender-email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
               <input
+                id="sender-email"
                 type="email"
                 required
                 value={formData.senderEmail}
@@ -198,8 +237,11 @@ export function ShipPackage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+              <label htmlFor="sender-phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
               <input
+                id="sender-phone"
                 type="tel"
                 required
                 value={formData.senderPhone}
@@ -208,8 +250,11 @@ export function ShipPackage() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Address</label>
+              <label htmlFor="sender-address" className="block text-sm font-medium text-gray-700 mb-2">
+                Pickup Address
+              </label>
               <textarea
+                id="sender-address"
                 required
                 rows={3}
                 value={formData.senderAddress}
@@ -225,8 +270,11 @@ export function ShipPackage() {
           <h3 className="text-lg font-semibold mb-4">📥 Recipient Information</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <label htmlFor="recipient-name" className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
+              </label>
               <input
+                id="recipient-name"
                 type="text"
                 required
                 value={formData.recipientName}
@@ -235,8 +283,11 @@ export function ShipPackage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+              <label htmlFor="recipient-phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
               <input
+                id="recipient-phone"
                 type="tel"
                 required
                 value={formData.recipientPhone}
@@ -245,8 +296,11 @@ export function ShipPackage() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
+              <label htmlFor="recipient-address" className="block text-sm font-medium text-gray-700 mb-2">
+                Delivery Address
+              </label>
               <textarea
+                id="recipient-address"
                 required
                 rows={3}
                 value={formData.recipientAddress}
@@ -262,8 +316,11 @@ export function ShipPackage() {
           <h3 className="text-lg font-semibold mb-4">📦 Package Details</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+              <label htmlFor="package-weight" className="block text-sm font-medium text-gray-700 mb-2">
+                Weight (kg)
+              </label>
               <input
+                id="package-weight"
                 type="number"
                 step="0.1"
                 min="0"
@@ -274,8 +331,11 @@ export function ShipPackage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Length (cm)</label>
+              <label htmlFor="package-length" className="block text-sm font-medium text-gray-700 mb-2">
+                Length (cm)
+              </label>
               <input
+                id="package-length"
                 type="number"
                 min="0"
                 required
@@ -285,8 +345,11 @@ export function ShipPackage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Width (cm)</label>
+              <label htmlFor="package-width" className="block text-sm font-medium text-gray-700 mb-2">
+                Width (cm)
+              </label>
               <input
+                id="package-width"
                 type="number"
                 min="0"
                 required
@@ -296,8 +359,11 @@ export function ShipPackage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
+              <label htmlFor="package-height" className="block text-sm font-medium text-gray-700 mb-2">
+                Height (cm)
+              </label>
               <input
+                id="package-height"
                 type="number"
                 min="0"
                 required
@@ -314,8 +380,11 @@ export function ShipPackage() {
           <h3 className="text-lg font-semibold mb-4">🚚 Service Options</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
+              <label htmlFor="service-type" className="block text-sm font-medium text-gray-700 mb-2">
+                Service Type
+              </label>
               <select
+                id="service-type"
                 value={formData.serviceType}
                 onChange={(e) => handleInputChange("serviceType", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"

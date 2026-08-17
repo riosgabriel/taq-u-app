@@ -1,0 +1,31 @@
+meta {
+  name: Create My Address
+  type: http
+  seq: 43
+}
+
+post {
+  url: {{host}}/api/customers/me/addresses
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "Home",
+    "address": "100 Maple St, Springfield, IL 62704",
+    "isDefault": true
+  }
+}
+
+docs {
+  Adds an address to the authenticated customer's address book.
+
+  200 — CustomerAddressResponse.
+  401 — invalid or missing token.
+  400 — invalid body.
+}

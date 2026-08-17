@@ -9,7 +9,7 @@ import { OrderNotAssignableError } from "delivery/domain/driver-errors"
 import { InvalidOrderStatusTransitionError } from "ordering/domain/order-status"
 import { Delivery } from "delivery/domain/delivery"
 import { RecordNotFoundError } from "@/persistence-errors"
-import { DriverId, OrderId } from "@/ids"
+import { CustomerId, DriverId, OrderId } from "@/ids"
 import { DeliveryStatus, OrderStatus } from "@prisma/client"
 
 const mockOrder: OrderWithPackages = {
@@ -30,7 +30,6 @@ const mockOrder: OrderWithPackages = {
 }
 
 const mockCustomerRepo = CustomerRepository.of({
-  createCustomer: () => Effect.die("unexpected"),
   getCustomers: () => Effect.die("unexpected"),
   getCustomerById: () => Effect.die("unexpected"),
 })
@@ -50,6 +49,7 @@ describe("OrderService", () => {
         getOrderById: () => Effect.die("unexpected"),
         listOrders: () => Effect.die("unexpected"),
         findByDriverId: () => Effect.die("unexpected"),
+        findByCustomerId: () => Effect.die("unexpected"),
         updateOrder: () => Effect.die("unexpected"),
         updateOrderStatus: () => Effect.die("unexpected"),
         markAssigned: (_orderId: OrderId, driverId: DriverId, assignedAt: Date) => {
@@ -132,6 +132,7 @@ describe("OrderService", () => {
       getOrderById: () => Effect.succeed(mockOrder),
       listOrders: () => Effect.die("unexpected"),
       findByDriverId: () => Effect.die("unexpected"),
+      findByCustomerId: () => Effect.die("unexpected"),
       updateOrder: () => Effect.die("unexpected"),
       updateOrderStatus: () => Effect.die("unexpected"),
       markAssigned: () => Effect.succeed(assignedOrder),
@@ -146,6 +147,7 @@ describe("OrderService", () => {
         Effect.fail(new RecordNotFoundError({ model: "Order", id: "order-1", message: "Order order-1 not found" })),
       listOrders: () => Effect.die("unexpected"),
       findByDriverId: () => Effect.die("unexpected"),
+      findByCustomerId: () => Effect.die("unexpected"),
       updateOrder: () => Effect.die("unexpected"),
       updateOrderStatus: () => Effect.die("unexpected"),
       markAssigned: () => Effect.die("unexpected"),
@@ -208,6 +210,7 @@ describe("OrderService", () => {
             getOrderById: () => Effect.succeed(mockOrder),
             listOrders: () => Effect.die("unexpected"),
             findByDriverId: () => Effect.die("unexpected"),
+            findByCustomerId: () => Effect.die("unexpected"),
             updateOrder: () => Effect.die("unexpected"),
             updateOrderStatus: () => Effect.die("unexpected"),
             markAssigned: () =>
@@ -239,6 +242,7 @@ describe("OrderService", () => {
             getOrderById: () => Effect.succeed(mockOrder),
             listOrders: () => Effect.die("unexpected"),
             findByDriverId: () => Effect.die("unexpected"),
+            findByCustomerId: () => Effect.die("unexpected"),
             updateOrder: () => Effect.die("unexpected"),
             updateOrderStatus: () => Effect.die("unexpected"),
             markAssigned: () =>
@@ -250,6 +254,42 @@ describe("OrderService", () => {
             updatePackageStatus: () => Effect.die("unexpected"),
           }),
           mockAssignmentService
+        )
+      )
+    )
+  })
+
+  describe("getOrdersByCustomer", () => {
+    it.effect("returns only the orders belonging to the customer", () =>
+      Effect.gen(function* () {
+        const service = yield* OrderService
+        const result = yield* service.getOrdersByCustomer("cust-1" as CustomerId)
+        expect(result).toHaveLength(1)
+        expect(result[0].customerId).toBe("cust-1")
+      }).pipe(
+        Effect.provide(
+          OrderServiceLive.pipe(
+            Layer.provide(
+              Layer.succeed(
+                OrderRepository,
+                OrderRepository.of({
+                  createOrder: () => Effect.die("unexpected"),
+                  getOrderById: () => Effect.die("unexpected"),
+                  listOrders: () => Effect.die("unexpected"),
+                  findByDriverId: () => Effect.die("unexpected"),
+                  findByCustomerId: () => Effect.succeed([mockOrder]),
+                  updateOrder: () => Effect.die("unexpected"),
+                  updateOrderStatus: () => Effect.die("unexpected"),
+                  markAssigned: () => Effect.die("unexpected"),
+                  addPackageToOrder: () => Effect.die("unexpected"),
+                  findPackageByTrackingNumber: () => Effect.die("unexpected"),
+                  updatePackageStatus: () => Effect.die("unexpected"),
+                })
+              )
+            ),
+            Layer.provide(Layer.succeed(CustomerRepository, mockCustomerRepo)),
+            Layer.provide(Layer.succeed(EventPublisher, mockEventPublisher))
+          )
         )
       )
     )

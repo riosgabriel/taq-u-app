@@ -1,0 +1,28 @@
+meta {
+  name: Register Customer
+  type: http
+  seq: 38
+}
+
+post {
+  url: {{host}}/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Frank New",
+    "email": "frank.new@email.com",
+    "password": "password123",
+    "phone": "555-1006"
+  }
+}
+
+docs {
+  Registers a new customer and returns a JWT token.
+
+  200 — { token, customer }.
+  409 — email already registered.
+  400 — invalid body (password < 8 chars, bad email, missing name).
+}

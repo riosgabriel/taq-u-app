@@ -25,7 +25,8 @@
     "cors": "^2.8.6",
     "dotenv": "16.5.0",
     "effect": "^3.14.22",
-    "express": "5.1.0"
+    "express": "5.1.0",
+    "jose": "^6.2.8"
   },
   "devDependencies": {
     "@effect/vitest": "^0.29.0",

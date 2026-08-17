@@ -1,0 +1,22 @@
+meta {
+  name: List My Addresses
+  type: http
+  seq: 42
+}
+
+get {
+  url: {{host}}/api/customers/me/addresses
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Lists the authenticated customer's address book entries.
+
+  200 — CustomerAddressResponse[].
+  401 — invalid or missing token.
+}

@@ -1,4 +1,4 @@
-import { DriverId, OrderId, PackageId } from "@/ids"
+import { CustomerId, DriverId, OrderId, PackageId } from "@/ids"
 import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Either, Layer, Schema } from "effect"
@@ -27,6 +27,8 @@ export class OrderRepository extends Context.Tag("order/OrderRepository")<
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
 
     readonly findByDriverId: (driverId: DriverId) => Effect.Effect<OrderWithPackages[], PersistenceError>
+
+    readonly findByCustomerId: (customerId: CustomerId) => Effect.Effect<OrderWithPackages[], PersistenceError>
 
     readonly updateOrder: (
       orderId: OrderId,
@@ -169,6 +171,17 @@ export const OrderRepositoryLive = Layer.effect(
         return prismaService.execute(() =>
           prismaService.prisma.order.findMany({
             where: { driverId },
+            include: {
+              packages: true,
+            },
+          })
+        )
+      },
+
+      findByCustomerId: (customerId: CustomerId) => {
+        return prismaService.execute(() =>
+          prismaService.prisma.order.findMany({
+            where: { customerId },
             include: {
               packages: true,
             },

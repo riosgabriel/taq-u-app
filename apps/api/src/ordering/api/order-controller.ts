@@ -1,5 +1,6 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { badRequest, conflict, notFound, ok } from "@/middleware/http"
+import { authenticatedRouter } from "@/middleware/authenticated-router"
 import { decodeBody, decodeParams } from "@/middleware/validate"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
@@ -38,6 +39,16 @@ OrderController.get("/", async (req: Request, res: Response, next: NextFunction)
 
   runEffect(req, res, next, program)
 })
+
+export const OrderPortal = authenticatedRouter()
+
+OrderPortal.get("/mine", (customerId, _req) =>
+  Effect.gen(function* (_) {
+    const orderService = yield* OrderService
+    const orders = yield* orderService.getOrdersByCustomer(customerId)
+    return ok(orders.map(OrderResponse.fromOrderWithPackages))
+  })
+)
 
 OrderController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   const program = Effect.gen(function* (_) {

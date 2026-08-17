@@ -33,6 +33,7 @@ const configLayer = Layer.succeed(
     dbPoolSize: 5,
     dbConnectTimeout: 10,
     logLevel: "info",
+    jwtSecret: "test-secret",
   })
 )
 
@@ -92,7 +93,13 @@ describe("PrismaService.$transaction rollback semantics (integration)", () => {
     Effect.gen(function* () {
       yield* Effect.promise(() =>
         prisma.customer.create({
-          data: { name: "Probe Customer", email: FIXED_EMAIL, phone: "555-0001", address: "1 Probe Way" },
+          data: {
+            name: "Probe Customer",
+            email: FIXED_EMAIL,
+            phone: "555-0001",
+            address: "1 Probe Way",
+            passwordHash: "scrypt$integration-test-hash",
+          },
         })
       )
 
@@ -100,7 +107,13 @@ describe("PrismaService.$transaction rollback semantics (integration)", () => {
       const failure = yield* prismaService
         .$transaction(async (tx) => {
           await tx.customer.create({
-            data: { name: "Probe Customer 2", email: FIXED_EMAIL, phone: "555-0002", address: "2 Probe Way" },
+            data: {
+              name: "Probe Customer 2",
+              email: FIXED_EMAIL,
+              phone: "555-0002",
+              address: "2 Probe Way",
+              passwordHash: "scrypt$integration-test-hash",
+            },
           })
           return Either.right("unreachable")
         })

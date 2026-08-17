@@ -86,6 +86,9 @@ importers:
       express:
         specifier: 5.1.0
         version: 5.1.0
+      jose:
+        specifier: ^6.2.8
+        version: 6.2.8
     devDependencies:
       "@effect/vitest":
         specifier: ^0.29.0
@@ -4747,6 +4750,11 @@ packages:
     resolution:
       { integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw== }
     dev: true
+
+  /jose@6.2.8:
+    resolution:
+      { integrity: sha512-Bsdjwm3Qsd/P0jR+BHDe3LytDfY7WBq2HmCCLIwuVRHMuEC9ae7/R474GIUdF1NgCyZjzVo/A9DOiOBtXq8ZoQ== }
+    dev: false
 
   /js-tokens@3.0.2:
     resolution:

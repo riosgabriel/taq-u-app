@@ -106,6 +106,7 @@ describe("Customer persistence (integration)", () => {
                 email: FIXED_EMAIL,
                 phone: "555-0000",
                 address: "1 Test Way",
+                passwordHash: "scrypt$integration-test-hash",
               },
             })
 
