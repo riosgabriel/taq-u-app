@@ -1,5 +1,6 @@
 import cors from "cors"
-import { CustomerController } from "customer/api/customer-controller"
+import { AuthController, AuthPortal } from "auth/api/auth-controller"
+import { CustomerAddressPortal, CustomerController } from "customer/api/customer-controller"
 import { DeliveryController } from "delivery/api/delivery-controller"
 import { DriverController } from "delivery/api/driver-controller"
 import dotenv from "dotenv"
@@ -8,7 +9,7 @@ import { EstimateController } from "estimate/api/estimate-controller"
 import express from "express"
 import { HealthController } from "health/api/health-controller"
 import { LocationController } from "location/api/location-controller"
-import { OrderController } from "ordering/api/order-controller"
+import { OrderController, OrderPortal } from "ordering/api/order-controller"
 import { PackageController } from "ordering/api/package-controller"
 import { PaymentController } from "payment/api/payment-controller"
 import { RouteController } from "route/api/route-controller"
@@ -28,7 +29,11 @@ const startServer = Effect.suspend(() => {
 
   const apiRouter = express.Router()
 
+  apiRouter.use("/auth", AuthPortal.router)
+  apiRouter.use("/auth", AuthController)
+  apiRouter.use("/customers", CustomerAddressPortal.router)
   apiRouter.use("/customers", CustomerController)
+  apiRouter.use("/orders", OrderPortal.router)
   apiRouter.use("/orders", OrderController)
   apiRouter.use("/packages", PackageController)
   apiRouter.use("/drivers", DriverController)

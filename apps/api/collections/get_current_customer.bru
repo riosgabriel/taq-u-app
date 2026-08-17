@@ -1,0 +1,22 @@
+meta {
+  name: Get Current Customer
+  type: http
+  seq: 40
+}
+
+get {
+  url: {{host}}/api/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns the authenticated customer from the Bearer token.
+
+  200 — CustomerResponse.
+  401 — missing, malformed, or expired token.
+}

@@ -95,7 +95,7 @@ describe("Customer persistence (integration)", () => {
       // did not roll back as expected).
       const FIXED_EMAIL = "itest-customer@example.com"
 
-      const outcome = yield* Effect.tryPromise({
+      const failure = yield* Effect.tryPromise({
         try: () =>
           prisma.$transaction(async (tx) => {
             // CREATE — observable: a row is written through the real
@@ -106,6 +106,7 @@ describe("Customer persistence (integration)", () => {
                 email: FIXED_EMAIL,
                 phone: "555-0000",
                 address: "1 Test Way",
+                passwordHash: "scrypt$integration-test-hash",
               },
             })
 
@@ -144,18 +145,22 @@ describe("Customer persistence (integration)", () => {
             throw new RollbackSignal()
           }),
         catch: (e): Error => (e instanceof Error ? e : new Error(String(e))),
-      })
+      }).pipe(Effect.flip)
 
-      // The ONLY acceptable outcome is `RollbackSignal` — that means
+      // The ONLY acceptable failure is `RollbackSignal` — that means
       // every assertion above passed and the transaction was rolled
       // back cleanly. Anything else (a Prisma connection error, an
       // assertion error that bubbled out) is a real failure; re-throw
-      // so the test reports it. The `as Error` narrows `outcome`
-      // (inferred as `never | Error` because the try callback ends
-      // with an unconditional throw) to the type we know the catch
-      // produced.
-      if (!((outcome as Error) instanceof RollbackSignal)) {
-        throw outcome
+      // so the test reports it.
+      if (!(failure instanceof RollbackSignal)) {
+        throw failure
+      }
+
+      // ROLLBACK — observable: the row written inside the transaction
+      // must not have been persisted.
+      const leaked = yield* Effect.promise(() => prisma.customer.findUnique({ where: { email: FIXED_EMAIL } }))
+      if (leaked !== null) {
+        throw new Error("customer row leaked after transaction rollback")
       }
     })
   )

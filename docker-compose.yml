@@ -29,6 +29,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/taq-u?schema=public}
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-please-change-in-production-7f3c1b}
       PRISMA_GENERATE_DATAPROXY: ${PRISMA_GENERATE_DATAPROXY:-true}
     env_file:
       - .env

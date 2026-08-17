@@ -7,7 +7,7 @@ class Customer extends Schema.Class<Customer>("Customer")({
   name: Schema.NonEmptyString,
   email: Schema.NonEmptyString,
   phone: Schema.NullishOr(Schema.String),
-  address: Schema.NonEmptyString,
+  address: Schema.NullishOr(Schema.String),
 }) {
   static fromPrisma(customer: PrismaCustomer): Customer {
     return {

@@ -1,9 +1,30 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api"
 
-import type { CustomerCreateInput, CustomerResponse } from "../types/customer"
+import type { CustomerAddressResponse, CustomerResponse } from "../types/customer"
+import type { AuthResponse, LoginInput, RegisterInput } from "../types/auth"
 import type { Driver, DriverCreateInput, DriverUpdateInput } from "../types/driver"
 import type { EstimateResponse } from "../types/estimate"
 import type { OrderCreateInput, OrderResponse, OrderUpdateInput } from "../types/order"
+
+export class ApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+let tokenGetter: (() => string | null) | null = null
+let unauthorizedHandler: (() => void) | null = null
+
+export function setAuthTokenGetter(getter: () => string | null) {
+  tokenGetter = getter
+}
+
+export function setUnauthorizedHandler(handler: () => void) {
+  unauthorizedHandler = handler
+}
 
 class ApiClient {
   private baseUrl: string
@@ -14,26 +35,54 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
+    const token = tokenGetter?.()
 
     const response = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options?.headers,
       },
     })
 
     if (!response.ok) {
+      if (response.status === 401) {
+        unauthorizedHandler?.()
+      }
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || errorData.message || `API Error: ${response.statusText}`)
+      throw new ApiError(response.status, errorData.error || errorData.message || `API Error: ${response.statusText}`)
     }
 
     return response.json()
   }
 
+  // Auth
+  async register(data: RegisterInput): Promise<AuthResponse> {
+    return this.request("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async login(data: LoginInput): Promise<AuthResponse> {
+    return this.request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getMe(): Promise<CustomerResponse> {
+    return this.request("/auth/me")
+  }
+
   // Orders
   async getOrders(): Promise<OrderResponse[]> {
     return this.request("/orders")
+  }
+
+  async getMyOrders(): Promise<OrderResponse[]> {
+    return this.request("/orders/mine")
   }
 
   async getOrder(id: string): Promise<OrderResponse> {
@@ -82,10 +131,31 @@ class ApiClient {
     return this.request(`/customers/${id}`)
   }
 
-  async createCustomer(data: CustomerCreateInput): Promise<CustomerResponse> {
-    return this.request("/customers", {
+  // Customer addresses
+  async getMyAddresses(): Promise<CustomerAddressResponse[]> {
+    return this.request("/customers/me/addresses")
+  }
+
+  async createAddress(data: { label: string; address: string; isDefault?: boolean }): Promise<CustomerAddressResponse> {
+    return this.request("/customers/me/addresses", {
       method: "POST",
       body: JSON.stringify(data),
+    })
+  }
+
+  async updateAddress(
+    id: string,
+    data: { label?: string; address?: string; isDefault?: boolean }
+  ): Promise<CustomerAddressResponse> {
+    return this.request(`/customers/me/addresses/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteAddress(id: string): Promise<void> {
+    return this.request(`/customers/me/addresses/${id}`, {
+      method: "DELETE",
     })
   }
 

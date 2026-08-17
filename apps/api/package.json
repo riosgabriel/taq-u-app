@@ -11,7 +11,7 @@
     "lint": "eslint . --ext .ts",
     "test": "vitest run --exclude='**/test/integration/**'",
     "test:watch": "vitest --exclude='**/test/integration/**'",
-    "test:integration": "vitest run test/integration",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "format": "prettier --write .",
     "db:deploy": "npx prisma migrate deploy && npx prisma generate",
     "db:migrate": "npx prisma migrate dev",
@@ -25,7 +25,8 @@
     "cors": "^2.8.6",
     "dotenv": "16.5.0",
     "effect": "^3.14.22",
-    "express": "5.1.0"
+    "express": "5.1.0",
+    "jose": "^6.2.8"
   },
   "devDependencies": {
     "@effect/vitest": "^0.29.0",

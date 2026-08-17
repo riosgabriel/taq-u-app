@@ -1,0 +1,27 @@
+meta {
+  name: Delete My Address
+  type: http
+  seq: 45
+}
+
+delete {
+  url: {{host}}/api/customers/me/addresses/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+params:path {
+  id: address-id-here
+}
+
+docs {
+  Deletes one of the authenticated customer's addresses.
+
+  200 — { message }.
+  401 — invalid or missing token.
+  404 — address not found or not owned by the customer.
+}

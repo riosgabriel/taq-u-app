@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
-import { api } from "@/lib/api"
+import { api, ApiError } from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
 
 /**
  * PackageList — connected to the real backend.
@@ -114,6 +115,7 @@ const flattenOrders = (orders: RawOrder[]): PackageListItem[] => {
 }
 
 export function PackageList() {
+  const { customer } = useAuth()
   const [filter, setFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [items, setItems] = useState<PackageListItem[]>([])
@@ -124,24 +126,34 @@ export function PackageList() {
     let cancelled = false
     setIsLoading(true)
     setError(null)
-    api
-      .getOrders()
-      .then((orders) => {
-        if (cancelled) return
-        setItems(flattenOrders(orders as RawOrder[]))
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err instanceof Error ? err.message : "Unknown error")
-      })
-      .finally(() => {
-        if (cancelled) return
-        setIsLoading(false)
-      })
+
+    async function loadPackages() {
+      try {
+        const orders = await (customer ? api.getMyOrders() : api.getOrders())
+        if (!cancelled) {
+          setItems(flattenOrders(orders as RawOrder[]))
+        }
+      } catch (err) {
+        if (!cancelled) {
+          if (err instanceof ApiError && err.status === 401) {
+            setError("Session expired. Please sign in again.")
+          } else {
+            setError(err instanceof Error ? err.message : "Unknown error")
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadPackages()
+
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [customer])
 
   const filteredPackages = useMemo(() => {
     return items.filter((pkg) => {

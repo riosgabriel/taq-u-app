@@ -13,11 +13,14 @@ export const LogLevelConfig = Config.literal(
   "error"
 )("LOG_LEVEL").pipe(Config.withDefault("info"))
 
+export const JwtSecretConfig = Config.string("JWT_SECRET")
+
 export const AppConfig = Config.all({
   databaseUrl: DatabaseURLConfig,
   dbPoolSize: DbPoolSizeConfig,
   dbConnectTimeout: DbConnectTimeoutConfig,
   logLevel: LogLevelConfig,
+  jwtSecret: JwtSecretConfig,
 })
 
 const withDbParams = (url: string, poolSize: number, connectTimeout: number): string => {
@@ -38,6 +41,7 @@ export class ConfigService extends Context.Tag("order/ConfigService")<
     readonly dbPoolSize: number
     readonly dbConnectTimeout: number
     readonly logLevel: "debug" | "info" | "warn" | "error"
+    readonly jwtSecret: string
   }
 >() {}
 

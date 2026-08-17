@@ -3,11 +3,12 @@ import { OrderStatus, PackageStatus } from "@prisma/client"
 import { CustomerRepository } from "customer/repository/customer-repository"
 import { CustomerNotFoundError } from "customer/services/customer-service"
 import { Context, Data, Effect, Layer } from "effect"
-import { DriverId, OrderId, PackageId } from "@/ids"
+import { CustomerId, DriverId, OrderId, PackageId } from "@/ids"
 import { EventPublisher } from "events/event-publisher"
 import { transition as statusTransition } from "ordering/domain/order-status"
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { OrderRepository, OrderWithPackages } from "ordering/repository/order-repository"
+import { DriverAssignmentService } from "delivery/services/driver-assignment-service"
 import { DriverNotFoundError, DriverNotAvailableError } from "delivery/services/driver-service"
 
 export class OrderNotFoundError extends Data.TaggedError("order/OrderNotFoundError")<{
@@ -34,6 +35,7 @@ export class OrderService extends Context.Tag("order/OrderService")<
     ) => Effect.Effect<OrderWithPackages, CustomerNotFoundError | PersistenceError>
     readonly getOrderById: (orderId: OrderId) => Effect.Effect<OrderWithPackages, OrderNotFoundError | PersistenceError>
     readonly listOrders: () => Effect.Effect<OrderWithPackages[], PersistenceError>
+    readonly getOrdersByCustomer: (customerId: CustomerId) => Effect.Effect<OrderWithPackages[], PersistenceError>
     readonly updateOrder: (
       orderId: OrderId,
       updateInput: OrderUpdateInput
@@ -49,8 +51,14 @@ export class OrderService extends Context.Tag("order/OrderService")<
       driverId: DriverId
     ) => Effect.Effect<
       OrderWithPackages,
-      OrderNotFoundError | OrderStatusError | DriverNotFoundError | DriverNotAvailableError | PersistenceError
+      OrderNotFoundError | OrderStatusError | DriverNotFoundError | DriverNotAvailableError | PersistenceError,
+      DriverAssignmentService
     >
+    readonly markOrderAssigned: (
+      orderId: OrderId,
+      driverId: DriverId,
+      assignedAt: Date
+    ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
     readonly pickupOrder: (
       orderId: OrderId
     ) => Effect.Effect<OrderWithPackages, OrderNotFoundError | OrderStatusError | PersistenceError>
@@ -119,6 +127,8 @@ export const OrderServiceLive = Layer.effect(
 
       listOrders: () => orderRepository.listOrders(),
 
+      getOrdersByCustomer: (customerId: CustomerId) => orderRepository.findByCustomerId(customerId),
+
       updateOrder: (orderId: OrderId, updateInput: OrderUpdateInput) => {
         return orderRepository
           .updateOrder(orderId, updateInput)
@@ -185,14 +195,49 @@ export const OrderServiceLive = Layer.effect(
               )
             )
 
-          const validated = yield* statusTransition(existingOrder.status, OrderStatus.ASSIGNED)
+          yield* statusTransition(existingOrder.status, OrderStatus.ASSIGNED)
 
-          const result = yield* orderRepository.assignDriver(orderId, driverId, new Date(), validated)
+          const assignedAt = new Date()
 
-          yield* eventPublisher.notify(result.events)
+          const assignmentService = yield* DriverAssignmentService
+          yield* assignmentService.assignDriverToOrder(orderId, driverId, assignedAt)
 
-          return result.order
+          const result = yield* orderRepository.markAssigned(orderId, driverId, assignedAt)
+
+          return result
         }).pipe(
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+          ),
+          Effect.catchTag("delivery/OrderNotAssignableError", (error) =>
+            Effect.fail(
+              new OrderStatusError({
+                orderId,
+                currentStatus: error.currentStatus,
+                message: error.message,
+              })
+            )
+          ),
+          Effect.catchTag("order/InvalidOrderStatusTransitionError", (error) =>
+            Effect.fail(
+              new OrderStatusError({
+                orderId,
+                currentStatus: error.currentStatus,
+                message: error.message,
+              })
+            )
+          )
+        )
+      },
+
+      markOrderAssigned: (orderId: OrderId, driverId: DriverId, assignedAt: Date) => {
+        return Effect.gen(function* () {
+          const result = yield* orderRepository.markAssigned(orderId, driverId, assignedAt)
+          return result
+        }).pipe(
+          Effect.catchTag("persistence/RecordNotFoundError", (error) =>
+            Effect.fail(new OrderNotFoundError({ orderId, message: error.message }))
+          ),
           Effect.catchTag("order/InvalidOrderStatusTransitionError", (error) =>
             Effect.fail(
               new OrderStatusError({

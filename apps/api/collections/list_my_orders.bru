@@ -1,0 +1,22 @@
+meta {
+  name: List My Orders
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{host}}/api/orders/mine
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns only the authenticated customer's orders, each with packages.
+
+  200 — OrderResponse[].
+  401 — invalid or missing token.
+}

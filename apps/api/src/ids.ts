@@ -32,3 +32,6 @@ export type EstimateId = Schema.Schema.Type<typeof EstimateId>
 
 export const CarrierId = Schema.NonEmptyString.pipe(Schema.brand("CarrierId"))
 export type CarrierId = Schema.Schema.Type<typeof CarrierId>
+
+export const CustomerAddressId = Schema.NonEmptyString.pipe(Schema.brand("CustomerAddressId"))
+export type CustomerAddressId = Schema.Schema.Type<typeof CustomerAddressId>
