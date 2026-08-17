@@ -69,6 +69,7 @@ Existing domains: `ordering`, `customer`, `delivery`.
 
 - **Error tags**: `Data.TaggedError` with `"domain/ErrorName"` format (e.g. `"order/OrderNotFoundError"`, `"delivery/DriverNotFoundError"`, `"customer/CustomerEmailAlreadyExistsError"`). Persistence-layer errors (in `persistence-errors.ts`) use the `"persistence/ErrorName"` prefix instead. Keep the tag format consistent — error matching in controllers uses it.
 - **Controllers**: always use `runEffect(req, res, next, program)`. Never `Effect.runPromise` directly. The middleware handles logging, parse errors -> 400, and forwards unhandled to the global handler.
+- **Authenticated routes**: register them on an `authenticatedRouter()` portal (e.g. `AuthPortal`, `CustomerAddressPortal`, `OrderPortal`) — handlers receive `customerId` as a typed parameter and never touch `requireAuth`. Portal routers mount before their public router in `apps/api/src/index.ts`; order matters (`/orders/mine` must not fall through to `/orders/:id`).
 - **HTTP responses**: use helpers from `@/middleware/http` (`ok`, `notFound`, `badRequest`, `conflict`). Never construct raw `res.status().json()` in business logic.
 - **DTOs**: one `Schema.Class` per input/output shape. Include a `fromEntity()` static method for mapping Prisma types to response DTOs.
 - **Repositories**: use `prismaService.execute()` for single queries, `prismaService.$transaction()` for multi-step writes (which need a Prisma `TransactionClient`). Repository methods return `Effect`s.
@@ -89,10 +90,11 @@ Things an agent would confidently do wrong:
 - **No global catch-all validation**: `decodeBody`/`decodeParams` are called per-endpoint. If you add a new endpoint, make sure to decode its inputs — there's no safety net.
 - **Bruno collection drift**: If you add/change an endpoint, update the matching `.bru` file in `apps/api/collections/`. The collections are the only API testing tool.
 - **Missing error tag in controller**: When you add a new domain error (`Data.TaggedError`), you must add a corresponding `Effect.catchTag` in the controller or it hits the global `effectErrorHandler` -> 500.
+- **Route without auth**: Adding a route to a public controller `Router()` leaves it anonymous. If the endpoint needs auth, register it on an `authenticatedRouter()` portal instead — there's no safety net.
 
 ## State & risks
 
-- **No auth**: 8 PII fields exposed (customer name/email/phone/address, driver name/email/phone, location address). Anyone can hit any endpoint. Don't add auth unilaterally — there may be a planned approach.
+- **Partial auth**: JWT auth exists for customer-facing endpoints (register/login, `/auth/me`, `/orders/mine`, `/customers/me/addresses`) via `authenticatedRouter()` portals. Everything else is anonymous — 8 PII fields exposed (customer name/email/phone/address, driver name/email/phone, location address). Don't protect remaining endpoints unilaterally — rate limiting is tracked in TAQ-54.
 - **OTel installed, DB not instrumented**: OpenTelemetry middleware is wired but database queries (`prismaService.execute`) aren't traced. Don't assume OTel is complete.
 - **Known correctness footguns in @repos/effect**: Serialization trap in RpcSerialization.ts (Map/Set -> `{}`), shared reference leaks in FiberMap/FiberSet iterators. If working with serialization or fiber management, inspect the vendored source for these patterns.
 - **No typecheck in validate**: `pnpm validate` is lint + format only. Web has typecheck (web `lint` runs `tsc --noEmit`), api does not.
