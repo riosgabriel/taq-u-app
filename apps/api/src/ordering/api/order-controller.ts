@@ -1,6 +1,6 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { badRequest, conflict, notFound, ok } from "@/middleware/http"
-import { protectedRouter } from "@/middleware/protected-router"
+import { authenticatedRouter } from "@/middleware/authenticated-router"
 import { decodeBody, decodeParams } from "@/middleware/validate"
 import { Effect, Schema } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
@@ -40,7 +40,7 @@ OrderController.get("/", async (req: Request, res: Response, next: NextFunction)
   runEffect(req, res, next, program)
 })
 
-export const OrderPortal = protectedRouter()
+export const OrderPortal = authenticatedRouter()
 
 OrderPortal.get("/mine", (customerId, _req) =>
   Effect.gen(function* (_) {

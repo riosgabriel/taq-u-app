@@ -6,13 +6,13 @@ import { InvalidTokenError } from "auth/auth-errors"
 import { Effect } from "effect"
 import { NextFunction, Request, Response, Router } from "express"
 
-export type ProtectedHandler<E, R> = (customerId: CustomerId, req: Request) => Effect.Effect<HttpResponse, E, R>
+export type AuthenticatedHandler<E, R> = (customerId: CustomerId, req: Request) => Effect.Effect<HttpResponse, E, R>
 
-export const protectedRouter = () => {
+export const authenticatedRouter = () => {
   const router = Router()
 
   const wrap =
-    <E, R>(handler: ProtectedHandler<E, R>) =>
+    <E, R>(handler: AuthenticatedHandler<E, R>) =>
     (req: Request, res: Response, next: NextFunction) => {
       const program = Effect.gen(function* () {
         const customerId = yield* requireAuth(req)
@@ -26,10 +26,10 @@ export const protectedRouter = () => {
     }
 
   return {
-    get: (path: string, handler: ProtectedHandler<any, any>) => router.get(path, wrap(handler)),
-    post: (path: string, handler: ProtectedHandler<any, any>) => router.post(path, wrap(handler)),
-    put: (path: string, handler: ProtectedHandler<any, any>) => router.put(path, wrap(handler)),
-    delete: (path: string, handler: ProtectedHandler<any, any>) => router.delete(path, wrap(handler)),
+    get: (path: string, handler: AuthenticatedHandler<any, any>) => router.get(path, wrap(handler)),
+    post: (path: string, handler: AuthenticatedHandler<any, any>) => router.post(path, wrap(handler)),
+    put: (path: string, handler: AuthenticatedHandler<any, any>) => router.put(path, wrap(handler)),
+    delete: (path: string, handler: AuthenticatedHandler<any, any>) => router.delete(path, wrap(handler)),
     router,
   }
 }

@@ -1,7 +1,7 @@
 import { decodeBody, decodeParams } from "@/middleware/validate"
 import { runEffect } from "@/middleware/effect-runner"
 import { notFound, ok } from "@/middleware/http"
-import { protectedRouter } from "@/middleware/protected-router"
+import { authenticatedRouter } from "@/middleware/authenticated-router"
 import { CustomerAddressId, CustomerId } from "@/ids"
 import {
   CustomerAddressResponse,
@@ -30,7 +30,7 @@ CustomerController.get("/", async (req: Request, res: Response, next: NextFuncti
   runEffect(req, res, next, program)
 })
 
-export const CustomerAddressPortal = protectedRouter()
+export const CustomerAddressPortal = authenticatedRouter()
 
 CustomerAddressPortal.get("/me/addresses", (customerId, _req) =>
   Effect.gen(function* (_) {

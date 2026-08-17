@@ -1,6 +1,6 @@
 import { runEffect } from "@/middleware/effect-runner"
 import { conflict, ok, unauthorized } from "@/middleware/http"
-import { protectedRouter } from "@/middleware/protected-router"
+import { authenticatedRouter } from "@/middleware/authenticated-router"
 import { decodeBody } from "@/middleware/validate"
 import { AuthResponse, LoginInput, RegisterInput } from "auth/dto/auth-dto"
 import { AuthService } from "auth/services/auth-service"
@@ -30,7 +30,7 @@ AuthController.post("/login", async (req: Request, res: Response, next: NextFunc
   runEffect(req, res, next, program)
 })
 
-export const AuthPortal = protectedRouter()
+export const AuthPortal = authenticatedRouter()
 
 AuthPortal.get("/me", (customerId, _req) =>
   Effect.gen(function* (_) {
