@@ -1,5 +1,5 @@
 import { CustomerId, DriverId, OrderId, PackageId } from "@/ids"
-import { PersistenceError, RecordNotFoundError } from "@/persistence-errors"
+import { PersistenceError, RecordNotFoundError, UniqueConstraintViolation } from "@/persistence-errors"
 import { OrderStatus, PackageStatus, Prisma } from "@prisma/client"
 import { Context, Effect, Either, Layer, Schema } from "effect"
 import { DomainEvent } from "events/domain-event"
@@ -8,6 +8,8 @@ import { InvalidOrderStatusTransitionError, ValidatedOrderStatus } from "orderin
 import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dto/order-dto"
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
 import { PrismaService } from "prisma-service"
+
+const MAX_TRACKING_NUMBER_ATTEMPTS = 3
 
 const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
@@ -81,69 +83,51 @@ export const OrderRepositoryLive = Layer.effect(
     const trackingNumberService = yield* TrackingNumberService
     const eventPublisher = yield* EventPublisher
 
-    const generateTrackingNumbersInTx = async (
-      tx: Prisma.TransactionClient,
-      count: number
-    ): Promise<Either.Either<string[], PersistenceError>> => {
-      const numbers: string[] = []
-      for (let i = 0; i < count; i++) {
-        const generated = await trackingNumberService.generateInTx(tx)
-        if (Either.isLeft(generated)) return Either.left(generated.left)
-        numbers.push(generated.right)
-      }
-      return Either.right(numbers)
-    }
-
     return OrderRepository.of({
-      createOrder: (orderInput: OrderCreateInput) =>
-        prismaService.$transaction(async (tx): Promise<Either.Either<CreateOrderResult, PersistenceError>> => {
-          const trackingNumbersResult = await generateTrackingNumbersInTx(tx, orderInput.packages.length)
-          if (Either.isLeft(trackingNumbersResult)) return Either.left(trackingNumbersResult.left)
-          const trackingNumbers = trackingNumbersResult.right
-
-          const order = await tx.order.create({
-            data: {
-              customer: {
-                connect: {
-                  id: orderInput.customerId,
+      createOrder: (orderInput: OrderCreateInput) => {
+        const attempt = () =>
+          prismaService.$transaction(async (tx): Promise<Either.Either<CreateOrderResult, PersistenceError>> => {
+            const trackingNumbers = orderInput.packages.map(() => trackingNumberService.generate())
+            const order = await tx.order.create({
+              data: {
+                customer: { connect: { id: orderInput.customerId } },
+                packages: {
+                  createMany: {
+                    data: orderInput.packages.map((pkg, index) => ({
+                      weightKg: pkg.weightKg,
+                      dimensions: pkg.dimensions,
+                      description: pkg.description,
+                      fragile: pkg.fragile,
+                      perishable: pkg.perishable,
+                      insured: pkg.insured,
+                      status: PackageStatus.AWAITING_PICKUP,
+                      trackingNumber: trackingNumbers[index],
+                    })),
+                  },
                 },
+                pickupAddress: orderInput.pickupAddress,
+                deliveryAddress: orderInput.deliveryAddress,
+                pickupDate: orderInput.pickupDate,
+                deliveryDate: orderInput.deliveryDate,
+                specialInstructions: orderInput.specialInstructions,
+                priority: orderInput.priority,
+                status: OrderStatus.PENDING,
               },
-              packages: {
-                createMany: {
-                  data: orderInput.packages.map((pkg, index) => ({
-                    weightKg: pkg.weightKg,
-                    dimensions: pkg.dimensions,
-                    description: pkg.description,
-                    fragile: pkg.fragile,
-                    perishable: pkg.perishable,
-                    insured: pkg.insured,
-                    status: PackageStatus.AWAITING_PICKUP,
-                    trackingNumber: trackingNumbers[index],
-                  })),
-                },
-              },
-              pickupAddress: orderInput.pickupAddress,
-              deliveryAddress: orderInput.deliveryAddress,
-              pickupDate: orderInput.pickupDate,
-              deliveryDate: orderInput.deliveryDate,
-              specialInstructions: orderInput.specialInstructions,
-              priority: orderInput.priority,
-              status: OrderStatus.PENDING,
-            },
-            include: {
-              packages: true,
-            },
+              include: { packages: true },
+            })
+            const orderEvent: DomainEvent = {
+              type: "OrderCreated",
+              streamId: `order:${order.id}`,
+              payload: { orderId: order.id, customerId: order.customerId },
+            }
+            const written = await eventPublisher.writeInTransaction(tx, [orderEvent])
+            return Either.right({ order, events: written })
           })
-
-          const orderEvent: DomainEvent = {
-            type: "OrderCreated",
-            streamId: `order:${order.id}`,
-            payload: { orderId: order.id, customerId: order.customerId },
-          }
-          const written = await eventPublisher.writeInTransaction(tx, [orderEvent])
-
-          return Either.right({ order, events: written })
-        }),
+        return Effect.retry(attempt(), {
+          times: MAX_TRACKING_NUMBER_ATTEMPTS - 1,
+          while: (error) => error instanceof UniqueConstraintViolation,
+        })
+      },
       getOrderById: (orderId: OrderId) => {
         return prismaService
           .execute(() =>
@@ -282,32 +266,35 @@ export const OrderRepositoryLive = Layer.effect(
             )
           }
         ),
-      addPackageToOrder: (orderId: OrderId, packageInput: AddPackageInput) =>
-        prismaService.$transaction(async (tx): Promise<Either.Either<OrderWithPackages, PersistenceError>> => {
-          const trackingNumberResult = await trackingNumberService.generateInTx(tx)
-          if (Either.isLeft(trackingNumberResult)) return Either.left(trackingNumberResult.left)
-
-          await tx.package.create({
-            data: {
-              order: { connect: { id: orderId } },
-              weightKg: packageInput.weightKg,
-              dimensions: packageInput.dimensions,
-              description: packageInput.description,
-              fragile: packageInput.fragile,
-              perishable: packageInput.perishable,
-              insured: packageInput.insured,
-              trackingNumber: trackingNumberResult.right,
-              status: PackageStatus.AWAITING_PICKUP,
-            },
-          })
-
-          return Either.right(
-            await tx.order.findUniqueOrThrow({
-              where: { id: orderId },
-              include: { packages: true },
+      addPackageToOrder: (orderId: OrderId, packageInput: AddPackageInput) => {
+        const attempt = () =>
+          prismaService.$transaction(async (tx): Promise<Either.Either<OrderWithPackages, PersistenceError>> => {
+            const trackingNumber = trackingNumberService.generate()
+            await tx.package.create({
+              data: {
+                order: { connect: { id: orderId } },
+                weightKg: packageInput.weightKg,
+                dimensions: packageInput.dimensions,
+                description: packageInput.description,
+                fragile: packageInput.fragile,
+                perishable: packageInput.perishable,
+                insured: packageInput.insured,
+                trackingNumber,
+                status: PackageStatus.AWAITING_PICKUP,
+              },
             })
-          )
-        }),
+            return Either.right(
+              await tx.order.findUniqueOrThrow({
+                where: { id: orderId },
+                include: { packages: true },
+              })
+            )
+          })
+        return Effect.retry(attempt(), {
+          times: MAX_TRACKING_NUMBER_ATTEMPTS - 1,
+          while: (error) => error instanceof UniqueConstraintViolation,
+        })
+      },
       findPackageByTrackingNumber: (trackingNumber: string) => {
         return prismaService
           .execute(() =>
