@@ -81,33 +81,13 @@ export const OrderRepositoryLive = Layer.effect(
     const trackingNumberService = yield* TrackingNumberService
     const eventPublisher = yield* EventPublisher
 
-    const generateTrackingNumbersInTx = async (
-      tx: Prisma.TransactionClient,
-      count: number
-    ): Promise<Either.Either<string[], PersistenceError>> => {
-      const numbers: string[] = []
-      for (let i = 0; i < count; i++) {
-        const generated = await trackingNumberService.generateInTx(tx)
-        if (Either.isLeft(generated)) return Either.left(generated.left)
-        numbers.push(generated.right)
-      }
-      return Either.right(numbers)
-    }
-
     return OrderRepository.of({
       createOrder: (orderInput: OrderCreateInput) =>
         prismaService.$transaction(async (tx): Promise<Either.Either<CreateOrderResult, PersistenceError>> => {
-          const trackingNumbersResult = await generateTrackingNumbersInTx(tx, orderInput.packages.length)
-          if (Either.isLeft(trackingNumbersResult)) return Either.left(trackingNumbersResult.left)
-          const trackingNumbers = trackingNumbersResult.right
-
+          const trackingNumbers = orderInput.packages.map(() => trackingNumberService.generate())
           const order = await tx.order.create({
             data: {
-              customer: {
-                connect: {
-                  id: orderInput.customerId,
-                },
-              },
+              customer: { connect: { id: orderInput.customerId } },
               packages: {
                 createMany: {
                   data: orderInput.packages.map((pkg, index) => ({
@@ -130,18 +110,14 @@ export const OrderRepositoryLive = Layer.effect(
               priority: orderInput.priority,
               status: OrderStatus.PENDING,
             },
-            include: {
-              packages: true,
-            },
+            include: { packages: true },
           })
-
           const orderEvent: DomainEvent = {
             type: "OrderCreated",
             streamId: `order:${order.id}`,
             payload: { orderId: order.id, customerId: order.customerId },
           }
           const written = await eventPublisher.writeInTransaction(tx, [orderEvent])
-
           return Either.right({ order, events: written })
         }),
       getOrderById: (orderId: OrderId) => {
@@ -284,9 +260,7 @@ export const OrderRepositoryLive = Layer.effect(
         ),
       addPackageToOrder: (orderId: OrderId, packageInput: AddPackageInput) =>
         prismaService.$transaction(async (tx): Promise<Either.Either<OrderWithPackages, PersistenceError>> => {
-          const trackingNumberResult = await trackingNumberService.generateInTx(tx)
-          if (Either.isLeft(trackingNumberResult)) return Either.left(trackingNumberResult.left)
-
+          const trackingNumber = trackingNumberService.generate()
           await tx.package.create({
             data: {
               order: { connect: { id: orderId } },
@@ -296,11 +270,10 @@ export const OrderRepositoryLive = Layer.effect(
               fragile: packageInput.fragile,
               perishable: packageInput.perishable,
               insured: packageInput.insured,
-              trackingNumber: trackingNumberResult.right,
+              trackingNumber,
               status: PackageStatus.AWAITING_PICKUP,
             },
           })
-
           return Either.right(
             await tx.order.findUniqueOrThrow({
               where: { id: orderId },

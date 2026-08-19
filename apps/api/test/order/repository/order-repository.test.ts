@@ -1,11 +1,10 @@
 import { describe, expect, it } from "@effect/vitest"
-import { Effect, Either, Layer } from "effect"
+import { Effect, Layer } from "effect"
 import { OrderRepository, OrderRepositoryLive } from "ordering/repository/order-repository"
 import { TrackingNumberService, TrackingNumberServiceShape } from "ordering/services/tracking-number-service"
 import { EventPublisher } from "events/event-publisher"
 import { CustomerId, DriverId, OrderId } from "@/ids"
 import { OrderStatus } from "@prisma/client"
-import { UnexpectedPersistenceError } from "@/persistence-errors"
 import { OrderCreateInput } from "ordering/dto/order-dto"
 import { PrismaService } from "prisma-service"
 import { mockPrismaServiceWith } from "../../helpers/mock-prisma-service"
@@ -18,10 +17,7 @@ describe("OrderRepository.markAssigned", () => {
     notify: () => Effect.void,
   })
 
-  const mockTrackingNumberService = TrackingNumberService.of({
-    generate: () => Effect.die("unexpected"),
-    generateInTx: () => Promise.resolve(Either.right("TAQ-TEST")),
-  })
+  const mockTrackingNumberService = TrackingNumberService.of({ generate: () => "TAQ-TEST" })
 
   const fixedAssignedAt = new Date("2026-01-01T10:00:00.000Z")
 
@@ -141,15 +137,7 @@ describe("OrderRepository.addPackageToOrder", () => {
     notify: () => Effect.void,
   })
 
-  const mockTrackingNumberService = TrackingNumberService.of({
-    generate: () => Effect.die("unexpected"),
-    generateInTx: () => Promise.resolve(Either.right("TAQ-TEST")),
-  })
-
-  const failingTrackingNumberService = TrackingNumberService.of({
-    generate: () => Effect.die("unexpected"),
-    generateInTx: () => Promise.resolve(Either.left(new UnexpectedPersistenceError({ cause: "test exhaustion" }))),
-  })
+  const mockTrackingNumberService = TrackingNumberService.of({ generate: () => "TAQ-TEST" })
 
   const makeTx = (overrides: { order?: Record<string, any>; package?: Record<string, any> }) => ({
     order: {
@@ -182,14 +170,6 @@ describe("OrderRepository.addPackageToOrder", () => {
     insured: true,
   }
 
-  it.effect("fails with UnexpectedPersistenceError when tracking number generation fails", () =>
-    Effect.gen(function* () {
-      const repo = yield* OrderRepository
-      const failure = yield* repo.addPackageToOrder("order-1" as OrderId, packageInput).pipe(Effect.flip)
-      expect(failure._tag).toBe("persistence/UnexpectedPersistenceError")
-    }).pipe(Effect.provide(layerWithTracking(makeTx({}), failingTrackingNumberService)))
-  )
-
   it.effect("creates a package using the generated tracking number", () => {
     let createData: Record<string, any> | undefined
     const tx = makeTx({
@@ -218,17 +198,16 @@ describe("OrderRepository.createOrder", () => {
     notify: () => Effect.void,
   })
 
-  const failingTrackingNumberService = TrackingNumberService.of({
-    generate: () => Effect.die("unexpected"),
-    generateInTx: () => Promise.resolve(Either.left(new UnexpectedPersistenceError({ cause: "test exhaustion" }))),
-  })
+  const mockTrackingNumberService = TrackingNumberService.of({ generate: () => "TAQ-TEST" })
 
-  const layerWith = (tx: unknown) =>
+  const layerWithTracking = (tx: unknown, trackingService: TrackingNumberServiceShape) =>
     OrderRepositoryLive.pipe(
       Layer.provide(Layer.succeed(PrismaService, prismaWith(tx))),
-      Layer.provide(Layer.succeed(TrackingNumberService, failingTrackingNumberService)),
+      Layer.provide(Layer.succeed(TrackingNumberService, trackingService)),
       Layer.provide(Layer.succeed(EventPublisher, mockEventPublisher))
     )
+
+  const layerWith = (tx: unknown) => layerWithTracking(tx, mockTrackingNumberService)
 
   const orderInput: OrderCreateInput = {
     customerId: "customer-1" as CustomerId,
@@ -250,7 +229,7 @@ describe("OrderRepository.createOrder", () => {
     ],
   }
 
-  const makeTx = () => ({
+  const makeTx = (overrides: { order?: Record<string, any> } = {}) => ({
     order: {
       updateMany: async () => ({ count: 0 }),
       findUnique: async () => null,
@@ -260,15 +239,26 @@ describe("OrderRepository.createOrder", () => {
         driverId: "driver-1",
         packages: [],
       }),
+      ...overrides.order,
     },
     package: { create: async () => ({ id: "pkg-1" }) },
   })
 
-  it.effect("fails with UnexpectedPersistenceError when tracking number generation fails", () =>
-    Effect.gen(function* () {
+  it.effect("creates an order with generated tracking numbers", () => {
+    let createData: Record<string, any> | undefined
+    const tx = makeTx({
+      order: {
+        create: async (args: any) => {
+          createData = args
+          return { id: "order-1", customerId: "customer-1", status: OrderStatus.PENDING, packages: [] }
+        },
+      },
+    })
+    return Effect.gen(function* () {
       const repo = yield* OrderRepository
-      const failure = yield* repo.createOrder(orderInput).pipe(Effect.flip)
-      expect(failure._tag).toBe("persistence/UnexpectedPersistenceError")
-    }).pipe(Effect.provide(layerWith(makeTx())))
-  )
+      const result = yield* repo.createOrder(orderInput)
+      expect(result.order.id).toBe("order-1")
+      expect(createData?.data.packages.createMany.data[0].trackingNumber).toBe("TAQ-TEST")
+    }).pipe(Effect.provide(layerWith(tx)))
+  })
 })
