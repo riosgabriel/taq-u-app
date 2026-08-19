@@ -10,8 +10,7 @@ export const TrackingNumberServiceLive = Layer.succeed(
   TrackingNumberService,
   TrackingNumberService.of({
     // UUID v7 (RFC 9562): time-ordered and sortable. The findUnique pre-check is deliberately gone —
-    // the DB @unique constraint is the collision guard, and the repository retries insert-time P2002
-    // collisions on trackingNumber only (bounded).
+    // the DB @unique constraint is the collision guard; ~74 random bits make insert-time retry unnecessary.
     generate: () => uuidv7(),
   })
 )

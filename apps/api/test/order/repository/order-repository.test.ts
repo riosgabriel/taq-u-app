@@ -4,7 +4,7 @@ import { OrderRepository, OrderRepositoryLive } from "ordering/repository/order-
 import { TrackingNumberService, TrackingNumberServiceShape } from "ordering/services/tracking-number-service"
 import { EventPublisher } from "events/event-publisher"
 import { CustomerId, DriverId, OrderId } from "@/ids"
-import { OrderStatus, Prisma } from "@prisma/client"
+import { OrderStatus } from "@prisma/client"
 import { OrderCreateInput } from "ordering/dto/order-dto"
 import { PrismaService } from "prisma-service"
 import { mockPrismaServiceWith } from "../../helpers/mock-prisma-service"
@@ -139,13 +139,6 @@ describe("OrderRepository.addPackageToOrder", () => {
 
   const mockTrackingNumberService = TrackingNumberService.of({ generate: () => "TAQ-TEST" })
 
-  const sequenceTrackingNumberService = TrackingNumberService.of({
-    generate: (() => {
-      let i = 0
-      return () => `TAQ-SEQ-${i++}`
-    })(),
-  })
-
   const makeTx = (overrides: { order?: Record<string, any>; package?: Record<string, any> }) => ({
     order: {
       updateMany: async () => ({ count: 0 }),
@@ -195,98 +188,6 @@ describe("OrderRepository.addPackageToOrder", () => {
       expect(createData?.data.weightKg).toBe(5)
     }).pipe(Effect.provide(layerWithTracking(tx, mockTrackingNumberService)))
   })
-
-  it.effect("retries with a fresh tracking number when the insert hits a unique violation", () => {
-    const created: string[] = []
-    const tx = makeTx({
-      package: {
-        create: async (args: any) => {
-          created.push(args.data.trackingNumber)
-          if (created.length === 1) {
-            throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed on trackingNumber", {
-              code: "P2002",
-              clientVersion: "test",
-              meta: { target: ["trackingNumber"] },
-            })
-          }
-          return { id: "pkg-1" }
-        },
-      },
-    })
-    return Effect.gen(function* () {
-      const repo = yield* OrderRepository
-      const order = yield* repo.addPackageToOrder("order-1" as OrderId, packageInput)
-      expect(order.status).toBe(OrderStatus.ASSIGNED)
-      expect(created).toHaveLength(2)
-      expect(created[0]).not.toBe(created[1])
-    }).pipe(Effect.provide(layerWithTracking(tx, sequenceTrackingNumberService)))
-  })
-
-  it.effect("fails with UniqueConstraintViolation after exhausting retries", () => {
-    let calls = 0
-    const tx = makeTx({
-      package: {
-        create: async () => {
-          calls++
-          throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed on trackingNumber", {
-            code: "P2002",
-            clientVersion: "test",
-            meta: { target: ["trackingNumber"] },
-          })
-        },
-      },
-    })
-    return Effect.gen(function* () {
-      const repo = yield* OrderRepository
-      const failure = yield* repo.addPackageToOrder("order-1" as OrderId, packageInput).pipe(Effect.flip)
-      expect(failure._tag).toBe("persistence/UniqueConstraintViolation")
-      expect(calls).toBe(3)
-    }).pipe(Effect.provide(layerWithTracking(tx, mockTrackingNumberService)))
-  })
-
-  it.effect("does not retry on non-unique-violation errors", () => {
-    let calls = 0
-    const tx = makeTx({
-      package: {
-        create: async () => {
-          calls++
-          throw new Prisma.PrismaClientKnownRequestError("Record not found", {
-            code: "P2025",
-            clientVersion: "test",
-            meta: { modelName: "Package" },
-          })
-        },
-      },
-    })
-    return Effect.gen(function* () {
-      const repo = yield* OrderRepository
-      const failure = yield* repo.addPackageToOrder("order-1" as OrderId, packageInput).pipe(Effect.flip)
-      expect(failure._tag).toBe("persistence/RecordNotFoundError")
-      expect(calls).toBe(1)
-    }).pipe(Effect.provide(layerWithTracking(tx, mockTrackingNumberService)))
-  })
-
-  it.effect("does not retry on a unique violation for a non-trackingNumber field", () => {
-    let calls = 0
-    const tx = makeTx({
-      package: {
-        create: async () => {
-          calls++
-          throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed on email", {
-            code: "P2002",
-            clientVersion: "test",
-            meta: { target: ["email"] },
-          })
-        },
-      },
-    })
-    return Effect.gen(function* () {
-      const repo = yield* OrderRepository
-      const failure = yield* repo.addPackageToOrder("order-1" as OrderId, packageInput).pipe(Effect.flip)
-      expect(failure._tag).toBe("persistence/UniqueConstraintViolation")
-      expect(calls).toBe(1)
-    }).pipe(Effect.provide(layerWithTracking(tx, mockTrackingNumberService)))
-  })
 })
 
 describe("OrderRepository.createOrder", () => {
@@ -298,13 +199,6 @@ describe("OrderRepository.createOrder", () => {
   })
 
   const mockTrackingNumberService = TrackingNumberService.of({ generate: () => "TAQ-TEST" })
-
-  const sequenceTrackingNumberService = TrackingNumberService.of({
-    generate: (() => {
-      let i = 0
-      return () => `TAQ-SEQ-${i++}`
-    })(),
-  })
 
   const layerWithTracking = (tx: unknown, trackingService: TrackingNumberServiceShape) =>
     OrderRepositoryLive.pipe(
@@ -350,21 +244,12 @@ describe("OrderRepository.createOrder", () => {
     package: { create: async () => ({ id: "pkg-1" }) },
   })
 
-  it.effect("retries with fresh tracking numbers when createMany hits a unique violation", () => {
-    let calls = 0
-    const trackingNumbers: string[] = []
+  it.effect("creates an order with generated tracking numbers", () => {
+    let createData: Record<string, any> | undefined
     const tx = makeTx({
       order: {
         create: async (args: any) => {
-          calls++
-          trackingNumbers.push(args.data.packages.createMany.data[0].trackingNumber)
-          if (calls === 1) {
-            throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed on trackingNumber", {
-              code: "P2002",
-              clientVersion: "test",
-              meta: { target: ["trackingNumber"] },
-            })
-          }
+          createData = args
           return { id: "order-1", customerId: "customer-1", status: OrderStatus.PENDING, packages: [] }
         },
       },
@@ -373,31 +258,7 @@ describe("OrderRepository.createOrder", () => {
       const repo = yield* OrderRepository
       const result = yield* repo.createOrder(orderInput)
       expect(result.order.id).toBe("order-1")
-      expect(calls).toBe(2)
-      expect(trackingNumbers).toHaveLength(2)
-      expect(trackingNumbers[0]).not.toBe(trackingNumbers[1])
-    }).pipe(Effect.provide(layerWithTracking(tx, sequenceTrackingNumberService)))
-  })
-
-  it.effect("fails with UniqueConstraintViolation after exhausting retries", () => {
-    let calls = 0
-    const tx = makeTx({
-      order: {
-        create: async () => {
-          calls++
-          throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed on trackingNumber", {
-            code: "P2002",
-            clientVersion: "test",
-            meta: { target: ["trackingNumber"] },
-          })
-        },
-      },
-    })
-    return Effect.gen(function* () {
-      const repo = yield* OrderRepository
-      const failure = yield* repo.createOrder(orderInput).pipe(Effect.flip)
-      expect(failure._tag).toBe("persistence/UniqueConstraintViolation")
-      expect(calls).toBe(3)
+      expect(createData?.data.packages.createMany.data[0].trackingNumber).toBe("TAQ-TEST")
     }).pipe(Effect.provide(layerWith(tx)))
   })
 })
