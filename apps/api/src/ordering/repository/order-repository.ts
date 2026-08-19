@@ -9,7 +9,7 @@ import { AddPackageInput, OrderCreateInput, OrderUpdateInput } from "ordering/dt
 import { TrackingNumberService } from "ordering/services/tracking-number-service"
 import { PrismaService } from "prisma-service"
 
-const MAX_TRACKING_NUMBER_ATTEMPTS = 3
+const MAX_TRACKING_NUMBER_RETRIES = 2
 
 const orderNotFound = (orderId: string) =>
   new RecordNotFoundError({ model: "Order", id: orderId, message: `Order with id ${orderId} not found` })
@@ -124,8 +124,8 @@ export const OrderRepositoryLive = Layer.effect(
             return Either.right({ order, events: written })
           })
         return Effect.retry(attempt(), {
-          times: MAX_TRACKING_NUMBER_ATTEMPTS - 1,
-          while: (error) => error instanceof UniqueConstraintViolation,
+          times: MAX_TRACKING_NUMBER_RETRIES,
+          while: (error) => error instanceof UniqueConstraintViolation && error.field.includes("trackingNumber"),
         })
       },
       getOrderById: (orderId: OrderId) => {
@@ -291,8 +291,8 @@ export const OrderRepositoryLive = Layer.effect(
             )
           })
         return Effect.retry(attempt(), {
-          times: MAX_TRACKING_NUMBER_ATTEMPTS - 1,
-          while: (error) => error instanceof UniqueConstraintViolation,
+          times: MAX_TRACKING_NUMBER_RETRIES,
+          while: (error) => error instanceof UniqueConstraintViolation && error.field.includes("trackingNumber"),
         })
       },
       findPackageByTrackingNumber: (trackingNumber: string) => {

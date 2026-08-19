@@ -9,7 +9,9 @@ export class TrackingNumberService extends Context.Tag("order/TrackingNumberServ
 export const TrackingNumberServiceLive = Layer.succeed(
   TrackingNumberService,
   TrackingNumberService.of({
-    // UUID v7 (RFC 9562): time-ordered and sortable; the DB @unique constraint is the collision guard.
+    // UUID v7 (RFC 9562): time-ordered and sortable. The findUnique pre-check is deliberately gone —
+    // the DB @unique constraint is the collision guard, and the repository retries insert-time P2002
+    // collisions on trackingNumber only (bounded).
     generate: () => uuidv7(),
   })
 )

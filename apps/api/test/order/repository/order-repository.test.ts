@@ -265,6 +265,28 @@ describe("OrderRepository.addPackageToOrder", () => {
       expect(calls).toBe(1)
     }).pipe(Effect.provide(layerWithTracking(tx, mockTrackingNumberService)))
   })
+
+  it.effect("does not retry on a unique violation for a non-trackingNumber field", () => {
+    let calls = 0
+    const tx = makeTx({
+      package: {
+        create: async () => {
+          calls++
+          throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed on email", {
+            code: "P2002",
+            clientVersion: "test",
+            meta: { target: ["email"] },
+          })
+        },
+      },
+    })
+    return Effect.gen(function* () {
+      const repo = yield* OrderRepository
+      const failure = yield* repo.addPackageToOrder("order-1" as OrderId, packageInput).pipe(Effect.flip)
+      expect(failure._tag).toBe("persistence/UniqueConstraintViolation")
+      expect(calls).toBe(1)
+    }).pipe(Effect.provide(layerWithTracking(tx, mockTrackingNumberService)))
+  })
 })
 
 describe("OrderRepository.createOrder", () => {
