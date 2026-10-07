@@ -20,24 +20,10 @@ import { describe, expect, it } from "@effect/vitest"
 import { Effect, Either, Layer } from "effect"
 import { afterAll, beforeAll, beforeEach } from "vitest"
 import { PrismaLive, PrismaService } from "prisma-service"
-import { ConfigService } from "config-service"
 import { UnexpectedPersistenceError } from "@/persistence-errors"
-import { prisma } from "./prisma"
+import { prisma, testConfigLayer } from "./prisma"
 
-const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/taq-u"
-
-const configLayer = Layer.succeed(
-  ConfigService,
-  ConfigService.of({
-    databaseUrl: DATABASE_URL,
-    dbPoolSize: 5,
-    dbConnectTimeout: 10,
-    logLevel: "info",
-    jwtSecret: "test-secret",
-  })
-)
-
-const serviceLayer = PrismaLive.pipe(Layer.provide(configLayer))
+const serviceLayer = PrismaLive.pipe(Layer.provide(testConfigLayer))
 
 const FIXED_EMAIL = "itest-prisma-service-transaction@example.com"
 

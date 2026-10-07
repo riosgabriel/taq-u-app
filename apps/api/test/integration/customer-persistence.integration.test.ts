@@ -67,14 +67,13 @@
  */
 
 import { describe, it } from "@effect/vitest"
-import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
+import { makePgAdapter } from "db-adapter"
 import { Effect } from "effect"
 import { afterAll } from "vitest"
+import { databaseConfig } from "./prisma"
 
-const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/taq-u"
-
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DATABASE_URL }) })
+const prisma = new PrismaClient({ adapter: makePgAdapter(databaseConfig) })
 
 /**
  * A sentinel error that, when thrown inside a `prisma.$transaction`
