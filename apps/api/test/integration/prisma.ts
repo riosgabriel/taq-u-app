@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client"
+import { ConfigService } from "config-service"
+import { DatabaseConfig, makePgAdapter } from "db-adapter"
+import { ConfigProvider, Effect, Layer } from "effect"
 
 /**
  * Shared Prisma client for integration tests.
@@ -12,9 +15,20 @@ import { PrismaClient } from "@prisma/client"
  * to construct or disconnect a Prisma client. It imports `prisma`
  * from this module and uses it directly. The lifecycle is owned here.
  *
- * DATABASE_URL follows the same convention as the rest of the test
- * suite: default to the local docker-compose Postgres.
+ * Database settings are read through the app's `DatabaseConfig`, with
+ * DATABASE_URL falling back to the local docker-compose Postgres.
  */
-const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/taq-u"
+const testConfigProvider = ConfigProvider.fromEnv().pipe(
+  ConfigProvider.orElse(() =>
+    ConfigProvider.fromMap(new Map([["DATABASE_URL", "postgres://postgres:postgres@localhost:5432/taq-u"]]))
+  )
+)
 
-export const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } })
+export const databaseConfig = Effect.runSync(testConfigProvider.load(DatabaseConfig))
+
+export const testConfigLayer = Layer.succeed(
+  ConfigService,
+  ConfigService.of({ ...databaseConfig, logLevel: "info", jwtSecret: "test-secret" })
+)
+
+export const prisma = new PrismaClient({ adapter: makePgAdapter(databaseConfig) })

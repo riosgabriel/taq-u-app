@@ -19,7 +19,6 @@
 import { CustomerAddressId, CustomerId } from "@/ids"
 import { RecordNotFoundError } from "@/persistence-errors"
 import { describe, expect, it } from "@effect/vitest"
-import { ConfigService } from "config-service"
 import {
   CustomerAddressRepository,
   CustomerAddressRepositoryLive,
@@ -27,22 +26,9 @@ import {
 import { Effect, Layer, Schema } from "effect"
 import { PrismaLive } from "prisma-service"
 import { afterAll, beforeEach } from "vitest"
-import { prisma } from "./prisma"
+import { prisma, testConfigLayer } from "./prisma"
 
-const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/taq-u"
-
-const configLayer = Layer.succeed(
-  ConfigService,
-  ConfigService.of({
-    databaseUrl: DATABASE_URL,
-    dbPoolSize: 5,
-    dbConnectTimeout: 10,
-    logLevel: "info",
-    jwtSecret: "test-secret",
-  })
-)
-
-const serviceLayer = PrismaLive.pipe(Layer.provide(configLayer))
+const serviceLayer = PrismaLive.pipe(Layer.provide(testConfigLayer))
 
 const addressRepoLayer = CustomerAddressRepositoryLive.pipe(Layer.provide(serviceLayer))
 

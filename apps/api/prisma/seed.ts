@@ -10,13 +10,14 @@ import {
   PaymentMethod,
   PaymentStatus,
 } from "@prisma/client"
+import "dotenv/config"
+import { Effect } from "effect"
 import { hashPassword } from "../src/auth/domain/password"
-
-const prisma = new PrismaClient()
+import { DatabaseConfig, makePgAdapter } from "../src/db-adapter"
 
 const DEV_PASSWORD = "password123"
 
-async function main() {
+async function seed(prisma: PrismaClient) {
   console.log("🌱 Starting database seed...")
 
   // Clean existing data using TRUNCATE CASCADE for schema-independent wipe
@@ -661,11 +662,16 @@ async function main() {
   console.log("✅ Database seed completed successfully!")
 }
 
-main()
-  .catch((e) => {
-    console.error("❌ Seed failed:", e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+const program = Effect.gen(function* () {
+  const config = yield* DatabaseConfig
+  const prisma = yield* Effect.acquireRelease(
+    Effect.sync(() => new PrismaClient({ adapter: makePgAdapter(config) })),
+    (prisma) => Effect.promise(() => prisma.$disconnect())
+  )
+  yield* Effect.tryPromise(() => seed(prisma))
+}).pipe(Effect.scoped)
+
+Effect.runPromise(program).catch((e) => {
+  console.error("❌ Seed failed:", e)
+  process.exit(1)
+})
