@@ -6,9 +6,9 @@ import {
   UnexpectedPersistenceError,
   UniqueConstraintViolation,
 } from "@/persistence-errors"
-import { PrismaPg } from "@prisma/adapter-pg"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { ConfigService } from "config-service"
+import { makePgAdapter } from "db-adapter"
 import { Context, Effect, Either, Layer } from "effect"
 
 const mapKnownPrismaError = (error: Prisma.PrismaClientKnownRequestError): PersistenceError => {
@@ -80,9 +80,9 @@ export class PrismaService extends Context.Tag("PrismaService")<
 export const PrismaLive = Layer.scoped(
   PrismaService,
   Effect.gen(function* () {
-    const { databaseUrl } = yield* ConfigService
+    const config = yield* ConfigService
     const client = new PrismaClient({
-      adapter: new PrismaPg({ connectionString: databaseUrl }),
+      adapter: makePgAdapter(config),
       log: process.env.LOG_PRISMA === "true" ? ["query", "info", "warn", "error"] : ["error", "warn"],
     })
     return PrismaService.of({
