@@ -10,9 +10,11 @@ import {
   PaymentMethod,
   PaymentStatus,
 } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
+import "dotenv/config"
 import { hashPassword } from "../src/auth/domain/password"
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
 
 const DEV_PASSWORD = "password123"
 

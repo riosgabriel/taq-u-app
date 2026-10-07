@@ -1,3 +1,4 @@
+import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
 
 /**
@@ -17,4 +18,4 @@ import { PrismaClient } from "@prisma/client"
  */
 const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/taq-u"
 
-export const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } })
+export const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DATABASE_URL }) })

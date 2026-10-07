@@ -6,6 +6,7 @@ import {
   UnexpectedPersistenceError,
   UniqueConstraintViolation,
 } from "@/persistence-errors"
+import { PrismaPg } from "@prisma/adapter-pg"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { ConfigService } from "config-service"
 import { Context, Effect, Either, Layer } from "effect"
@@ -81,7 +82,7 @@ export const PrismaLive = Layer.scoped(
   Effect.gen(function* () {
     const { databaseUrl } = yield* ConfigService
     const client = new PrismaClient({
-      datasources: { db: { url: databaseUrl } },
+      adapter: new PrismaPg({ connectionString: databaseUrl }),
       log: process.env.LOG_PRISMA === "true" ? ["query", "info", "warn", "error"] : ["error", "warn"],
     })
     return PrismaService.of({
