@@ -1,30 +1,45 @@
-# TAQ-U-BIN Package Delivery System
+# TAQ-U web
 
-This is a project built with [Chef](https://chef.convex.dev) using [Convex](https://convex.dev) as its backend.
-You can find docs about Chef with useful information like how to deploy to production [here](https://docs.convex.dev/chef).
+Customer app and ops console for the TAQ-U delivery API (`apps/api`).
 
-This project is connected to the Convex deployment named [`marvelous-deer-51`](https://dashboard.convex.dev/d/marvelous-deer-51).
+## Run it
 
-## Project structure
+```bash
+pnpm dev            # from the repo root: API on :3000 + Vite
+pnpm dev:web        # web only
+```
 
-The frontend code is in the `app` directory and is built with [Vite](https://vitejs.dev/).
+Vite proxies `/api` to `http://localhost:3000`. Override the target with `VITE_API_PROXY_TARGET`, or skip the proxy
+entirely by setting `VITE_API_URL` (e.g. `https://api.example.com/api`).
 
-The backend code is in the `convex` directory.
+`pnpm --filter @taq-u-app/web lint` runs `tsc` — the only static check for this package.
 
-`npm run dev` will start the frontend and backend servers.
+## Routes
 
-## App authentication
+| Path                      | Access   | What it is                                                |
+| ------------------------- | -------- | --------------------------------------------------------- |
+| `/track/:trackingNumber?` | public   | Package tracking                                          |
+| `/login`, `/register`     | public   | Auth; honours `?redirect=`                                |
+| `/ship`                   | customer | Create an order (`POST /orders/mine`) with a live quote   |
+| `/orders`, `/orders/:id`  | customer | Order history, details, edit, cancel                      |
+| `/account`                | customer | Profile and saved addresses                               |
+| `/ops/orders`             | **open** | Dispatch: confirm, assign driver, pickup, deliver, cancel |
+| `/ops/deliveries`         | **open** | Deliveries by status, reassign driver                     |
+| `/ops/drivers`            | **open** | Driver CRUD and availability                              |
 
-Chef apps use [Convex Auth](https://auth.convex.dev/) with Anonymous auth for easy sign in. You may wish to change this before deploying your app.
+`/ops/*` is unauthenticated because the API has no staff roles yet.
 
-## Developing and deploying your app
+## Layout
 
-Check out the [Convex docs](https://docs.convex.dev/) for more information on how to develop with Convex.
+```
+src/
+  lib/api/        client.ts (fetch + ApiError), endpoints.ts, types.ts
+  lib/            session.ts, query.ts (QueryClient + keys), format.ts
+  components/ui/  shadcn components
+  components/     layout/, page.tsx (PageHeader/EmptyState/ErrorState/NotYetAvailable), StatusBadge.tsx
+  features/       auth, tracking, shipping, orders, account, ops
+  router.tsx
+```
 
-- If you're new to Convex, the [Overview](https://docs.convex.dev/understanding/) is a good place to start
-- Check out the [Hosting and Deployment](https://docs.convex.dev/production/) docs for how to deploy your app
-- Read the [Best Practices](https://docs.convex.dev/understanding/best-practices/) guide for tips on how to improve you app further
-
-## HTTP API
-
-User-defined http routes are defined in the `convex/router.ts` file. We split these routes into a separate file from `convex/http.ts` to allow us to prevent the LLM from modifying the authentication routes.
+Where the API doesn't provide something yet (tracking history, real ETA, payments, profile editing), the UI says so
+with `NotYetAvailable` instead of showing made-up data.

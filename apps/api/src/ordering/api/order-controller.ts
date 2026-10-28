@@ -8,6 +8,7 @@ import { OrderId, PackageId } from "@/ids"
 import {
   AddPackageInput,
   AssignDriverInput,
+  MyOrderCreateInput,
   OrderCreateInput,
   OrderResponse,
   OrderUpdateInputSchema,
@@ -48,6 +49,15 @@ OrderPortal.get("/mine", (customerId, _req) =>
     const orders = yield* orderService.getOrdersByCustomer(customerId)
     return ok(orders.map(OrderResponse.fromOrderWithPackages))
   })
+)
+
+OrderPortal.post("/mine", (customerId, req) =>
+  Effect.gen(function* (_) {
+    const input = yield* decodeBody(MyOrderCreateInput, req)
+    const orderService = yield* OrderService
+    const order = yield* orderService.createOrder(OrderCreateInput.make({ ...input, customerId }))
+    return ok(OrderResponse.fromOrderWithPackages(order))
+  }).pipe(Effect.catchTag("order/CustomerNotFoundError", (error) => Effect.succeed(notFound(error.message))))
 )
 
 OrderController.get("/:id", async (req: Request, res: Response, next: NextFunction) => {

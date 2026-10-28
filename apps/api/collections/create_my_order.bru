@@ -1,0 +1,44 @@
+meta {
+  name: Create My Order
+  type: http
+  seq: 46
+}
+
+post {
+  url: {{host}}/api/orders/mine
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "pickupAddress": "123 Pickup Street, City, State 12345",
+    "deliveryAddress": "456 Delivery Avenue, City, State 12345",
+    "pickupDate": "2024-01-15T10:00:00Z",
+    "specialInstructions": "Leave at front door if no answer",
+    "priority": "STANDARD",
+    "packages": [
+      {
+        "weightKg": 2.0,
+        "dimensions": "25x15x10 cm",
+        "description": "Documents",
+        "fragile": false,
+        "perishable": false,
+        "insured": false
+      }
+    ]
+  }
+}
+
+docs {
+  Creates an order owned by the authenticated customer. Same body as
+  Create Order, minus `customerId`, which is taken from the token.
+
+  200 — OrderResponse.
+  400 — invalid body.
+  401 — invalid or missing token.
+}

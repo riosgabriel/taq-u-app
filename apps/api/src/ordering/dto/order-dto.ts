@@ -93,11 +93,11 @@ export class OrderCreateInput extends Schema.Class<OrderCreateInput>("OrderCreat
     required: true,
     identifier: "pickupDate",
   }),
-  deliveryDate: Schema.NonEmptyString.annotations({
+  deliveryDate: Schema.optional(Schema.NonEmptyString).annotations({
     required: false,
     identifier: "deliveryDate",
   }),
-  specialInstructions: Schema.String.annotations({
+  specialInstructions: Schema.optional(Schema.String).annotations({
     required: false,
     identifier: "specialInstructions",
   }),
@@ -116,6 +116,12 @@ export class OrderCreateInput extends Schema.Class<OrderCreateInput>("OrderCreat
     default: "STANDARD",
   }),
 }) {}
+
+const { customerId: _customerId, ...myOrderCreateFields } = OrderCreateInput.fields
+
+export class MyOrderCreateInput extends Schema.Class<MyOrderCreateInput>("order/MyOrderCreateInput")(
+  myOrderCreateFields
+) {}
 
 export class PackageResponse extends Schema.Class<PackageResponse>("order/PackageResponse")({
   id: PackageId,
@@ -181,31 +187,28 @@ export class OrderResponse extends Schema.Class<OrderResponse>("OrderResponse")(
 }
 
 export class OrderUpdateInput extends Schema.Class<OrderUpdateInput>("OrderUpdateInput")({
-  pickupAddress: Schema.NonEmptyString.annotations({
+  pickupAddress: Schema.optional(Schema.NonEmptyString).annotations({
     required: false,
     identifier: "pickupAddress",
   }),
-  deliveryAddress: Schema.NonEmptyString.annotations({
+  deliveryAddress: Schema.optional(Schema.NonEmptyString).annotations({
     required: false,
     identifier: "deliveryAddress",
   }),
-  pickupDate: Schema.NonEmptyString.annotations({
+  pickupDate: Schema.optional(Schema.NonEmptyString).annotations({
     required: false,
     identifier: "pickupDate",
   }),
-  deliveryDate: Schema.NonEmptyString.annotations({
+  deliveryDate: Schema.optional(Schema.NonEmptyString).annotations({
     required: false,
     identifier: "deliveryDate",
   }),
-  specialInstructions: Schema.String.annotations({
+  specialInstructions: Schema.optional(Schema.String).annotations({
     required: false,
     identifier: "specialInstructions",
   }),
-  priority: Schema.Literal(
-    OrderPriority.LOW,
-    OrderPriority.STANDARD,
-    OrderPriority.HIGH,
-    OrderPriority.URGENT
+  priority: Schema.optional(
+    Schema.Literal(OrderPriority.LOW, OrderPriority.STANDARD, OrderPriority.HIGH, OrderPriority.URGENT)
   ).annotations({
     required: false,
     identifier: "priority",

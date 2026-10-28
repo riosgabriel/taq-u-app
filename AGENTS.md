@@ -50,6 +50,16 @@ These were settled. Don't undo or re-argue them.
 | **Domain coupling uses FK constraints, not service calls**    | Driver validation in order assignment uses DB foreign key constraint rather than calling DriverService from OrderService, avoiding bidirectional module coupling.                                   | `806691fd0` |
 | **Config is an injected dependency**                          | Via `ConfigLive` layer in runtime. Services never read env vars directly.                                                                                                                           | `4ca7434ff` |
 
+## Web app (`apps/web`)
+
+React 19 + Vite + Tailwind v4 + shadcn/ui, React Router v7, TanStack Query v5. See `apps/web/README.md`.
+
+- **All HTTP goes through `src/lib/api/endpoints.ts`** (typed per domain). Types in `src/lib/api/types.ts` mirror the API DTOs by hand — update them when a DTO changes.
+- **Session** lives in `src/lib/session.ts` (token in localStorage). A 401 on a request that carried a token expires the session; `RequireAuth` then redirects to `/login?redirect=…&expired=1`.
+- **Query keys** are centralized in `src/lib/query.ts`. Mutations invalidate by key; `["orders"]` is the prefix for every order query.
+- **Customer routes** (`/ship`, `/orders`, `/account`) sit under `RequireAuth`. **`/ops/*`** is deliberately unauthenticated (no staff roles in the API yet) and shows a banner saying so.
+- Customers create orders via `POST /orders/mine` (customerId from token), not the public `POST /orders`.
+
 ## Domain module template
 
 Adding a new domain? Follow the same structure:
@@ -103,7 +113,7 @@ Things an agent would confidently do wrong:
 ## Boundaries
 
 - `@repos/` is read-only — don't edit files there
-- `setup.mjs` in `apps/web` is a Convex scaffolding leftover — ignore it
+- Don't run the shadcn CLI in `apps/web` without checking its output — it has rewritten `@/lib/utils` imports to a bogus `cn` npm package before
 - Don't add typecheck to `validate` — deliberate. API typecheck is intentionally excluded from CI.
 - Don't use `Effect.runPromise` in controllers — always `runEffect()`
 - Don't add global validation middleware — validation is per-endpoint by design
